@@ -22,7 +22,7 @@ jobs:
         run: cmake -E make_directory .vcpkg-cache
       - name: Linux graphics prerequisites
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libibus-1.0-dev libdbus-1-dev libudev-dev xvfb xauth
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libltdl-dev libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libibus-1.0-dev libdbus-1-dev libudev-dev xvfb xauth
       - uses: lukka/run-vcpkg@v11
         with:
           vcpkgGitCommitId: 4056a718039dc20216cccb960bccce4b9ad69519
