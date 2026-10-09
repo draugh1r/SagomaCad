@@ -1,0 +1,12 @@
+{
+  "name": "sagomacad",
+  "version-string": "0.1.0",
+  "builtin-baseline": "4056a718039dc20216cccb960bccce4b9ad69519",
+  "dependencies": [
+    "sdl3",
+    {"name": "imgui", "features": ["docking-experimental", "opengl3-binding", "sdl3-binding"]},
+    {"name": "opencascade", "default-features": false},
+    "nlohmann-json",
+    "stb"
+  ]
+}

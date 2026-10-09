@@ -1,0 +1,41 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-cache,readwrite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lukka/get-cmake@latest
+      - uses: actions/cache@v4
+        with:
+          path: .vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ runner.arch }}-
+      - name: Prepare vcpkg binary cache
+        run: cmake -E make_directory .vcpkg-cache
+      - name: Linux graphics prerequisites
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxinerama-dev libxkbcommon-dev libwayland-dev libibus-1.0-dev libdbus-1-dev libudev-dev xvfb xauth
+      - uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 4056a718039dc20216cccb960bccce4b9ad69519
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a ctest --test-dir build --output-on-failure
+      - name: Test macOS
+        if: runner.os == 'macOS'
+        run: ctest --test-dir build --output-on-failure
+      - name: Test Windows
+        if: runner.os == 'Windows'
+        run: ctest --test-dir build --output-on-failure
