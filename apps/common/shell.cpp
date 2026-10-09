@@ -144,19 +144,19 @@ void Shell::draw() {
         ImGui::TextDisabled("  |  Nuovo documento");
         ImGui::SameLine(); ImGui::TextDisabled("   SOLIDO     SCHIZZO");
     }, ImGuiWindowFlags_NoScrollbar);
-    if (state_.browser) panel("Browser", "BROWSER", t, [&] {
-        ImGui::TextDisabled("DOCUMENTO"); ImGui::Separator();
+    if (state_.browser) panel("Browser", ui::labels.browser, t, [&] {
+        ImGui::TextDisabled("%s", ui::labels.document); ImGui::Separator();
         ImGui::TextUnformatted("  Origine"); ImGui::TextDisabled("    Piano XY");
         ImGui::TextDisabled("    Piano XZ"); ImGui::TextDisabled("    Piano YZ");
-        ImGui::Spacing(); ImGui::TextDisabled("CORPI"); ImGui::Separator();
+        ImGui::Spacing(); ImGui::TextDisabled("%s", ui::labels.bodies); ImGui::Separator();
         ImGui::TextDisabled("  Nessun corpo");
     });
-    if (state_.properties) panel("Proprietà", "PROPRIETÀ", t, [&] {
-        ImGui::TextDisabled("SELEZIONE"); ImGui::Separator();
+    if (state_.properties) panel("Proprietà", ui::labels.properties, t, [&] {
+        ImGui::TextDisabled("%s", ui::labels.selection); ImGui::Separator();
         ImGui::TextDisabled("Nessun elemento selezionato");
     });
-    if (state_.timeline) panel("Timeline", "TIMELINE", t, [&] {
-        ImGui::TextDisabled("CRONOLOGIA DELLE FEATURE"); ImGui::Separator();
+    if (state_.timeline) panel("Timeline", ui::labels.timeline, t, [&] {
+        ImGui::TextDisabled("%s", ui::labels.feature_history); ImGui::Separator();
         ImGui::TextDisabled("Il documento è vuoto");
         if (glyph_sample_) ImGui::TextUnformatted("àèéìòù ÀÈÉÌÒÙ");
     });

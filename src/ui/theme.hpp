@@ -3,6 +3,19 @@
 
 namespace sagomacad::ui {
 struct Color { float r, g, b, a = 1.0f; };
+struct SectionLabels {
+    const char* browser;
+    const char* document;
+    const char* bodies;
+    const char* properties;
+    const char* selection;
+    const char* timeline;
+    const char* feature_history;
+};
+inline constexpr SectionLabels labels {
+    "BROWSER", "DOCUMENTO", "CORPI", "PROPRIETÀ", "SELEZIONE",
+    "TIMELINE", "CRONOLOGIA DELLE FEATURE"
+};
 struct Theme {
     Color background, panel, panel_alt, viewport, text, muted, border, accent, axis_x, axis_y, grid_major, grid_minor;
     float rounding, spacing, padding, sidebar_width, inspector_width, timeline_height, toolbar_height;
