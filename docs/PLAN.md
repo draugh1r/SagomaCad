@@ -218,7 +218,7 @@ Stesso schema per linee (lunghezza, angolo), cerchi (diametro), archi. I vincoli
 
 ## 8. UI (`ui/`)
 
-Layout ispirato a Fusion 360, ricreato con asset nostri:
+L’obiettivo è replicare 1:1 layout, flusso di lavoro, scorciatoie e comportamento di Fusion 360, come fa PhotoCraft con Photoshop, con asset e icone nostri. Le eccezioni sono le aggiunte in stile Tinkercad della sezione 6 e del traguardo M6.
 
 - **Barra superiore:** schede contestuali (Solido, Schizzo) con gruppi di comandi a icone ed etichette, menu a tendina per gruppo.
 - **Sinistra:** browser del documento (parametri, corpi, schizzi, piani) con visibilità a occhio.
@@ -286,7 +286,152 @@ Lo snapshot crea un contesto OpenGL nascosto, renderizza alcuni frame della UI c
 
 ---
 
-## 11. Traguardi
+## 11. Accesso per agenti AI
+
+Qualsiasi agente AI compatibile MCP può collegarsi a SagomaCad, leggere il modello, modellare, misurare e vedere il risultato mentre l’utente segue il lavoro nell’app.
+
+### Principio
+
+L'MCP non è un modulo a parte con una sua logica: è un altro client del registro comandi, come la UI, la CLI e il canale di controllo. Se un comando esiste, l'agente può usarlo. Nessuna funzione deve esistere solo nella UI.
+
+Il valore rispetto agli MCP esistenti per altri CAD (che di solito passano da add-in o API parziali) viene da tre cose:
+
+1. **Accesso completo**: tutto ciò che fa l'utente passa dai comandi, quindi l'agente può fare tutto.
+2. **L'agente vede**: rendering del modello da qualsiasi vista, con facce e spigoli etichettati.
+3. **Riferimenti stabili**: facce e spigoli hanno nomi stabili (punto 4 di PLAN.md), quindi l'agente può dire "raccorda `ext1.side(e3)` con raggio 2" e il riferimento sopravvive alle modifiche.
+
+
+### Architettura
+
+Tre livelli, uno sopra l'altro. Il motore è uno solo, le porte d'ingresso sono due.
+
+```text
+app con terminale (Codex, Claude Code, script)  --> sagomacad-cli call ...   --+
+                                                                               +--> canale di controllo (socket TCP) --> app SagomaCad
+app senza terminale (Claude Desktop, Cursor...)  --> MCP --> sagomacad-cli mcp --+
+                                                             (oppure headless: Session in memoria, senza finestra)
+```
+
+#### Il canale di controllo (socket) è la base
+
+Esiste già da M0 (`auth`, `ui.inspect`, `ui.screenshot`, in seguito `engine.execute` e il resto). Tutto passa da lì. Né il client CLI né l'MCP contengono logica propria: traducono e inoltrano.
+
+#### Client CLI per agenti da terminale
+
+Gli agenti che sanno usare la shell non hanno bisogno di MCP: basta un comando ben documentato. Costa poco e non occupa contesto con le descrizioni degli strumenti.
+
+```sh
+sagomacad-cli call engine.commands
+sagomacad-cli call engine.execute '{"command":"feature.extrude","params":{"sketch":"sk1","distance":"20 mm"}}'
+sagomacad-cli call ui.screenshot '{"path":"shot.png"}'
+sagomacad-cli call batch '{"steps":[...]}'
+```
+
+- Legge porta e token da `--port` / `--token-file` o da un file di sessione scritto dall'app all'avvio (`.sagomacad/session.json`, solo per l'utente corrente), così l'agente non deve conoscerli.
+- Stampa la risposta JSON su stdout, gli errori su stderr, codice di uscita diverso da zero in caso di errore.
+- Se non c'è un'app aperta e si passa `--headless <file.sagomacad>`, esegue la chiamata su una `Session` in memoria.
+- `docs/agents.md`: guida breve per agenti da terminale, con esempi di chiamate per i flussi tipici (schizzo, estrusione, misura, screenshot). È il file da indicare a Codex e Claude Code.
+
+#### Server MCP per tutte le altre app
+
+- `sagomacad-cli mcp` è un server MCP su **stdio** (il trasporto standard che tutti i client supportano).
+- **Modalità bridge** (`--bridge 7878 --token-file ...`): si collega all'app in esecuzione. L'utente vede in tempo reale ogni operazione dell'agente nel viewport e nella timeline. È la modalità principale.
+- **Modalità headless** (default se l'app non è aperta): crea una `Session` propria. Serve per automazioni, test e per Codex durante lo sviluppo.
+- Il protocollo MCP è JSON-RPC 2.0: si implementa direttamente con nlohmann/json, senza dipendenze nuove. Modulo `automation/mcp/` (livello L5).
+- Più avanti, opzionale: trasporto HTTP streamable su loopback, per agenti che non lanciano processi.
+
+
+### Tool esposti
+
+Pochi tool generici e ben documentati funzionano meglio di centinaia di tool, uno per comando. Il catalogo completo dei comandi si scopre con `commands_list`.
+
+#### Scoperta ed esecuzione
+
+| Tool | Cosa fa |
+|---|---|
+| `commands_list {filter?}` | Elenco comandi: id, etichetta, documentazione parametri, abilitato o no e perché |
+| `command_run {command, params}` | Esegue un comando, restituisce risultato o errore leggibile |
+| `batch_run {steps, stop_on_error}` | Esegue più comandi come **un solo passo di undo** |
+| `undo` / `redo` | Annulla o ripete |
+
+#### Lettura del modello
+
+| Tool | Cosa fa |
+|---|---|
+| `document_inspect` | Parametri, timeline con stato ed errori di ogni feature, corpi, unità |
+| `feature_get {id}` | Parametri completi di una feature |
+| `sketch_inspect {sketch}` | Entità, vincoli, quote, gradi di libertà residui, stato del solver |
+| `geometry_query {body?, kind, filter?}` | Facce, spigoli o vertici con riferimento stabile e descrizione geometrica (tipo, normale, raggio, baricentro, area, lunghezza). Filtri: piane, cilindriche, parallele a un asse, sopra una quota, eccetera |
+| `selection_get` | Cosa ha selezionato l'utente nell'app (solo bridge): "raccorda gli spigoli che ho selezionato" |
+
+#### Misure
+
+| Tool | Cosa fa |
+|---|---|
+| `mass_properties {body}` | Volume, area, bounding box, baricentro |
+| `measure {a, b}` | Distanza minima e angolo tra due entità |
+| `check_printability {body}` | Solido chiuso o no, pareti sotto uno spessore minimo, sbalzi oltre un angolo (dopo M7) |
+
+#### Vista
+
+| Tool | Cosa fa |
+|---|---|
+| `render_view {view, size?, highlight?, labels?}` | PNG del modello da `iso`, `top`, `front`, `right` o da una camera libera. `labels: true` disegna i nomi stabili sulle facce e sugli spigoli, così l'agente può riferirsi a quello che vede |
+| `ui_screenshot` | Screenshot dell'intera app (solo bridge) |
+
+#### File
+
+| Tool | Cosa fa |
+|---|---|
+| `document_open {path}` / `document_save {path?}` | Solo dentro le cartelle radice concesse |
+| `export {format: stl|3mf|step, body?, path}` | Export, stesse regole sui percorsi |
+
+#### Risorse MCP
+
+- `sagomacad://document` - il documento corrente in JSON
+- `sagomacad://commands` - il catalogo comandi
+- `sagomacad://docs/modeling-guide` - una guida breve per agenti: come si crea uno schizzo, come si estrude, come si usano i riferimenti stabili, errori comuni
+
+
+### Esperienza utente nell'app
+
+- **Pannello Agente**: mostra se un agente è collegato e il registro delle sue azioni (comando, parametri, esito).
+- Ogni batch di un agente è un passo della timeline e dell'undo, marcato con un'icona "agente". L'utente annulla con Ctrl+Z come per qualsiasi altra operazione.
+- Interruttore "Consenti agenti" nella barra in alto. Se è spento, la modalità bridge rifiuta le connessioni.
+- Mentre l'agente lavora, il viewport mostra in evidenza le entità che ha appena creato o modificato.
+
+
+### Sicurezza
+
+- Solo loopback, token obbligatorio in modalità bridge.
+- Lettura e scrittura file solo nelle cartelle radice concesse all'avvio. Percorsi assoluti e `..` rifiutati.
+- Sovrascrivere un file esistente richiede `overwrite: true` esplicito.
+- Nessun tool esegue codice arbitrario o comandi di sistema.
+- Limiti su dimensione delle richieste, numero di passi di un batch e dimensione delle immagini.
+- Il fuzz dei comandi copre anche il percorso MCP: input malformato produce errore JSON-RPC, mai crash.
+
+
+### Errori pensati per agenti
+
+Ogni errore restituisce:
+
+- un messaggio chiaro (`"Lo schizzo sk2 non ha profili chiusi"`);
+- un codice stabile (`sketch.no_closed_profile`);
+- quando possibile, un suggerimento (`"Lo spigolo e4 non tocca e1: aggiungi un vincolo coincidente tra i punti p3 e p5"`).
+
+Gli agenti si correggono molto meglio con errori precisi che con un generico "operazione fallita".
+
+
+### Test
+
+- Test di integrazione MCP: uno script avvia `sagomacad-cli mcp` in headless, crea una scatola 40x40x20 con un foro passante da 10 mm usando solo tool MCP, e verifica con `mass_properties` che il volume sia corretto entro la tolleranza.
+- Test di conformità: handshake `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, gestione degli errori JSON-RPC.
+- Test bridge: app avviata in CI con `--control`, MCP collegato, `render_view` e `ui_screenshot` restituiscono PNG validi.
+- Codex usa l'MCP in headless durante lo sviluppo per verificare le feature che implementa.
+
+---
+
+## 12. Traguardi
 
 Ogni traguardo si chiude solo con build verde, test verdi, controllo livelli verde e gli screenshot o i test numerici indicati.
 
@@ -295,23 +440,27 @@ CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto 
 *Fatto quando:* lo snapshot dell'app vuota esiste ed è approvato come prima golden image.
 
 **M1 - Documento e comandi**
-`doc/` con serializzazione `.sagomacad`, registro comandi, undo/redo, parametri con espressioni, `sagomacad-cli run`, palette dei comandi nella UI, `document.*`, `param.*`, `edit.*`. Test di fuzz dei comandi attivo.
-*Fatto quando:* salva, riapri, undo e redo funzionano da CLI e da UI con gli stessi comandi.
+`doc/` con serializzazione `.sagomacad`, registro comandi, undo/redo, parametri con espressioni, `sagomacad-cli run`, palette dei comandi nella UI, `document.*`, `param.*`, `edit.*`. Client `sagomacad-cli call <metodo> [params]` per il canale di controllo, scoperta di porta e token dal file di sessione, opzioni `--port`, `--token-file` e `--headless <file.sagomacad>`, guida `docs/agents.md`. `Body` prevede `kind: brep | mesh` e la timeline distingue feature `exact | sdf`, anche se in M1 esistono solo quelle esatte; il formato `.sagomacad` accoglie i nuovi tipi senza rompere i file precedenti. Gli id `sdf.lattice`, `sdf.shell`, `sdf.smoothUnion`, `sdf.texture`, `sdf.offset` e `mesh.import` sono riservati, senza implementazione. Test di fuzz dei comandi attivo.
+*Fatto quando:* salva, riapri, undo e redo funzionano da CLI e da UI con gli stessi comandi; in CI il client chiama `engine.execute` e `ui.screenshot` sull'app e verifica risposta JSON e PNG.
+
+**M1.5 - MCP base**
+`sagomacad-cli mcp` su stdio con JSON-RPC 2.0 e modalità headless; `commands_list`, `command_run`, `batch_run` come unico passo di undo, `undo`, `redo`, `document_inspect`, `document_open`, `document_save` e risorse MCP. Documentazione in `docs/mcp.md` con la configurazione per Claude Desktop, Claude Code e Codex.
+*Fatto quando:* passano i test di conformità `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read` e di errore JSON-RPC; CLI e MCP leggono ed eseguono gli stessi comandi.
 
 **M2 - Kernel e vista 3D**
-`kernel/` con OCCT, `primitive.add` (box, cilindro), tassellazione, vista shaded con spigoli, orbita/pan/zoom, view cube, `export.stl`.
+`kernel/` con OCCT, `primitive.add` (box, cilindro), tassellazione, vista shaded con spigoli, orbita/pan/zoom, view cube, `export.stl`. L'export chiede al motore quale stadio del corpo esportare anziché prendere sempre l'ultimo risultato; in M2 gli stadi esatto e finale coincidono. MCP: `render_view`, `mass_properties`, `export` (inizialmente STL) e modalità bridge verso l'app in esecuzione, inclusi `ui_screenshot` e test del collegamento.
 *Fatto quando:* un box 40x40x20 esportato in STL ha volume corretto entro la tolleranza e si apre in Bambu Studio.
 
 **M3 - Sketcher 2D**
-Piani di schizzo, linea, rettangolo, cerchio, arco, vincoli automatici e manuali, quote, solver, colori per gradi di libertà (blu libero, nero vincolato), **quote digitate durante il disegno** come descritto al punto 6.
+Piani di schizzo, linea, rettangolo, cerchio, arco, vincoli automatici e manuali, quote, solver, colori per gradi di libertà (blu libero, nero vincolato), **quote digitate durante il disegno** come descritto al punto 6. MCP: `sketch_inspect`.
 *Fatto quando:* un rettangolo 40x20 si disegna digitando "40 Tab 20 Invio" e risulta completamente vincolato.
 
 **M4 - Feature e timeline**
-Estrusione e taglio da profili, rivoluzione, timeline con modifica parametri e rollback, regen incrementale, feature in errore senza crash.
+Estrusione e taglio da profili, rivoluzione, timeline con modifica parametri e rollback, regen incrementale, feature in errore senza crash. MCP: `feature_get`.
 *Fatto quando:* cambiare la quota dello schizzo a monte aggiorna il solido e i test di volume restano corretti.
 
 **M5 - Selezione e feature su facce**
-Picking con ID buffer, hover, clic ripetuto, schizzi su faccia, raccordi e smussi su spigoli selezionati, riferimenti topologici del punto 4.
+Picking con ID buffer, hover, clic ripetuto, schizzi su faccia, raccordi e smussi su spigoli selezionati, riferimenti topologici del punto 4. MCP: `geometry_query`, `measure`, `selection_get` e `render_view` con etichette dei riferimenti stabili. Test di integrazione headless: scatola 40×40×20 con foro passante da 10 mm creata usando solo tool MCP, volume verificato tramite `mass_properties`.
 *Fatto quando:* un raccordo su uno spigolo sopravvive alla modifica della quota a monte (test dedicato).
 
 **M6 - Immediatezza Tinkercad**
@@ -319,16 +468,57 @@ Primitive trascinate dal pannello sul piano o su una faccia, fori drag and drop,
 *Fatto quando:* una scatola con foro centrale si crea in meno di 10 secondi senza aprire uno schizzo, e nella timeline compaiono feature normali e modificabili.
 
 **M7 - Export e stampa**
-3MF e STEP, tolleranza di tassellazione impostabile, export di un corpo o di tutto, apertura diretta in Bambu Studio se installato.
+3MF e STEP, tolleranza di tassellazione impostabile, export di un corpo o di tutto, apertura diretta in Bambu Studio se installato. L'export continua a chiedere al motore lo stadio del corpo: STEP usa lo stadio esatto, STL e 3MF il risultato finale; prima delle feature SDF i due risultati coincidono. MCP: `export` anche per 3MF e STEP, `check_printability`.
 *Fatto quando:* STL, 3MF e STEP dello stesso pezzo si aprono correttamente in Bambu Studio e in un altro CAD.
 
 **M8 - Rifinitura**
-Menu a marcatura (tasto destro), scorciatoie personalizzabili, tema chiaro e scuro, salvataggio di recupero, prestazioni su modelli con centinaia di feature.
-
-**Dopo (fuori dal primo piano):** feature SDF in fondo alla timeline (riempimenti gyroid e lattice, svuotamento) che convertono il solido esatto in campo di distanza e producono solo mesh per la stampa.
+Menu a marcatura (tasto destro), scorciatoie personalizzabili, tema chiaro e scuro, salvataggio di recupero, prestazioni su modelli con centinaia di feature. Pannello Agente con registro delle azioni, interruttore "Consenti agenti" ed evidenziazione delle modifiche nel viewport.
 
 ---
 
-## 12. Primo prompt per Codex
+## 13. Feature SDF
+
+Le feature SDF per la stampa 3D arrivano dopo M8. In M1, M2 e M7 si preparano solo i contratti del modello e dell'export descritti sopra; non si implementano ora operazioni SDF.
+
+### A cosa servono
+
+La geometria esatta (B-rep, OpenCascade) serve a progettare. Le feature SDF servono a preparare il pezzo per la stampa con operazioni che il kernel esatto fa male o non fa:
+
+- reticoli e gyroid dentro il pezzo (pezzi leggeri, imbottiture, impugnature);
+- svuotamento con pareti uniformi su forme complesse;
+- lavoro su mesh importate (STL di scansioni e miniature): taglio, base, svuotamento, fori per perni, senza booleane che falliscono;
+- unioni morbide tra forme;
+- texture sulle superfici (zigrinature, pattern);
+- offset per tolleranze di incastro e stampe "print in place".
+
+Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo slicer vuole comunque triangoli, e la risoluzione di campionamento (per esempio 0,05 mm) è sotto la precisione della stampante.
+
+### Regole di modello
+
+1. **Due stadi per corpo.** La timeline di ogni corpo ha uno stadio esatto e, opzionalmente, uno stadio SDF che viene dopo. Una feature SDF non può essere seguita da feature esatte sullo stesso corpo: il comando rifiuta l'operazione con un errore chiaro.
+2. **Niente si perde.** La feature SDF legge il solido esatto prodotto dalle feature precedenti. Sopprimerla, o spostare il marker della timeline prima di lei, riporta al solido esatto. Cambiare una quota a monte ricalcola anche la feature SDF.
+3. **Due uscite per corpo.**
+   - Export STEP: usa sempre il risultato dello stadio esatto.
+   - Export STL e 3MF: usa il risultato finale, SDF compreso.
+   Se un corpo ha feature SDF, il dialog di export STEP lo segnala ("esporto la geometria esatta, senza le feature di stampa").
+4. **Corpi da mesh.** Un STL importato è un corpo di tipo mesh. Su di esso si possono usare solo feature SDF (e trasformazioni). Non entra mai nello stadio esatto.
+5. **Parametri come tutte le altre feature.** Spessore delle pareti, dimensione delle celle, risoluzione di campionamento sono parametri ed espressioni, modificabili dalla timeline e dai comandi.
+
+### Cosa deve prevedere già da ora
+
+- **M1 (documento):** `Body` ha un campo `kind: brep | mesh` e la timeline distingue il tipo di ogni feature (`exact | sdf`), anche se oggi esistono solo quelle esatte. Il formato `.sagomacad` deve poter aggiungere questi tipi senza rompere i file vecchi.
+- **M2 / M7 (export):** l'export chiede al motore "quale stadio" del corpo esportare, invece di prendere sempre l'ultimo risultato. Oggi le due risposte coincidono.
+- **Comandi e MCP:** gli id previsti sono `sdf.lattice`, `sdf.shell`, `sdf.smoothUnion`, `sdf.texture`, `sdf.offset`, `mesh.import`. Non vanno implementati ora, ma i nomi sono riservati.
+
+### Implementazione (quando arriverà)
+
+- Modulo `sdf/` al livello L3, accanto a `regen/` e `mesh/`. Non dipende da OCCT: riceve una mesh densa del solido esatto da `mesh/`.
+- Conversione mesh -> campo di distanza su griglia sparsa (solo vicino alla superficie), operazioni sul campo, estrazione della superficie con dual contouring o marching cubes, semplificazione adattiva della mesh.
+- Anteprima nel viewport a bassa risoluzione mentre si modificano i parametri, risoluzione piena all'export.
+- Test: volume e spessore minimo delle pareti misurati sulla mesh risultante, mesh chiusa e senza autointersezioni, tempi su un pezzo di riferimento.
+
+---
+
+## 14. Primo prompt per Codex
 
 > Leggi `AGENTS.md` e `PLAN.md`. Implementa il traguardo M0 del piano: struttura delle cartelle e dei target CMake per tutti i livelli (anche vuoti), vcpkg manifest, app `sagomacad` con finestra SDL3, Dear ImGui docking e viewport OpenGL con griglia e assi, tema con token in `ui/theme.hpp`, `sagomacad-cli snapshot` che renderizza offscreen e salva un PNG, canale di controllo con `auth`, `ui.inspect` e `ui.screenshot`, script `tools/check_layers.py`, workflow CI per Windows, macOS e Linux. Alla fine genera lo snapshot dell'app vuota in `docs/screenshots/m0.png`, guardalo, correggi quello che non va, e aggiorna `log/devlog.md`. Non iniziare M1.

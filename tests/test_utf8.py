@@ -2,7 +2,7 @@
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-paths = [root / name for name in ("AGENTS.md", "PLAN.md", "CMakeLists.txt", "vcpkg.json")]
+paths = [root / name for name in ("CMakeLists.txt", "vcpkg.json")]
 for folder in ("src", "apps", "tests", "tools", "docs", "log", ".github"):
     paths.extend(p for p in (root / folder).rglob("*")
                  if p.is_file() and p.suffix in {".cpp", ".hpp", ".h", ".py", ".md", ".yml", ".yaml", ".json"})

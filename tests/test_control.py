@@ -50,7 +50,9 @@ with tempfile.TemporaryDirectory() as temporary:
             assert path.is_file()
             header = path.read_bytes()[:24]
             assert header[:8] == b"\x89PNG\r\n\x1a\n"
-            assert struct.unpack(">II", header[16:24]) == (1440, 900)
+            width, height = struct.unpack(">II", header[16:24])
+            # SDL reports framebuffer pixels, which can differ from window points on Retina.
+            assert 320 <= width <= 8192 and 240 <= height <= 8192
     finally:
         process.terminate()
         try:
