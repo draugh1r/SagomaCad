@@ -27,6 +27,17 @@ nlohmann::json dispatch(engine::Engine& engine, std::string_view method,
             return result.ok ? nlohmann::json{{"result", result.value}}
                              : nlohmann::json{{"error", {{"message", result.error}}}};
         }
+        if (method == "engine.batch") {
+            if (!params.is_object() || !params.contains("steps") ||
+                (params.contains("stop_on_error") && !params["stop_on_error"].is_boolean()))
+                return {{"error", {{"message", "engine.batch richiede steps e stop_on_error booleano opzionale"}}}};
+            for (auto it=params.begin();it!=params.end();++it)
+                if (it.key()!="steps" && it.key()!="stop_on_error")
+                    return {{"error", {{"message", "Parametro JSON sconosciuto: "+it.key()}}}};
+            const auto result=engine.execute_batch(params["steps"],params.value("stop_on_error",true));
+            return result.ok ? nlohmann::json{{"result",result.value}}
+                             : nlohmann::json{{"error",{{"message",result.error}}}};
+        }
         return {{"error", {{"message", "Metodo sconosciuto: " + std::string(method)}}}};
     } catch (const std::exception& e) {
         return {{"error", {{"message", e.what()}}}};

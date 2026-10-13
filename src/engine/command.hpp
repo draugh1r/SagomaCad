@@ -71,6 +71,7 @@ public:
     const Registry& registry() const { return registry_; }
     CommandResult execute(std::string_view id, const nlohmann::json& params = nlohmann::json::object(),
                           std::string_view coalesce_key = {});
+    CommandResult execute_batch(const nlohmann::json& steps, bool stop_on_error = true);
     nlohmann::json commands() const;
 private:
     Session session_;

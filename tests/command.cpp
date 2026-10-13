@@ -56,6 +56,24 @@ int main() {
         require(!engine.execute("param.set", {{"name", 12}, {"expression", "1 mm"}}).ok,
                 "tipo errato accettato");
         require(!engine.execute("comando.inesistente").ok, "id inesistente accettato");
+        const auto before_batch=engine.session().document;
+        const auto history_before_batch=engine.session().history.size();
+        good(engine.execute_batch(nlohmann::json::array({
+            {{"command","param.set"},{"params",{{"name","altezza"},{"expression","20 mm"}}}},
+            {{"command","param.set"},{"params",{{"name","raggio"},{"expression","altezza / 4"}}}}
+        })));
+        require(engine.session().history.size()==history_before_batch+1,"batch non è un solo passo di undo");
+        require(std::abs(value(engine,"raggio")-5.0)<1e-9,"batch non ha applicato i parametri");
+        good(engine.execute("edit.undo"));
+        require(engine.session().document==before_batch,"undo del batch incompleto");
+        good(engine.execute("edit.redo"));
+        require(std::abs(value(engine,"raggio")-5.0)<1e-9,"redo del batch incompleto");
+        const auto before_failed_batch=engine.session().document;
+        require(!engine.execute_batch(nlohmann::json::array({
+            {{"command","param.set"},{"params",{{"name","temporaneo"},{"expression","3 mm"}}}},
+            {{"command","param.set"},{"params",{{"name","errore"},{"expression","1 / 0"}}}}
+        })).ok,"batch fallito accettato");
+        require(engine.session().document==before_failed_batch,"batch fallito ha modificato il documento");
         std::filesystem::remove(path);
         std::cout << "Comandi: file, parametri collegati, undo/redo e coalescenza verificati\n";
         return 0;

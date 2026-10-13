@@ -72,7 +72,7 @@ int main(int argc,char** argv) {
         server=std::make_unique<sagomacad::ControlServer>(port,token,[&](const nlohmann::json& input)->nlohmann::json {
             const auto id=input.value("id",nlohmann::json());
             const auto method=input.value("method",std::string());
-            if (method=="engine.commands" || method=="engine.execute") {
+            if (method=="engine.commands" || method=="engine.execute" || method=="engine.batch") {
                 auto reply=sagomacad::automation::dispatch(engine,method,input.value("params",nlohmann::json::object()));
                 reply["id"]=id;
                 return reply;

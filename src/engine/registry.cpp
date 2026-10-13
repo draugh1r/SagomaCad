@@ -66,6 +66,41 @@ CommandResult Engine::execute(std::string_view id, const nlohmann::json& params,
     }
 }
 
+CommandResult Engine::execute_batch(const nlohmann::json& steps, bool stop_on_error) {
+    try {
+        if (!steps.is_array() || steps.empty() || steps.size()>64)
+            return CommandResult::failure("steps deve contenere da 1 a 64 comandi");
+        Engine staged;
+        staged.session_=session_;
+        nlohmann::json results=nlohmann::json::array();
+        for (std::size_t i=0;i<steps.size();++i) {
+            const auto& step=steps[i];
+            if (!step.is_object() || !step.contains("command") || !step["command"].is_string())
+                return CommandResult::failure("Passo "+std::to_string(i)+": command deve essere una stringa");
+            for (auto it=step.begin();it!=step.end();++it)
+                if (it.key()!="command" && it.key()!="params")
+                    return CommandResult::failure("Passo "+std::to_string(i)+": parametro sconosciuto "+it.key());
+            const auto id=step["command"].get<std::string>();
+            const auto* spec=registry_.find(id);
+            if (!spec || !spec->journal)
+                return CommandResult::failure("Passo "+std::to_string(i)+": il batch accetta solo comandi modificabili registrati");
+            const auto params=step.value("params",nlohmann::json::object());
+            const auto before_step=staged.session_;
+            const auto result=staged.execute(id,params);
+            if (!result.ok) {
+                staged.session_=before_step;
+                if (stop_on_error) return CommandResult::failure("Passo "+std::to_string(i)+" ("+id+"): "+result.error);
+                results.push_back({{"ok",false},{"command",id},{"error",result.error}});
+            } else results.push_back({{"ok",true},{"command",id},{"value",result.value}});
+        }
+        const auto before=session_.document;
+        session_.document=std::move(staged.session_.document);
+        session_.history.record(before,session_.document,{});
+        return {true,{{"results",std::move(results)},{"history_steps",session_.history.size()}},{}};
+    } catch (const std::exception& e) { return CommandResult::failure(std::string("Batch non valido: ")+e.what()); }
+      catch (...) { return CommandResult::failure("Errore imprevisto nel batch"); }
+}
+
 nlohmann::json Engine::commands() const {
     nlohmann::json result = nlohmann::json::array();
     for (const auto& spec : registry_.specs()) {
