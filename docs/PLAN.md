@@ -152,7 +152,7 @@ struct CommandSpec {
 ```text
 document.new  document.open {path}  document.save {path?}  document.inspect
 edit.undo  edit.redo  edit.delete {ids}
-param.set {name, expression}  param.list
+param.set {name, expression}  param.list  param.delete {name}
 sketch.create {plane: "XY"|"XZ"|"YZ" | face: FaceRef}  sketch.finish  sketch.edit {feature}
 sketch.line {points}  sketch.rect {corner, corner2 | center, size}  sketch.circle {center, diameter}  sketch.arc {...}
 sketch.constraint.add {kind, entities}   // coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, midpoint, fix
