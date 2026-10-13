@@ -1,6 +1,7 @@
 #include "shell.hpp"
 #include "fuzz.hpp"
 #include "client.hpp"
+#include "mcp.hpp"
 #include "ui/parameter_editor.hpp"
 #include <cstdio>
 #include <iostream>
@@ -11,6 +12,7 @@ int main(int argc,char** argv) {
     if (argc==2 && std::string(argv[1])=="fuzz-commands") return fuzz_commands();
     if (argc>=2 && (std::string(argv[1])=="call" || std::string(argv[1])=="run"))
         return client_cli(argc,argv);
+    if (argc>=2 && std::string(argv[1])=="mcp") return mcp_cli(argc,argv);
     if (argc<2 || std::string(argv[1])!="snapshot") {
         std::cerr<<"Usage: sagomacad-cli snapshot --size WIDTHxHEIGHT [--scale 1|2] --out file.png [--theme dark|light] [--glyph-test] [--script JSON]\n";
         return 2;

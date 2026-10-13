@@ -1,0 +1,183 @@
+#include "automation/mcp/server.hpp"
+#include <algorithm>
+#include <iostream>
+#include <string>
+
+namespace sagomacad::automation::mcp {
+namespace {
+Json rpc_error(const Json& id,int number,std::string code,std::string message,std::string suggestion={}) {
+    Json error={{"code",number},{"message",std::move(message)},
+                {"data",{{"code",std::move(code)},{"suggestion",std::move(suggestion)}}}};
+    return {{"jsonrpc","2.0"},{"id",id},{"error",std::move(error)}};
+}
+Json tool_error(std::string code,std::string message,std::string suggestion={}) {
+    Json data={{"code",std::move(code)},{"message",std::move(message)},{"suggestion",std::move(suggestion)}};
+    return {{"isError",true},{"content",Json::array({{{"type","text"},{"text",data.dump()}}})},
+            {"structuredContent",data}};
+}
+Json tool_success(const Json& value) {
+    return {{"content",Json::array({{{"type","text"},{"text",value.dump()}}})},
+            {"structuredContent",value}};
+}
+Json schema(std::initializer_list<std::pair<std::string,Json>> properties={},
+            std::initializer_list<std::string> required={}) {
+    Json p=Json::object();
+    for (const auto& [name,value]:properties) p[name]=value;
+    return {{"type","object"},{"properties",p},{"required",required},{"additionalProperties",false}};
+}
+Json text_schema() { return {{"type","string"}}; }
+Json bool_schema() { return {{"type","boolean"}}; }
+Json object_schema() { return {{"type","object"}}; }
+Json tools_catalog() {
+    const auto entry=[](const char* name,const char* description,Json input) {
+        return Json{{"name",name},{"description",description},{"inputSchema",std::move(input)}};
+    };
+    return Json::array({
+        entry("commands_list","Elenca i comandi disponibili e il loro stato",schema({{"filter",text_schema()}})),
+        entry("command_run","Esegue un comando del registro SagomaCad",schema({{"command",text_schema()},{"params",object_schema()}},{"command"})),
+        entry("batch_run","Esegue da 1 a 64 comandi come un solo passo di undo",schema({{"steps",{{"type","array"},{"minItems",1},{"maxItems",64}}},{"stop_on_error",bool_schema()}},{"steps"})),
+        entry("undo","Annulla l'ultima modifica",schema()),
+        entry("redo","Ripete l'ultima modifica annullata",schema()),
+        entry("document_inspect","Legge documento, parametri, feature e storia",schema()),
+        entry("document_open","Apre un documento in una radice consentita",schema({{"path",text_schema()}},{"path"})),
+        entry("document_save","Salva un documento in una radice consentita",schema({{"path",text_schema()},{"overwrite",bool_schema()}})),
+        entry("render_view","Renderizza un PNG da vista iso, top, front o right",schema({{"view",{{"type","string"},{"enum",Json::array({"iso","top","front","right"})}}},{"size",text_schema()}},{"view"})),
+        entry("mass_properties","Volume, area, baricentro e bounding box di un corpo",schema({{"body",text_schema()}})),
+        entry("export","Esporta STL nella cartella export consentita",schema({{"format",{{"type","string"},{"enum",Json::array({"stl"})}}},{"path",text_schema()},{"body",text_schema()},{"stage",text_schema()},{"tolerance",{{"type","number"}}},{"overwrite",bool_schema()}},{"format","path"})),
+        entry("ui_screenshot","Cattura la finestra dell'app aperta (solo bridge)",schema())
+    });
+}
+bool valid_keys(const Json& value,std::initializer_list<std::string_view> keys) {
+    if (!value.is_object()) return false;
+    for (auto it=value.begin();it!=value.end();++it)
+        if (std::find(keys.begin(),keys.end(),std::string_view(it.key()))==keys.end()) return false;
+    return true;
+}
+bool string_field(const Json& value,const char* key,bool required=false) {
+    return (!required && !value.contains(key)) || (value.contains(key) && value[key].is_string());
+}
+}
+
+Server::Server(Handler commands,Handler visuals,bool bridge,std::vector<std::filesystem::path> roots)
+    :commands_(std::move(commands)),visuals_(std::move(visuals)),bridge_(bridge),roots_(std::move(roots)) {}
+
+Json Server::invoke(std::string_view method,const Json& params) {
+    const auto reply=commands_(method,params);
+    if (!reply.is_object()) return tool_error("bridge.invalid_reply","Risposta del motore non valida","Riprova o riavvia l'app");
+    if (reply.contains("error")) {
+        const auto message=reply["error"].is_object()?reply["error"].value("message",std::string("Errore del motore")):"Errore del motore";
+        return tool_error("command.failed",message,"Controlla i parametri con commands_list");
+    }
+    if (!reply.contains("result")) return tool_error("bridge.invalid_reply","Risposta del motore senza result");
+    return tool_success(reply["result"]);
+}
+
+Json Server::tool(std::string_view name,const Json& a) {
+    if (name=="commands_list") {
+        if (!valid_keys(a,{"filter"}) || !string_field(a,"filter")) return tool_error("mcp.invalid_arguments","filter deve essere una stringa");
+        auto result=invoke("engine.commands",Json::object());
+        if (result.value("isError",false)) return result;
+        if (a.contains("filter")) {
+            auto filtered=Json::array();
+            const auto needle=a["filter"].get<std::string>();
+            for (const auto& command:result["structuredContent"])
+                if (command.value("id",std::string()).find(needle)!=std::string::npos ||
+                    command.value("label",std::string()).find(needle)!=std::string::npos) filtered.push_back(command);
+            result=tool_success(filtered);
+        }
+        return result;
+    }
+    if (name=="command_run") {
+        if (!valid_keys(a,{"command","params"}) || !string_field(a,"command",true) ||
+            (a.contains("params") && !a["params"].is_object()))
+            return tool_error("mcp.invalid_arguments","command deve essere una stringa e params un oggetto");
+        return invoke("engine.execute",{{"command",a["command"]},{"params",a.value("params",Json::object())}});
+    }
+    if (name=="batch_run") {
+        if (!valid_keys(a,{"steps","stop_on_error"}) || !a.contains("steps") || !a["steps"].is_array() ||
+            (a.contains("stop_on_error") && !a["stop_on_error"].is_boolean()))
+            return tool_error("mcp.invalid_arguments","steps deve essere un array e stop_on_error un booleano");
+        return invoke("engine.batch",{{"steps",a["steps"]},{"stop_on_error",a.value("stop_on_error",true)}});
+    }
+    if (name=="undo" || name=="redo") {
+        if (!a.empty()) return tool_error("mcp.invalid_arguments","Questo tool non accetta argomenti");
+        return invoke("engine.execute",{{"command",name=="undo"?"edit.undo":"edit.redo"},{"params",Json::object()}});
+    }
+    if (name=="document_inspect") {
+        if (!a.empty()) return tool_error("mcp.invalid_arguments","Questo tool non accetta argomenti");
+        return invoke("engine.execute",{{"command","document.inspect"},{"params",Json::object()}});
+    }
+    if (name=="document_open" || name=="document_save" || name=="export")
+        return tool_error("mcp.not_ready","Tool file in preparazione");
+    if (name=="render_view" || name=="mass_properties" || name=="ui_screenshot")
+        return visuals_(name,a);
+    return tool_error("mcp.unknown_tool","Tool MCP sconosciuto: "+std::string(name),"Consulta tools/list");
+}
+
+std::optional<Json> Server::handle(const Json& request) {
+    if (!request.is_object()) return rpc_error(nullptr,-32600,"mcp.invalid_request","La richiesta deve essere un oggetto JSON");
+    const auto id=request.value("id",Json(nullptr));
+    if (!request.contains("jsonrpc") || request["jsonrpc"]!="2.0" ||
+        !request.contains("method") || !request["method"].is_string() ||
+        (request.contains("id") && !(id.is_null() || id.is_string() || id.is_number_integer())))
+        return rpc_error(id,-32600,"mcp.invalid_request","Richiesta JSON-RPC 2.0 non valida");
+    const auto method=request["method"].get<std::string>();
+    if (!request.contains("id")) return std::nullopt;
+    const auto params=request.value("params",Json::object());
+    if (!params.is_object()) return rpc_error(id,-32602,"mcp.invalid_params","params deve essere un oggetto JSON");
+    Json result;
+    try {
+        if (method=="initialize")
+            result={{"protocolVersion","2025-06-18"},{"capabilities",{{"tools",Json::object()},{"resources",Json::object()}}},
+                    {"serverInfo",{{"name","sagomacad"},{"version","0.1.0"}}}};
+        else if (method=="ping") result=Json::object();
+        else if (method=="tools/list") result={{"tools",tools_catalog()}};
+        else if (method=="tools/call") {
+            if (!params.contains("name") || !params["name"].is_string() ||
+                (params.contains("arguments") && !params["arguments"].is_object()))
+                return rpc_error(id,-32602,"mcp.invalid_params","tools/call richiede name e arguments oggetto");
+            result=tool(params["name"].get<std::string>(),params.value("arguments",Json::object()));
+        } else if (method=="resources/list") {
+            result={{"resources",Json::array({
+                {{"uri","sagomacad://document"},{"name","Documento corrente"},{"mimeType","application/json"}},
+                {{"uri","sagomacad://commands"},{"name","Catalogo comandi"},{"mimeType","application/json"}},
+                {{"uri","sagomacad://docs/modeling-guide"},{"name","Guida modellazione"},{"mimeType","text/markdown"}}
+            })}};
+        } else if (method=="resources/read") {
+            if (!params.contains("uri") || !params["uri"].is_string())
+                return rpc_error(id,-32602,"mcp.invalid_params","resources/read richiede uri");
+            const auto uri=params["uri"].get<std::string>();
+            Json data;
+            std::string mime="application/json";
+            if (uri=="sagomacad://document") {
+                const auto reply=commands_("engine.execute",{{"command","document.inspect"},{"params",Json::object()}});
+                if (reply.contains("error")) return rpc_error(id,-32603,"command.failed",reply["error"].value("message","Errore del documento"));
+                data=reply.at("result").at("document");
+            } else if (uri=="sagomacad://commands") {
+                const auto reply=commands_("engine.commands",Json::object());
+                if (reply.contains("error")) return rpc_error(id,-32603,"command.failed",reply["error"].value("message","Errore del registro"));
+                data=reply.at("result");
+            } else if (uri=="sagomacad://docs/modeling-guide") {
+                mime="text/markdown";
+                data="# Guida SagomaCad\nUsa commands_list per scoprire i comandi. Crea parametri con param.set; usa primitive.add per box, cilindro e sfera. Le dimensioni accettano espressioni, per esempio larghezza o 20 mm. Per sottrarre un cilindro usa operation=subtract e indica body. Controlla il volume con mass_properties e salva con document_save. Schizzi e riferimenti stabili non sono ancora disponibili.\n";
+            } else return rpc_error(id,-32602,"mcp.unknown_resource","Risorsa sconosciuta: "+uri,"Consulta resources/list");
+            result={{"contents",Json::array({{{"uri",uri},{"mimeType",mime},{"text",mime=="application/json"?data.dump():data.get<std::string>()}}})}};
+        } else return rpc_error(id,-32601,"mcp.unknown_method","Metodo MCP sconosciuto: "+method,"Consulta tools/list e resources/list");
+    } catch (const std::exception& e) {
+        return rpc_error(id,-32603,"mcp.internal_error",e.what(),"Riprova o segnala l'errore");
+    }
+    return Json{{"jsonrpc","2.0"},{"id",id},{"result",std::move(result)}};
+}
+
+void Server::serve(std::istream& input,std::ostream& output) {
+    std::string line;
+    while (std::getline(input,line)) {
+        if (line.size()>1024*1024) { output<<rpc_error(nullptr,-32600,"mcp.request_too_large","Richiesta troppo grande").dump()<<'\n'; output.flush(); continue; }
+        const auto request=Json::parse(line,nullptr,false);
+        const auto response=request.is_discarded()
+            ?std::optional<Json>(rpc_error(nullptr,-32700,"mcp.parse_error","JSON non valido"))
+            :handle(request);
+        if (response) { output<<response->dump()<<'\n'; output.flush(); }
+    }
+}
+} // namespace sagomacad::automation::mcp

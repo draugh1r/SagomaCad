@@ -39,7 +39,7 @@ add_library(sagomacad_engine STATIC src/engine/registry.cpp src/engine/cmds/docu
 target_include_directories(sagomacad_engine PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_compile_definitions(sagomacad_engine PRIVATE SAGOMACAD_EXPORT_DIR="${PROJECT_SOURCE_DIR}/export")
 target_link_libraries(sagomacad_engine PUBLIC sagomacad_core sagomacad_doc sagomacad_solver sagomacad_kernel sagomacad_regen sagomacad_mesh)
-add_library(sagomacad_automation STATIC src/automation/dispatch.cpp
+add_library(sagomacad_automation STATIC src/automation/dispatch.cpp src/automation/mcp/server.cpp
   src/automation/control_client.cpp src/automation/session_file.cpp)
 target_include_directories(sagomacad_automation PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(sagomacad_automation PUBLIC sagomacad_engine nlohmann_json::nlohmann_json)
@@ -59,7 +59,8 @@ endif()
 add_executable(sagomacad apps/sagomacad/main.cpp)
 target_link_libraries(sagomacad PRIVATE sagomacad_shell)
 add_executable(sagomacad-cli apps/sagomacad-cli/main.cpp apps/sagomacad-cli/fuzz.cpp
-  apps/sagomacad-cli/client.cpp)
+  apps/sagomacad-cli/client.cpp apps/sagomacad-cli/mcp.cpp)
+target_compile_definitions(sagomacad-cli PRIVATE SAGOMACAD_PROJECT_ROOT="${PROJECT_SOURCE_DIR}")
 target_link_libraries(sagomacad-cli PRIVATE sagomacad_shell)
 set_target_properties(sagomacad PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/apps/sagomacad$<0:>")
 set_target_properties(sagomacad-cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/apps/sagomacad-cli$<0:>")
@@ -113,3 +114,5 @@ add_test(NAME parameter_editor COMMAND parameter_editor_test)
 add_test(NAME fuzz_commands COMMAND sagomacad-cli fuzz-commands)
 add_test(NAME cli COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_cli.py
   $<TARGET_FILE:sagomacad> $<TARGET_FILE:sagomacad-cli>)
+add_test(NAME mcp_conformance COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_mcp.py
+  $<TARGET_FILE:sagomacad-cli>)
