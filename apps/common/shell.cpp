@@ -19,6 +19,8 @@
 #include <cctype>
 #include <vector>
 #include <cstring>
+#include <array>
+#include <bit>
 
 namespace sagomacad {
 namespace {
@@ -68,6 +70,82 @@ void centered_text(ImDrawList* dl, ImVec2 center, std::string_view label, ImU32 
     const ImVec2 size=ImGui::GetFont()->CalcTextSizeA(font_size,FLT_MAX,wrap,value.c_str());
     dl->AddText(ImGui::GetFont(),font_size,{center.x-size.x*0.5f,center.y},color,
         value.c_str(),nullptr,wrap);
+}
+ui::Color shaded(ui::Color base,double light) {
+    const float intensity=static_cast<float>(std::clamp(0.62+0.38*light,0.27,1.12));
+    return {std::min(1.0f,base.r*intensity),std::min(1.0f,base.g*intensity),std::min(1.0f,base.b*intensity),base.a};
+}
+bool inside_triangle(ImVec2 p,ImVec2 a,ImVec2 b,ImVec2 c) {
+    auto sign=[](ImVec2 q,ImVec2 u,ImVec2 v) { return (q.x-v.x)*(u.y-v.y)-(u.x-v.x)*(q.y-v.y); };
+    const bool n1=sign(p,a,b)<0,n2=sign(p,b,c)<0,n3=sign(p,c,a)<0;
+    return n1==n2 && n2==n3;
+}
+double distance2(ImVec2 a,ImVec2 b) { return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y); }
+struct DrawTriangle { ImVec2 a,b,c; double depth; ui::Color color; };
+void draw_surface(ImDrawList* dl,const mesh::Surface& surface,const ui::Camera& camera,ui::Viewport viewport,const ui::Theme& theme,float scale) {
+    std::vector<DrawTriangle> triangles;
+    triangles.reserve(surface.geometry.triangles.size());
+    for (const auto& tri:surface.geometry.triangles) {
+        const auto a=camera.project(tri.vertices[0],viewport),b=camera.project(tri.vertices[1],viewport),c=camera.project(tri.vertices[2],viewport);
+        if (!a.visible || !b.visible || !c.visible) continue;
+        const auto& n=tri.normal;
+        const double light=std::max(0.0,n.x*0.42+n.y*(-0.35)+n.z*0.84);
+        triangles.push_back({{float(a.x),float(a.y)},{float(b.x),float(b.y)},{float(c.x),float(c.y)},(a.depth+b.depth+c.depth)/3.0,shaded(theme.solid,light)});
+    }
+    std::sort(triangles.begin(),triangles.end(),[](const auto& a,const auto& b){return a.depth>b.depth;});
+    for (const auto& tri:triangles) dl->AddTriangleFilled(tri.a,tri.b,tri.c,packed(tri.color));
+    for (const auto& edge:surface.geometry.edges) for (std::size_t i=1;i<edge.points.size();++i) {
+        const auto p=camera.project(edge.points[i-1],viewport),q=camera.project(edge.points[i],viewport);
+        if (!p.visible || !q.visible) continue;
+        const int segments=edge.points.size()==2?20:1;
+        for (int s=0;s<segments;++s) {
+            const double t0=double(s)/segments,t1=double(s+1)/segments,tm=(t0+t1)*0.5;
+            const ImVec2 midpoint={float(p.x+(q.x-p.x)*tm),float(p.y+(q.y-p.y)*tm)};
+            const double depth=p.depth+(q.depth-p.depth)*tm;
+            bool occluded=false;
+            for (const auto& tri:triangles) if (tri.depth<depth-0.5 && inside_triangle(midpoint,tri.a,tri.b,tri.c)) { occluded=true; break; }
+            if (!occluded) dl->AddLine({float(p.x+(q.x-p.x)*t0),float(p.y+(q.y-p.y)*t0)},
+                                       {float(p.x+(q.x-p.x)*t1),float(p.y+(q.y-p.y)*t1)},packed(theme.solid_edge),1.15f*scale);
+        }
+    }
+}
+void draw_view_cube(ImDrawList* dl,ui::Camera& camera,ImVec2 origin,float size,const ui::Theme& theme,bool clicked,ImVec2 mouse) {
+    const ImVec2 center={origin.x+size*0.5f,origin.y+size*0.5f};
+    std::array<kernel::Vec3,8> points{};
+    std::array<ImVec2,8> screen{};
+    for (int i=0;i<8;++i) {
+        points[i]={i&1?1.0:-1.0,i&2?1.0:-1.0,i&4?1.0:-1.0};
+        const auto& q=points[i];
+        screen[i]={center.x+float((q.x*camera.right().x+q.y*camera.right().y+q.z*camera.right().z)*size*0.26),
+                   center.y-float((q.x*camera.up().x+q.y*camera.up().y+q.z*camera.up().z)*size*0.26)};
+    }
+    struct Face { std::array<int,4> corners; kernel::Vec3 normal; double depth; };
+    std::array<Face,6> faces{{{{0,2,6,4},{-1,0,0},0},{{1,3,7,5},{1,0,0},0},
+        {{0,1,5,4},{0,-1,0},0},{{2,3,7,6},{0,1,0},0},{{0,1,3,2},{0,0,-1},0},{{4,5,7,6},{0,0,1},0}}};
+    const auto eye=camera.eye(); const kernel::Vec3 direction{eye.x-camera.target.x,eye.y-camera.target.y,eye.z-camera.target.z};
+    for (auto& f:faces) f.depth=f.normal.x*direction.x+f.normal.y*direction.y+f.normal.z*direction.z;
+    std::sort(faces.begin(),faces.end(),[](const auto& a,const auto& b){return a.depth<b.depth;});
+    kernel::Vec3 selected{}; bool has_selection=false;
+    for (const auto& f:faces) {
+        if (f.depth<=0) continue;
+        const auto a=screen[f.corners[0]],b=screen[f.corners[1]],c=screen[f.corners[2]],d=screen[f.corners[3]];
+        dl->AddQuadFilled(a,b,c,d,packed(shaded(theme.cube_face,0.4+f.depth/std::max(camera.distance,1.0))));
+        dl->AddQuad(a,b,c,d,packed(theme.cube_edge),1.0f);
+        if (clicked && (inside_triangle(mouse,a,b,c)||inside_triangle(mouse,a,c,d))) { selected=f.normal; has_selection=true; }
+    }
+    if (clicked && has_selection) {
+        // Corners and edges take precedence over the containing face.
+        double best=size*size*0.015;
+        for (int i=0;i<8;++i) { const double d=distance2(mouse,screen[i]); if (d<best) { best=d; selected=points[i]; } }
+        if (best==size*size*0.015) for (int i=0;i<8;++i) for (int j=i+1;j<8;++j) {
+            if (std::popcount(static_cast<unsigned int>(i^j))!=1) continue;
+            const ImVec2 mid={(screen[i].x+screen[j].x)*0.5f,(screen[i].y+screen[j].y)*0.5f};
+            const double d=distance2(mouse,mid);
+            if (d<best) { best=d; selected={(points[i].x+points[j].x)*0.5,(points[i].y+points[j].y)*0.5,(points[i].z+points[j].z)*0.5}; }
+        }
+        camera.look_from(selected);
+    }
+    dl->AddText({origin.x,origin.y+size-12},packed(theme.muted),"VIEW");
 }
 }
 
@@ -351,29 +429,75 @@ void Shell::draw() {
         const ImVec2 avail = ImGui::GetContentRegionAvail();
         const ImVec2 b = {a.x+avail.x,a.y+avail.y};
         ImDrawList* dl = ImGui::GetWindowDrawList();
+        const ui::Viewport viewport{a.x,a.y,avail.x,avail.y};
+        ImGui::InvisibleButton("canvas",avail);
+        if (ImGui::IsItemHovered()) {
+            const auto& io=ImGui::GetIO();
+            if (io.MouseWheel!=0) state_.camera.zoom(io.MouseWheel,io.MousePos.x,io.MousePos.y,viewport);
+            if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
+                if (io.KeyShift) state_.camera.pan(io.MouseDelta.x,io.MouseDelta.y,avail.y);
+                else state_.camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
+            }
+        }
+        if (engine_) {
+            const auto& doc=engine_->session().document;
+            const std::string revision=doc::to_json(doc).dump();
+            if (revision!=surface_revision_) {
+                surface_revision_=revision; surfaces_.clear();
+                const auto& snap=regenerator_.evaluate(doc);
+                for (const auto& body:doc.bodies) {
+                    if (!body.visible) continue;
+                    const auto found=std::find_if(snap.bodies.begin(),snap.bodies.end(),[&](const auto& b){return b.id==body.id;});
+                    if (found==snap.bodies.end() || !found->final) continue;
+                    auto built=mesh::build(*found->final,0.2);
+                    if (built) surfaces_.push_back(std::move(*built.value));
+                    else state_.status_message=built.error;
+                }
+                if (!surfaces_.empty() && !camera_fitted_) {
+                    auto lo=surfaces_.front().minimum,hi=surfaces_.front().maximum;
+                    for (const auto& surface:surfaces_) {
+                        lo.x=std::min(lo.x,surface.minimum.x);lo.y=std::min(lo.y,surface.minimum.y);lo.z=std::min(lo.z,surface.minimum.z);
+                        hi.x=std::max(hi.x,surface.maximum.x);hi.y=std::max(hi.y,surface.maximum.y);hi.z=std::max(hi.z,surface.maximum.z);
+                    }
+                    state_.camera.fit(lo,hi); camera_fitted_=true;
+                }
+                if (surfaces_.empty()) camera_fitted_=false;
+            }
+        }
         dl->AddRectFilled(a,b,packed(t.viewport));
         dl->PushClipRect(a,b,true);
-        const float step=t.grid_step*z;
         const float cx=(a.x+b.x)*0.5f;
         const float cy=(a.y+b.y)*0.5f;
-        const float run=(b.y-a.y)/t.grid_slope;
-        const int count=static_cast<int>(std::ceil((b.x-a.x+run)/step))+1;
-        for (int i=-count;i<=count;++i) {
-            const float x=cx+i*step;
-            const ImU32 color=packed(i%5==0?t.grid_major:t.grid_minor);
-            dl->AddLine({x,a.y},{x+run,b.y},color);
-            dl->AddLine({x,a.y},{x-run,b.y},color);
+        if (surfaces_.empty()) {
+            const float step=t.grid_step*z;
+            const float run=(b.y-a.y)/t.grid_slope;
+            const int count=static_cast<int>(std::ceil((b.x-a.x+run)/step))+1;
+            for (int i=-count;i<=count;++i) {
+                const float x=cx+i*step;
+                const ImU32 color=packed(i%5==0?t.grid_major:t.grid_minor);
+                dl->AddLine({x,a.y},{x+run,b.y},color);
+                dl->AddLine({x,a.y},{x-run,b.y},color);
+            }
+            dl->AddLine({a.x,cy-(a.x-cx)*t.grid_slope},{b.x,cy-(b.x-cx)*t.grid_slope},packed(t.axis_x),1.5f*z);
+            dl->AddLine({a.x,cy+(a.x-cx)*t.grid_slope},{b.x,cy+(b.x-cx)*t.grid_slope},packed(t.axis_y),1.5f*z);
+        } else {
+            const double extent=std::max(20.0,state_.camera.distance*0.8);
+            const double step=std::max(5.0,std::pow(10.0,std::floor(std::log10(extent/5.0))));
+            const int count=std::min(100,int(extent/step));
+            for (int i=-count;i<=count;++i) {
+                auto line=[&](kernel::Vec3 p,kernel::Vec3 q,ui::Color color) {
+                    const auto u=state_.camera.project(p,viewport),v=state_.camera.project(q,viewport);
+                    if (u.visible && v.visible) dl->AddLine({float(u.x),float(u.y)},{float(v.x),float(v.y)},packed(color),i==0?1.5f:1.0f);
+                };
+                line({i*step,-extent,0},{i*step,extent,0},i==0?t.axis_y:(i%5==0?t.grid_major:t.grid_minor));
+                line({-extent,i*step,0},{extent,i*step,0},i==0?t.axis_x:(i%5==0?t.grid_major:t.grid_minor));
+            }
+            for (const auto& surface:surfaces_) draw_surface(dl,surface,state_.camera,viewport,t,z);
         }
-        dl->AddLine({a.x,cy-(a.x-cx)*t.grid_slope},{b.x,cy-(b.x-cx)*t.grid_slope},packed(t.axis_x),1.5f*z);
-        dl->AddLine({a.x,cy+(a.x-cx)*t.grid_slope},{b.x,cy+(b.x-cx)*t.grid_slope},packed(t.axis_y),1.5f*z);
-        dl->AddCircleFilled({cx,cy},2.5f*z,packed(t.accent));
+        if (surfaces_.empty()) dl->AddCircleFilled({cx,cy},2.5f*z,packed(t.accent));
         const float cube=t.viewcube_size*z;
         const ImVec2 cube_a={b.x-cube-t.padding*z,a.y+t.padding*z};
-        const ImVec2 cube_b={cube_a.x+cube,cube_a.y+cube};
-        dl->AddRectFilled(cube_a,cube_b,packed(t.panel),t.rounding*z);
-        dl->AddRect(cube_a,cube_b,packed(t.border),t.rounding*z);
-        dl->AddText({cube_a.x+20*z,cube_a.y+24*z},packed(t.text),"TOP");
-        dl->AddText({cube_a.x+cube-11*z,cube_a.y-7*z},packed(t.axis_y),"Z");
+        draw_view_cube(dl,state_.camera,cube_a,cube,t,ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left),ImGui::GetIO().MousePos);
         const ImVec2 nav_a={cx-t.nav_width*z*0.5f,b.y-t.nav_height*z-t.padding*z};
         const ImVec2 nav_b={nav_a.x+t.nav_width*z,nav_a.y+t.nav_height*z};
         dl->AddRectFilled(nav_a,nav_b,packed(t.panel),t.rounding*z);
@@ -382,7 +506,6 @@ void Shell::draw() {
         for (int i=0;i<4;++i)
             icon(dl,icon_texture(nav_icons[i]),{nav_a.x+26*z+i*50*z,nav_a.y+6*z},18*z,packed(t.muted));
         dl->PopClipRect();
-        ImGui::InvisibleButton("canvas",avail);
     });
     draw_overlays(t);
 }

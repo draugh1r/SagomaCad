@@ -13,6 +13,11 @@ int main() {
         require(static_cast<bool>(box),"box non creato");
         const auto box_props=mass_properties(*box.value);
         require(box_props && near(box_props.value->volume,24) && near(box_props.value->area,52),"GProp box");
+        const auto surface=tessellate(*box.value,0.1);
+        require(surface && surface.value->triangles.size()>=12 && surface.value->edges.size()>=12,
+                "tassellazione box");
+        for (const auto& triangle:surface.value->triangles)
+            require(triangle.face_id>=1 && triangle.face_id<=6,"id faccia del triangolo");
         const auto cylinder=make_cylinder(2,5);
         require(static_cast<bool>(cylinder),"cilindro non creato");
         const auto cylinder_props=mass_properties(*cylinder.value);

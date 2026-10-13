@@ -1,9 +1,11 @@
 #pragma once
 #include <array>
 #include <string>
+#include "ui/camera.hpp"
 
 namespace sagomacad::ui {
 struct State {
+    Camera camera;
     std::string theme = "light";
     bool browser = true;
     bool properties = false;

@@ -4,11 +4,22 @@
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
+#include <BRep_Tool.hxx>
+#include <BRepAdaptor_Curve.hxx>
 #include <GProp_GProps.hxx>
 #include <Standard_Failure.hxx>
 #include <TopoDS_Shape.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Vec.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <TopAbs_Orientation.hxx>
+#include <TopAbs_ShapeEnum.hxx>
+#include <TopLoc_Location.hxx>
+#include <Poly_Triangulation.hxx>
+#include <Poly_Triangle.hxx>
+#include <GeomAbs_CurveType.hxx>
 #include <cmath>
 #include <exception>
 
@@ -86,5 +97,55 @@ Result<Shape> translate(const Shape& shape,double x,double y,double z) noexcept 
     } catch (const Standard_Failure& e) { return Result<Shape>::failure(occt_message(e)); }
       catch (const std::exception& e) { return Result<Shape>::failure(e.what()); }
       catch (...) { return Result<Shape>::failure("Errore imprevisto nella traslazione"); }
+}
+Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
+    if (!shape.impl_) return Result<Tessellation>::failure("Forma vuota");
+    if (!std::isfinite(tolerance) || tolerance<0.001 || tolerance>10.0)
+        return Result<Tessellation>::failure("Tolleranza di tassellazione non valida");
+    try {
+        BRepMesh_IncrementalMesh mesher(shape.impl_->shape,tolerance,false,0.35,true);
+        if (!mesher.IsDone()) return Result<Tessellation>::failure("Tassellazione OpenCascade fallita");
+        Tessellation result;
+        int face_id=0;
+        auto point=[](const gp_Pnt& p)->Vec3 { return {p.X(),p.Y(),p.Z()}; };
+        for (TopExp_Explorer explorer(shape.impl_->shape,TopAbs_FACE);explorer.More();explorer.Next()) {
+            ++face_id;
+            const auto face=TopoDS::Face(explorer.Current());
+            TopLoc_Location location;
+            const auto triangulation=BRep_Tool::Triangulation(face,location);
+            if (triangulation.IsNull()) continue;
+            for (int i=1;i<=triangulation->NbTriangles();++i) {
+                int a=0,b=0,c=0;
+                triangulation->Triangle(i).Get(a,b,c);
+                if (face.Orientation()==TopAbs_REVERSED) std::swap(b,c);
+                const auto pa=point(triangulation->Node(a).Transformed(location.Transformation()));
+                const auto pb=point(triangulation->Node(b).Transformed(location.Transformation()));
+                const auto pc=point(triangulation->Node(c).Transformed(location.Transformation()));
+                const double ux=pb.x-pa.x,uy=pb.y-pa.y,uz=pb.z-pa.z;
+                const double vx=pc.x-pa.x,vy=pc.y-pa.y,vz=pc.z-pa.z;
+                Vec3 normal{uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx};
+                const double size=std::hypot(normal.x,normal.y,normal.z);
+                if (size<=1.0e-12) continue;
+                normal.x/=size; normal.y/=size; normal.z/=size;
+                result.triangles.push_back({{{pa,pb,pc}},normal,face_id});
+                if (result.triangles.size()>2000000) return Result<Tessellation>::failure("Troppi triangoli");
+            }
+        }
+        for (TopExp_Explorer explorer(shape.impl_->shape,TopAbs_EDGE);explorer.More();explorer.Next()) {
+            const auto edge=TopoDS::Edge(explorer.Current());
+            BRepAdaptor_Curve curve(edge);
+            const double first=curve.FirstParameter(),last=curve.LastParameter();
+            if (!std::isfinite(first) || !std::isfinite(last) || last<first) continue;
+            const int count=curve.GetType()==GeomAbs_Line?1:48;
+            Polyline line;
+            for (int i=0;i<=count;++i)
+                line.points.push_back(point(curve.Value(first+(last-first)*i/count)));
+            result.edges.push_back(std::move(line));
+        }
+        if (result.triangles.empty()) return Result<Tessellation>::failure("La forma non contiene triangoli");
+        return Result<Tessellation>::success(std::move(result));
+    } catch (const Standard_Failure& e) { return Result<Tessellation>::failure(occt_message(e)); }
+      catch (const std::exception& e) { return Result<Tessellation>::failure(e.what()); }
+      catch (...) { return Result<Tessellation>::failure("Errore imprevisto nella tassellazione"); }
 }
 } // namespace sagomacad::kernel

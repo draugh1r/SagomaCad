@@ -2,6 +2,8 @@
 #include "ui/state.hpp"
 #include "ui/theme.hpp"
 #include "engine/command.hpp"
+#include "regen/regenerator.hpp"
+#include "mesh/surface.hpp"
 #include <SDL3/SDL_video.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -30,6 +32,10 @@ private:
     std::string error_;
     ui::State state_;
     engine::Engine* engine_ = nullptr;
+    regen::Regenerator regenerator_;
+    std::string surface_revision_;
+    std::vector<mesh::Surface> surfaces_;
+    bool camera_fitted_ = false;
     int scale_ = 1;
     bool imgui_ready_ = false;
     bool glyph_sample_ = false;
