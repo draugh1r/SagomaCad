@@ -6,7 +6,7 @@ namespace sagomacad::engine::cmds {
 std::vector<CommandSpec> edit_specs() {
     return {
         {"edit.undo", "Annulla", {"Modifica"}, std::string("Ctrl+Z"),
-         "{}; annulla l'ultima modifica", 
+         "{}; annulla l'ultima modifica",
          [](const Session& session) -> Status {
              return session.history.can_undo() ? Status{} : Status::failure("Nessuna modifica da annullare");
          },

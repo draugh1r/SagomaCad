@@ -1,8 +1,10 @@
 #include "shell.hpp"
+#include "fuzz.hpp"
 #include <iostream>
 #include <string>
 
 int main(int argc,char** argv) {
+    if (argc==2 && std::string(argv[1])=="fuzz-commands") return fuzz_commands();
     if (argc<2 || std::string(argv[1])!="snapshot") {
         std::cerr<<"Usage: sagomacad-cli snapshot --size WIDTHxHEIGHT [--scale 1|2] --out file.png [--theme dark|light] [--glyph-test] [--script JSON]\n";
         return 2;
