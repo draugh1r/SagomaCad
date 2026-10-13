@@ -26,6 +26,7 @@ public:
     nlohmann::json inspect() const;
     ui::State& state() { return state_; }
     void bind_engine(engine::Engine* engine) { engine_ = engine; }
+    bool open_feature_editor(std::string_view feature_id);
 private:
     SDL_Window* window_ = nullptr;
     SDL_GLContext context_ = nullptr;

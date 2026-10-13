@@ -2,6 +2,7 @@
 #include "ui/theme.hpp"
 #include "ui/toolbar_catalog.hpp"
 #include "ui/parameter_editor.hpp"
+#include "ui/feature_editor.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
 #include <imgui.h>
@@ -410,8 +411,24 @@ void Shell::draw() {
         if (has_bodies) for (const auto& body:engine_->session().document.bodies) {
             const ImVec2 q=ImGui::GetCursorScreenPos();
             const ImVec2 eye_pos={q.x+47*z,q.y+1*z};
-            ImGui::SetCursorScreenPos(eye_pos);
             ImGui::PushID(body.id.c_str());
+            ImGui::SetCursorScreenPos({q.x+67*z,q.y});
+            ImGui::InvisibleButton("body_row",{std::max(50.0f,ImGui::GetContentRegionAvail().x-67*z),23*z});
+            if (ImGui::BeginPopupContextItem("body_context")) {
+                if (ImGui::MenuItem("Modifica feature")) {
+                    const auto& document=engine_->session().document;
+                    for (auto it=document.timeline.rbegin();it!=document.timeline.rend();++it) {
+                        const auto found=document.features.find(*it);
+                        if (found!=document.features.end() && found->second.data.is_object() &&
+                            found->second.data.contains("body_id") && found->second.data["body_id"].is_string() &&
+                            found->second.data["body_id"].get<std::string>()==body.id) {
+                            open_feature_editor(*it); break;
+                        }
+                    }
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::SetCursorScreenPos(eye_pos);
             if (ImGui::InvisibleButton("visibility",{18*z,18*z})) {
                 const auto result=engine_->execute("body.visibility",{{"body",body.id},{"visible",!body.visible}});
                 if (!result.ok) state_.status_message=result.error;
@@ -443,6 +460,8 @@ void Shell::draw() {
         else {
             const auto& document=engine_->session().document;
             const auto& snapshot=regenerator_.evaluate(document);
+            std::string pending_action,pending_id;
+            bool after_edit_feature=false;
             for (const auto& id:document.timeline) {
                 const auto found=document.features.find(id);
                 if (found==document.features.end()) continue;
@@ -452,24 +471,30 @@ void Shell::draw() {
                 const char* glyph=feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"cylinder":"circle";
                 const ImVec2 pos=ImGui::GetCursorScreenPos();
                 ImGui::PushID(id.c_str());
-                const bool clicked=ImGui::InvisibleButton("feature",{100*z,23*z});
-                const bool double_clicked=clicked && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
-                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s",feature.name.c_str(),failed?error->error.c_str():"\nDoppio clic per modificare");
-                ImGui::PopID();
-                icon(dl,icon_texture(glyph),{pos.x+3*z,pos.y+2*z},17*z,packed(failed?t.error:t.muted));
-                dl->AddText({pos.x+24*z,pos.y+2*z},packed(failed?t.error:t.text),feature.name.c_str());
-                if (double_clicked) {
-                    state_.primitive_feature_id=id; state_.primitive_editor_open=true; state_.primitive_error.clear();
-                    const auto& dimensions=feature.data.at("dimensions");
-                    const bool box=feature.type=="primitive.box",cylinder=feature.type=="primitive.cylinder";
-                    const std::array<const char*,3> keys=box?std::array<const char*,3>{"width","depth","height"}:
-                        cylinder?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
-                    for (int i=0;i<3;++i) {
-                        state_.primitive_dimensions[i].fill('\0');
-                        if (keys[i]) std::snprintf(state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size(),"%s",dimensions.at(keys[i]).get<std::string>().c_str());
-                    }
+                ImGui::InvisibleButton("feature",{100*z,23*z});
+                const bool double_clicked=ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+                const bool hovered=ImGui::IsItemHovered();
+                if (ImGui::BeginPopupContextItem("feature_context")) {
+                    if (ImGui::MenuItem("Modifica feature")) open_feature_editor(id);
+                    if (ImGui::MenuItem(feature.suppressed?"Ripristina":"Sopprimi")) {pending_action="feature.suppress";pending_id=id;}
+                    if (ImGui::MenuItem("Elimina")) {pending_action="feature.delete";pending_id=id;}
+                    ImGui::EndPopup();
                 }
+                if (hovered) ImGui::SetTooltip("%s%s",feature.name.c_str(),failed?error->error.c_str():"\nDoppio clic per modificare");
+                ImGui::PopID();
+                const bool at_marker=state_.primitive_editor_open && state_.primitive_feature_id==id;
+                icon(dl,icon_texture(glyph),{pos.x+3*z,pos.y+2*z},17*z,packed(failed?t.error:t.muted));
+                dl->AddText({pos.x+24*z,pos.y+2*z},packed(failed?t.error:after_edit_feature?t.muted:t.text),feature.name.c_str());
+                if (at_marker) { dl->AddLine({pos.x+99*z,pos.y-2*z},{pos.x+99*z,pos.y+26*z},packed(t.accent),2*z); after_edit_feature=true; }
+                if (double_clicked) open_feature_editor(id);
                 ImGui::SameLine();
+            }
+            if (!pending_action.empty()) {
+                nlohmann::json params={{"feature_id",pending_id}};
+                if (pending_action=="feature.suppress") params["suppressed"]=!document.features.at(pending_id).suppressed;
+                const auto result=engine_->execute(pending_action,params);
+                if (!result.ok) state_.status_message=result.error;
+                if (result.ok && pending_id==state_.primitive_feature_id) state_.primitive_editor_open=false;
             }
         }
         if (glyph_sample_) ImGui::TextUnformatted("àèéìòù ÀÈÉÌÒÙ");
@@ -490,11 +515,15 @@ void Shell::draw() {
             }
         }
         if (engine_) {
-            const auto& doc=engine_->session().document;
+            const auto preview=ui::feature_preview(state_,engine_->session().document);
+            const auto& doc=preview;
             const std::string revision=doc::to_json(doc).dump();
             if (revision!=surface_revision_) {
                 surface_revision_=revision; surfaces_.clear();
                 const auto& snap=regenerator_.evaluate(doc);
+                state_.primitive_preview_error.clear();
+                if (state_.primitive_editor_open) for (const auto& feature:snap.features)
+                    if (feature.id==state_.primitive_feature_id) state_.primitive_preview_error=feature.error;
                 for (const auto& body:doc.bodies) {
                     if (!body.visible) continue;
                     const auto found=std::find_if(snap.bodies.begin(),snap.bodies.end(),[&](const auto& b){return b.id==body.id;});
@@ -559,6 +588,9 @@ void Shell::draw() {
     });
     draw_overlays(t);
 }
+bool Shell::open_feature_editor(std::string_view feature_id) {
+    return engine_ && ui::begin_feature_edit(state_,engine_->session().document,feature_id);
+}
 void Shell::invoke_command(std::string_view id) {
     if (!engine_) return;
     const auto availability=ui::command_availability(id,engine_);
@@ -568,7 +600,7 @@ void Shell::invoke_command(std::string_view id) {
         return;
     }
     if (id=="primitive.add") {
-        state_.primitive_create_open=true; state_.primitive_kind=0; state_.primitive_error.clear();
+        state_.primitive_editor_open=false; state_.primitive_create_open=true; state_.primitive_kind=0; state_.primitive_error.clear();
         for (auto& buffer:state_.primitive_dimensions) std::snprintf(buffer.data(),buffer.size(),"40 mm");
         std::snprintf(state_.primitive_dimensions[2].data(),state_.primitive_dimensions[2].size(),"20 mm");
         return;
@@ -586,64 +618,46 @@ void Shell::invoke_command(std::string_view id) {
 void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);
     const ImVec2 display=ImGui::GetIO().DisplaySize;
-    if (state_.primitive_create_open && engine_) {
-        ImGui::SetNextWindowPos({display.x*0.5f,display.y*0.5f},ImGuiCond_Appearing,{0.5f,0.5f});
-        ImGui::SetNextWindowSize({420*z,0},ImGuiCond_Appearing);
-        if (ImGui::Begin("Crea primitiva",&state_.primitive_create_open,ImGuiWindowFlags_AlwaysAutoResize)) {
+    if ((state_.primitive_create_open || state_.primitive_editor_open) && engine_) {
+        const bool creating=state_.primitive_create_open;
+        bool* open=creating?&state_.primitive_create_open:&state_.primitive_editor_open;
+        const float panel_width=std::min(380*z,display.x*0.28f);
+        ImGui::SetNextWindowPos({std::max(t.padding*z,display.x-panel_width-2*t.padding*z),
+                                 t.toolbar_height*z+8*t.padding*z},ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize({panel_width,0},ImGuiCond_Appearing);
+        if (ImGui::Begin(creating?"Crea primitiva###primitive_panel":"Modifica feature###primitive_panel",open,ImGuiWindowFlags_AlwaysAutoResize)) {
             const char* types[]={"Box","Cilindro","Sfera"};
+            if (!creating) {
+                const auto found=engine_->session().document.features.find(state_.primitive_feature_id);
+                if (found==engine_->session().document.features.end()) *open=false;
+                else state_.primitive_kind=found->second.type=="primitive.box"?0:found->second.type=="primitive.cylinder"?1:2;
+            }
+            ImGui::BeginDisabled(!creating);
             ImGui::Combo("Tipo",&state_.primitive_kind,types,3);
+            ImGui::EndDisabled();
             const std::array<const char*,3> keys=state_.primitive_kind==0?std::array<const char*,3>{"width","depth","height"}:
                 state_.primitive_kind==1?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
             const std::array<const char*,3> labels=state_.primitive_kind==0?std::array<const char*,3>{"Larghezza","Profondità","Altezza"}:
                 state_.primitive_kind==1?std::array<const char*,3>{"Raggio","Altezza",nullptr}:std::array<const char*,3>{"Raggio",nullptr,nullptr};
             for (int i=0;i<3;++i) if (keys[i]) {
-                ImGui::TextUnformatted(labels[i]); ImGui::SetNextItemWidth(370*z); ImGui::PushID(i);
+                ImGui::TextUnformatted(labels[i]); ImGui::SetNextItemWidth(-1); ImGui::PushID(i);
                 ImGui::InputText("##dimension",state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size());
+                if (ImGui::IsItemEdited()) state_.primitive_error.clear();
                 ImGui::PopID();
             }
-            if (!state_.primitive_error.empty()) ImGui::TextColored(vec(t.error),"%s",state_.primitive_error.c_str());
-            if (ImGui::Button("Crea")) {
+            const auto& feedback=state_.primitive_error.empty()?state_.primitive_preview_error:state_.primitive_error;
+            if (!feedback.empty() && !creating) ImGui::TextColored(vec(t.error),"%s",feedback.c_str());
+            else if (!state_.primitive_error.empty()) ImGui::TextColored(vec(t.error),"%s",state_.primitive_error.c_str());
+            if (ImGui::Button(creating?"Crea":"OK")) {
                 nlohmann::json dimensions=nlohmann::json::object();
                 for (int i=0;i<3;++i) if (keys[i]) dimensions[keys[i]]=state_.primitive_dimensions[i].data();
-                const auto result=engine_->execute("primitive.add",{{"kind",std::array<const char*,3>{"box","cylinder","sphere"}[state_.primitive_kind]},{"dimensions",dimensions}});
-                if (result.ok) { state_.primitive_create_open=false; state_.primitive_error.clear(); }
+                const auto result=creating?
+                    engine_->execute("primitive.add",{{"kind",std::array<const char*,3>{"box","cylinder","sphere"}[state_.primitive_kind]},{"dimensions",dimensions}}):
+                    engine_->execute("feature.edit",{{"feature_id",state_.primitive_feature_id},{"dimensions",dimensions}});
+                if (result.ok) { *open=false; state_.primitive_error.clear(); state_.primitive_preview_error.clear(); }
                 else state_.primitive_error=result.error;
             }
-            ImGui::SameLine(); if (ImGui::Button("Annulla")) state_.primitive_create_open=false;
-        }
-        ImGui::End();
-    }
-    if (state_.primitive_editor_open && engine_) {
-        ImGui::SetNextWindowPos({display.x*0.5f,display.y*0.5f},ImGuiCond_Appearing,{0.5f,0.5f});
-        ImGui::SetNextWindowSize({420*z,0},ImGuiCond_Appearing);
-        if (ImGui::Begin("Modifica primitiva",&state_.primitive_editor_open,ImGuiWindowFlags_AlwaysAutoResize)) {
-            const auto found=engine_->session().document.features.find(state_.primitive_feature_id);
-            if (found==engine_->session().document.features.end()) { state_.primitive_editor_open=false; }
-            else {
-                const auto& feature=found->second;
-                ImGui::TextUnformatted(feature.name.c_str()); ImGui::Separator();
-                const bool box=feature.type=="primitive.box",cylinder=feature.type=="primitive.cylinder";
-                const std::array<const char*,3> keys=box?std::array<const char*,3>{"width","depth","height"}:
-                    cylinder?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
-                const std::array<const char*,3> labels=box?std::array<const char*,3>{"Larghezza","Profondità","Altezza"}:
-                    cylinder?std::array<const char*,3>{"Raggio","Altezza",nullptr}:std::array<const char*,3>{"Raggio",nullptr,nullptr};
-                for (int i=0;i<3;++i) if (keys[i]) {
-                    ImGui::TextUnformatted(labels[i]);
-                    ImGui::SetNextItemWidth(370*z);
-                    ImGui::PushID(i);
-                    ImGui::InputText("##dimension",state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size());
-                    ImGui::PopID();
-                }
-                if (!state_.primitive_error.empty()) ImGui::TextColored(vec(t.error),"%s",state_.primitive_error.c_str());
-                if (ImGui::Button("Conferma")) {
-                    nlohmann::json dimensions=nlohmann::json::object();
-                    for (int i=0;i<3;++i) if (keys[i]) dimensions[keys[i]]=state_.primitive_dimensions[i].data();
-                    const auto result=engine_->execute("primitive.edit",{{"feature_id",state_.primitive_feature_id},{"dimensions",dimensions}});
-                    if (result.ok) { state_.primitive_editor_open=false; state_.primitive_error.clear(); }
-                    else state_.primitive_error=result.error;
-                }
-                ImGui::SameLine(); if (ImGui::Button("Annulla")) state_.primitive_editor_open=false;
-            }
+            ImGui::SameLine(); if (ImGui::Button("Annulla") || ImGui::IsKeyPressed(ImGuiKey_Escape)) *open=false;
         }
         ImGui::End();
     }
@@ -858,6 +872,7 @@ nlohmann::json Shell::inspect() const {
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
         {"docking",true},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
+        {"feature_edit_open",state_.primitive_editor_open},{"feature_edit_id",state_.primitive_feature_id},
         {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }
 }

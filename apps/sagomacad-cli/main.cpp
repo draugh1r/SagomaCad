@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+#include <array>
 
 int main(int argc,char** argv) {
     if (argc==2 && std::string(argv[1])=="fuzz-commands") return fuzz_commands();
@@ -17,7 +18,8 @@ int main(int argc,char** argv) {
     int width=1440,height=900,scale=1;
     std::string output,theme="light",script="[]";
     bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false;
-    nlohmann::json parameter_draft;
+    nlohmann::json parameter_draft,feature_draft;
+    std::string feature_edit_id;
     for (int i=2;i<argc;++i) {
         const std::string arg=argv[i];
         if (arg=="--glyph-test") { glyph_test=true; continue; }
@@ -63,6 +65,14 @@ int main(int argc,char** argv) {
                 parameter_draft=params["parameter_draft"];
                 parameters_open=true;
             }
+            if (params.contains("feature_edit")) {
+                if (!params["feature_edit"].is_string()) return 2;
+                feature_edit_id=params["feature_edit"].get<std::string>();
+            }
+            if (params.contains("feature_draft")) {
+                if (!params["feature_draft"].is_object()) return 2;
+                feature_draft=params["feature_draft"];
+            }
         } else { std::cerr<<"Unknown snapshot method: "<<method<<'\n'; return 2; }
     }
     sagomacad::Shell shell(width,height,scale,true,theme=="light");
@@ -71,6 +81,18 @@ int main(int argc,char** argv) {
     shell.state().sketch_mode=sketch_mode;
     shell.state().palette_open=palette_open;
     shell.state().parameters_open=parameters_open;
+    if (!feature_edit_id.empty()) {
+        if (!shell.open_feature_editor(feature_edit_id)) return 2;
+        const auto type=engine.session().document.features.at(feature_edit_id).type;
+        const std::array<const char*,3> keys=type=="primitive.box"?std::array<const char*,3>{"width","depth","height"}:
+            type=="primitive.cylinder"?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
+        for (int i=0;i<3;++i) if (keys[i] && feature_draft.contains(keys[i])) {
+            if (!feature_draft[keys[i]].is_string()) return 2;
+            const auto value=feature_draft[keys[i]].get<std::string>();
+            if (value.size()>=shell.state().primitive_dimensions[i].size()) return 2;
+            std::snprintf(shell.state().primitive_dimensions[i].data(),shell.state().primitive_dimensions[i].size(),"%s",value.c_str());
+        }
+    }
     if (parameter_draft.is_object()) {
         auto& state=shell.state();
         state.parameter_editing=true;

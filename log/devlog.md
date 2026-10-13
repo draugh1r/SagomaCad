@@ -79,3 +79,11 @@ Il test GProp misura 32 000 mm³ per il box `larghezza × larghezza × 20 mm` 
 Esaminati `docs/screenshots/m2-iso-light.png` a 1440×900 e `docs/screenshots/m2-iso-dark.png` a 1280×720. Il modello è in vista isometrica con superfici ombreggiate e spigoli visibili; nel primo rendering gli spigoli posteriori apparivano attraverso il box e sono stati occultati. Confronto fatto con `docs/reference/fusion360-ui.png`: struttura di ribbon, browser, viewport e timeline corrispondente, mentre il modello di riferimento è una piastra più grande. `docs/reference/fusion/` non esiste nel workspace. Questi PNG sono verifiche, non golden approvate.
 
 Verifica finale Windows: build Release verde, CTest 18/18, `tools/check_layers.py` verde. Non avviati M1.5, M3 o CI remota.
+
+## 2026-10-13 — Correzione modifica feature M2
+
+Il doppio clic nella timeline non apriva il pannello perché il codice richiedeva nello stesso frame il rilascio del pulsante e l'evento di doppio clic, emesso alla pressione. Il test UI ora invia due clic alla feature e verifica l'apertura del pannello; verifica anche i menu contestuali della timeline e del corpo nel browser. La timeline offre Modifica feature, Sopprimi/Ripristina ed Elimina. Il browser offre Modifica feature sul corpo.
+
+Creazione e modifica usano lo stesso pannello sulla destra. In modifica mostra le espressioni originali; il viewport usa una copia del documento con rollback temporaneo alla feature e aggiorna la forma durante la digitazione. Annulla scarta la copia senza modificare la storia. OK esegue `feature.edit` con un solo passo di undo. Aggiunti i comandi `feature.suppress` e `feature.delete`; il client `sagomacad-cli call` richiama `feature.edit` tramite il canale di controllo.
+
+Il test numerico misura 32 000 mm³ prima della modifica della box e 48 000 mm³ dopo aver cambiato la sola larghezza a 60 mm; undo ripristina 32 000 mm³. Confrontati gli screenshot del pannello aperto `m2-feature-edit-light.png` (1440×900) e `m2-feature-edit-dark.png` (1280×720) con il riferimento disponibile `docs/reference/fusion360-ui.png`. Il riferimento mostra solo la schermata principale: manca un'immagine Fusion del pannello di modifica in `docs/reference/fusion/`. Le immagini sono verifiche, non golden approvate. Build Release Windows, CTest 20/20 e controllo dei livelli verdi.

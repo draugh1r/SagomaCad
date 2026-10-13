@@ -61,6 +61,16 @@ with tempfile.TemporaryDirectory() as directory:
         assert invoke("call", "ui.inspect", "{}", *options)["result"]["parameters"][1]["value"] == 10
         execute("edit.redo")
         assert execute("param.list")[1]["value"] == 20
+        added = execute("primitive.add", {"kind": "box", "dimensions":
+                        {"width": "larghezza", "depth": "larghezza", "height": "20 mm"}})
+        feature_id = added["feature_id"]
+        execute("feature.edit", {"feature_id": feature_id,
+                                 "dimensions": {"width": "60 mm"}})
+        inspected = execute("document.inspect")
+        assert inspected["document"]["features"][feature_id]["data"]["dimensions"]["width"] == "60 mm"
+        execute("edit.undo")
+        assert execute("document.inspect")["document"]["features"][feature_id]["data"]["dimensions"]["width"] == "larghezza"
+        execute("edit.redo")
         saved = root / "control.sagomacad"
         execute("document.saveAs", {"path": str(saved)})
         assert saved.is_file()

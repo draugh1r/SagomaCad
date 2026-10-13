@@ -20,6 +20,7 @@ struct State {
     int primitive_kind = 0;
     std::string primitive_feature_id;
     std::string primitive_error;
+    std::string primitive_preview_error;
     std::array<std::array<char,4096>,3> primitive_dimensions{};
     std::string file_command;
     std::string status_message;

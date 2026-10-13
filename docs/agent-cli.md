@@ -1,4 +1,4 @@
-# SagomaCad da terminale — M1
+# SagomaCad da terminale — M2
 
 Avviare `sagomacad` dalla cartella di lavoro. L'app apre il canale di controllo su `127.0.0.1`, scrive `.sagomacad/session.json` con porta e percorso del token, e protegge il token in un file separato. `sagomacad-cli call` legge automaticamente questi dati. `--port N --token-file PATH` li sostituiscono quando serve; `--session-file PATH` sceglie un file di sessione diverso.
 
@@ -12,6 +12,14 @@ sagomacad-cli call ui.screenshot '{"path":"prova.png"}'
 ```
 
 Il percorso di `ui.screenshot` è relativo alla radice di automazione dell'app. Ogni risposta riuscita è JSON su stdout; gli errori sono su stderr con codice di uscita non zero. `engine.commands` restituisce ID, etichette, parametri, scorciatoie e stato `enabled` dal registro unico dell'app.
+
+Per modificare una primitiva, usa l'ID restituito da `primitive.add` come `feature_id`. La modifica è un solo passo di undo nell'app in esecuzione:
+
+```sh
+sagomacad-cli call engine.execute '{"command":"primitive.add","params":{"kind":"box","dimensions":{"width":"larghezza","depth":"larghezza","height":"20 mm"}}}'
+sagomacad-cli call engine.execute '{"command":"feature.edit","params":{"feature_id":"primitive-1","dimensions":{"width":"60 mm"}}}'
+sagomacad-cli call engine.execute '{"command":"edit.undo"}'
+```
 
 ## Senza app aperta
 
@@ -34,4 +42,4 @@ Esempio di `passi.json`:
 ]
 ```
 
-`run --script '[...]'` accetta anche lo script JSON in linea. I comandi di schizzo, estrusione, misura e rendering del modello appartengono ai traguardi successivi; `engine.commands` indica quali sono realmente disponibili.
+`run --script '[...]'` accetta anche lo script JSON in linea. `engine.commands` indica quali comandi sono realmente disponibili.

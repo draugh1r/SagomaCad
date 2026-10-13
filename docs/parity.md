@@ -2,7 +2,7 @@
 
 Il catalogo della barra è definito in `src/ui/toolbar_catalog.cpp`. Ogni voce ha un ID presente in `docs/PLAN.md` e un'icona Lucide distinta. Lo stato di ciascuna voce viene dal registro dei comandi: **9 voci registrate, 27 mancanti**. Le voci mancanti sono disabilitate e mostrano «Non ancora disponibile». Annulla e Ripeti sono registrati ma si abilitano solo quando la storia contiene la rispettiva operazione.
 
-La palette (S o Ctrl+K) mostra anche i comandi registrati senza voce dedicata nella barra: `document.inspect`, `param.set`, `param.delete`, `primitive.edit` e `body.visibility`. `param.list` apre il pannello dei parametri. `primitive.add` apre il dialogo per box, cilindro e sfera; `export.stl` chiede il percorso ed è disponibile quando esiste un corpo.
+La palette (S o Ctrl+K) mostra anche i comandi registrati senza voce dedicata nella barra: `document.inspect`, `param.set`, `param.delete`, `primitive.edit`, `feature.edit`, `feature.suppress`, `feature.delete` e `body.visibility`. `param.list` apre il pannello dei parametri. `primitive.add` apre il dialogo per box, cilindro e sfera; `export.stl` chiede il percorso ed è disponibile quando esiste un corpo. Il doppio clic o il menu contestuale su una feature nella timeline apre lo stesso pannello della creazione; il browser offre la modifica tramite il menu contestuale del corpo.
 
 La scheda Schizzo è contestuale e compare solo quando `sketch_mode` è attivo. Le schede Superficie, Lamiera e Plastica sono state rimosse. Mesh, Gestisci e Utilità restano predisposte senza gruppi. Ogni gruppo mostra due o tre comandi principali; il menu sotto il gruppo contiene tutte le sue voci. Gli ID nuovi per le sole voci UI sono riservati nel piano, senza implementazione del comando.
 
