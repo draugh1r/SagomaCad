@@ -83,6 +83,7 @@ namespace cmds {
 std::vector<CommandSpec> document_specs();
 std::vector<CommandSpec> parameter_specs();
 std::vector<CommandSpec> edit_specs();
+std::vector<CommandSpec> primitive_specs();
 }
 
 } // namespace sagomacad::engine

@@ -30,7 +30,8 @@ bool History::redo(doc::Document& document) {
 }
 
 Registry::Registry() {
-    for (auto group : {cmds::document_specs(), cmds::parameter_specs(), cmds::edit_specs()})
+    for (auto group : {cmds::document_specs(), cmds::parameter_specs(), cmds::edit_specs(),
+                       cmds::primitive_specs()})
         for (auto& spec : group) {
             if (find(spec.id)) throw std::logic_error("ID comando duplicato: " + spec.id);
             specs_.push_back(std::move(spec));

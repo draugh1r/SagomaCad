@@ -31,7 +31,7 @@ target_link_libraries(sagomacad_kernel PUBLIC sagomacad_core sagomacad_doc ${Ope
 target_link_libraries(sagomacad_regen INTERFACE sagomacad_core sagomacad_doc sagomacad_solver sagomacad_kernel)
 target_link_libraries(sagomacad_mesh INTERFACE sagomacad_core sagomacad_doc sagomacad_kernel)
 add_library(sagomacad_engine STATIC src/engine/registry.cpp src/engine/cmds/document_cmds.cpp
-  src/engine/cmds/param_cmds.cpp src/engine/cmds/edit_cmds.cpp)
+  src/engine/cmds/param_cmds.cpp src/engine/cmds/edit_cmds.cpp src/engine/cmds/primitive_cmds.cpp)
 target_include_directories(sagomacad_engine PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(sagomacad_engine PUBLIC sagomacad_core sagomacad_doc sagomacad_solver sagomacad_kernel sagomacad_regen sagomacad_mesh)
 add_library(sagomacad_automation STATIC src/automation/dispatch.cpp
@@ -81,6 +81,9 @@ add_test(NAME expression COMMAND expression_test)
 add_executable(command_test tests/command.cpp)
 target_link_libraries(command_test PRIVATE sagomacad_engine)
 add_test(NAME command COMMAND command_test)
+add_executable(primitive_test tests/primitive.cpp)
+target_link_libraries(primitive_test PRIVATE sagomacad_engine)
+add_test(NAME primitive COMMAND primitive_test)
 add_executable(parameter_editor_test tests/parameter_editor.cpp)
 target_link_libraries(parameter_editor_test PRIVATE sagomacad_ui)
 add_test(NAME parameter_editor COMMAND parameter_editor_test)
