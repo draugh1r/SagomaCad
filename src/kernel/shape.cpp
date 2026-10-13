@@ -3,9 +3,12 @@
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 #include <GProp_GProps.hxx>
 #include <Standard_Failure.hxx>
 #include <TopoDS_Shape.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_Vec.hxx>
 #include <cmath>
 #include <exception>
 
@@ -66,5 +69,22 @@ Result<MassProperties> mass_properties(const Shape& shape) noexcept {
     } catch (const Standard_Failure& e) { return Result<MassProperties>::failure(occt_message(e)); }
       catch (const std::exception& e) { return Result<MassProperties>::failure(e.what()); }
       catch (...) { return Result<MassProperties>::failure("Errore imprevisto nel calcolo delle proprietà"); }
+}
+Result<Shape> translate(const Shape& shape,double x,double y,double z) noexcept {
+    if (!shape.impl_) return Result<Shape>::failure("Forma vuota");
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z) ||
+        std::abs(x)>1.0e9 || std::abs(y)>1.0e9 || std::abs(z)>1.0e9)
+        return Result<Shape>::failure("Traslazione non valida");
+    if (x==0.0 && y==0.0 && z==0.0) return Result<Shape>::success(shape);
+    try {
+        gp_Trsf transform;
+        transform.SetTranslation(gp_Vec(x,y,z));
+        BRepBuilderAPI_Transform builder(shape.impl_->shape,transform,true);
+        const auto moved=builder.Shape();
+        if (!builder.IsDone()) return Result<Shape>::failure("Traslazione fallita");
+        return Result<Shape>::success(Shape(std::make_shared<Shape::Impl>(moved)));
+    } catch (const Standard_Failure& e) { return Result<Shape>::failure(occt_message(e)); }
+      catch (const std::exception& e) { return Result<Shape>::failure(e.what()); }
+      catch (...) { return Result<Shape>::failure("Errore imprevisto nella traslazione"); }
 }
 } // namespace sagomacad::kernel

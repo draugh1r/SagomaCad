@@ -28,11 +28,13 @@ private:
     friend Result<Shape> make_cylinder(double,double) noexcept;
     friend Result<Shape> make_sphere(double) noexcept;
     friend Result<MassProperties> mass_properties(const Shape&) noexcept;
+    friend Result<Shape> translate(const Shape&,double,double,double) noexcept;
 };
 
 Result<Shape> make_box(double width,double depth,double height) noexcept;
 Result<Shape> make_cylinder(double radius,double height) noexcept;
 Result<Shape> make_sphere(double radius) noexcept;
 Result<MassProperties> mass_properties(const Shape& shape) noexcept;
+Result<Shape> translate(const Shape& shape,double x,double y,double z) noexcept;
 
 } // namespace sagomacad::kernel
