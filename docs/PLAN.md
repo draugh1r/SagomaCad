@@ -332,7 +332,7 @@ sagomacad-cli call batch '{"steps":[...]}'
 - Legge porta e token da `--port` / `--token-file` o da un file di sessione scritto dall'app all'avvio (`.sagomacad/session.json`, solo per l'utente corrente), così l'agente non deve conoscerli.
 - Stampa la risposta JSON su stdout, gli errori su stderr, codice di uscita diverso da zero in caso di errore.
 - Se non c'è un'app aperta e si passa `--headless <file.sagomacad>`, esegue la chiamata su una `Session` in memoria.
-- `docs/agents.md`: guida breve per agenti da terminale, con esempi di chiamate per i flussi tipici (schizzo, estrusione, misura, screenshot). È il file da indicare a Codex e Claude Code.
+- `docs/agent-cli.md`: guida breve per agenti da terminale, con esempi di chiamate per i flussi tipici (schizzo, estrusione, misura, screenshot). È il file da indicare a Codex e Claude Code.
 
 #### Server MCP per tutte le altre app
 
@@ -442,7 +442,7 @@ CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto 
 *Fatto quando:* lo snapshot dell'app vuota esiste ed è approvato come prima golden image.
 
 **M1 - Documento e comandi**
-`doc/` con serializzazione `.sagomacad`, registro comandi, undo/redo, parametri con espressioni, `sagomacad-cli run`, palette dei comandi nella UI, `document.*`, `param.*`, `edit.*`. Client `sagomacad-cli call <metodo> [params]` per il canale di controllo, scoperta di porta e token dal file di sessione, opzioni `--port`, `--token-file` e `--headless <file.sagomacad>`, guida `docs/agents.md`. `Body` prevede `kind: brep | mesh` e la timeline distingue feature `exact | sdf`, anche se in M1 esistono solo quelle esatte; il formato `.sagomacad` accoglie i nuovi tipi senza rompere i file precedenti. Gli id `sdf.lattice`, `sdf.shell`, `sdf.smoothUnion`, `sdf.texture`, `sdf.offset` e `mesh.import` sono riservati, senza implementazione. Test di fuzz dei comandi attivo.
+`doc/` con serializzazione `.sagomacad`, registro comandi, undo/redo, parametri con espressioni, `sagomacad-cli run`, palette dei comandi nella UI, `document.*`, `param.*`, `edit.*`. Client `sagomacad-cli call <metodo> [params]` per il canale di controllo, scoperta di porta e token dal file di sessione, opzioni `--port`, `--token-file` e `--headless <file.sagomacad>`, guida `docs/agent-cli.md`. `Body` prevede `kind: brep | mesh` e la timeline distingue feature `exact | sdf`, anche se in M1 esistono solo quelle esatte; il formato `.sagomacad` accoglie i nuovi tipi senza rompere i file precedenti. Gli id `sdf.lattice`, `sdf.shell`, `sdf.smoothUnion`, `sdf.texture`, `sdf.offset` e `mesh.import` sono riservati, senza implementazione. Test di fuzz dei comandi attivo.
 *Fatto quando:* salva, riapri, undo e redo funzionano da CLI e da UI con gli stessi comandi; in CI il client chiama `engine.execute` e `ui.screenshot` sull'app e verifica risposta JSON e PNG.
 
 **M1.5 - MCP base**

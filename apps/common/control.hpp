@@ -17,6 +17,7 @@ public:
     ControlServer(int port, std::string token, Handler handler);
     ~ControlServer();
     bool start(std::string& error);
+    int port() const { return port_; }
     void pump();
 private:
     struct Request { nlohmann::json input; std::promise<nlohmann::json> result; };

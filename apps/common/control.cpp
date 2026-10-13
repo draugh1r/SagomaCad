@@ -51,7 +51,7 @@ ControlServer::~ControlServer() {
 #endif
 }
 bool ControlServer::start(std::string& error) {
-    if (port_<1 || port_>65535 || token_.empty()) { error="invalid port or empty token"; return false; }
+    if (port_<0 || port_>65535 || token_.empty()) { error="invalid port or empty token"; return false; }
 #ifdef _WIN32
     WSADATA data{};
     if (WSAStartup(MAKEWORD(2,2),&data)!=0) { error="WSAStartup failed"; return false; }
@@ -63,6 +63,17 @@ bool ControlServer::start(std::string& error) {
     addr.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
     if (bind(sock,reinterpret_cast<sockaddr*>(&addr),sizeof(addr))!=0 || listen(sock,4)!=0) {
         error="cannot bind loopback port"; close_socket(sock); return false;
+    }
+    if (port_ == 0) {
+#ifdef _WIN32
+        int length = sizeof(addr);
+#else
+        socklen_t length = sizeof(addr);
+#endif
+        if (getsockname(sock,reinterpret_cast<sockaddr*>(&addr),&length)!=0) {
+            error="cannot query loopback port"; close_socket(sock); return false;
+        }
+        port_=ntohs(addr.sin_port);
     }
     socket_=static_cast<std::intptr_t>(sock); running_=true;
     thread_=std::thread(&ControlServer::serve,this);
