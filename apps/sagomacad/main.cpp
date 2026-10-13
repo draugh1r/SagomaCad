@@ -20,7 +20,7 @@ int main(int argc,char** argv) {
         else { std::cerr<<"Unknown or incomplete option: "<<arg<<'\n'; return 2; }
     }
     if (control_requested && (port<1 || port>65535)) { std::cerr<<"Invalid port\n"; return 2; }
-    sagomacad::Shell shell(1440,900,1,false,false);
+    sagomacad::Shell shell(1440,900,1,false,true);
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
     std::unique_ptr<sagomacad::ControlServer> server;
     if (port) {

@@ -3,6 +3,7 @@
 #include <SDL3/SDL_video.h>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <unordered_map>
 
 namespace sagomacad {
 class Shell {
@@ -28,6 +29,8 @@ private:
     int scale_ = 1;
     bool imgui_ready_ = false;
     bool glyph_sample_ = false;
+    std::unordered_map<std::string, unsigned int> icon_textures_;
+    unsigned int icon_texture(std::string_view name);
     void draw();
 };
 }

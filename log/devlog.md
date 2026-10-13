@@ -33,3 +33,19 @@ Integrato `PLAN-SDF.md` in `docs/PLAN.md` come sezione “Feature SDF”, in sos
 Nel run GitHub Actions `37992156513`, Linux ha superato 6/6 test; macOS ha fallito solo `control` perché il test presumeva 1440×900 pixel fisici anche sui display Retina. Il test ora valida le dimensioni ammesse del framebuffer. Aggiornato anche il test UTF-8 ai percorsi `docs/PLAN.md` e `docs/AGENTS.md` dopo lo spostamento dei documenti. Build Release Windows locale, CTest 6/6 e controllo dei livelli verdi. In attesa dell'esito della nuova CI remota.
 
 Lo stesso run ha poi mostrato un errore Windows in configurazione: `windows-latest` ha Visual Studio 2026, mentre il workflow richiedeva il generatore Visual Studio 17 2022. La matrice ora usa `windows-2022`, che mantiene il generatore e la versione del toolchain verificati localmente. Il run `38000047782` era ancora in corso al momento della correzione.
+
+## 2026-10-10 — Shell M0, tema chiaro
+
+Il tema chiaro è il predefinito di app, stato UI e CLI. Confrontata la shell con `docs/reference/fusion360-ui.png`: ribbon su più righe, browser più vicino alla struttura Fusion, viewport senza pannello Proprietà quando non c'è un comando attivo, griglia isometrica più tenue, indicatore di vista e barra di navigazione. Il tema scuro resta disponibile. Build Release locale riuscita; esaminati i PNG candidati chiaro e scuro a 1440×900 e 1280×720. Nessun test o CI avviato e nessuna golden image sostituita in attesa dell'utente. Restano statici le icone del ribbon e i controlli di vista: il comportamento appartiene ai traguardi successivi.
+
+## 2026-10-10 — Catalogo toolbar M0
+
+Aggiunto `src/ui/toolbar_catalog.cpp`: 33 voci con ID presenti nel piano, organizzate nelle schede e nei gruppi Fusion. Tutte sono disabilitate in M0 perché il registro comandi non esiste ancora; il tooltip dice «Non ancora disponibile». Il catalogo usa 33 icone Lucide distinte, rasterizzate da LunaSVG. `docs/parity.md` elenca 0 voci attive e 33 mancanti. Schizzo compare solo in modalità schizzo; la CLI snapshot può impostare `sketch_mode` per verificarlo. Salva, annulla e ripeti sono vicini al nome del documento. Browser con chevron e occhi, timeline sottile con controlli a sinistra, navigazione a icone. Vista 3D e view cube invariati.
+
+Build Release locale riuscita. Esaminati `m0-candidate-light-v5-1440x900.png`, `m0-candidate-dark-v5-1280x720.png` e `m0-candidate-sketch-1280x720.png`. Il confronto con il riferimento disponibile `docs/reference/fusion360-ui.png` ha evidenziato etichette sovrapposte nel ribbon; ridotti i caratteri delle etichette e allargati i gruppi prima della verifica finale. La cartella `docs/reference/fusion/` indicata da AGENTS non è presente nel workspace. Nessuna CI avviata, nessuna golden image promossa e nessun lavoro M1 iniziato.
+
+## 2026-10-12 — Correzioni finali alla barra M0
+
+Rimosse le schede Superficie, Lamiera e Plastica. Riorganizzati i sette gruppi Solido secondo la richiesta: Crea, Modifica, Costruisci, Ispeziona, Inserisci, Seleziona, Esporta. Ogni gruppo mostra due o tre comandi principali e la tendina contiene tutte le sue voci. Aggiunto il menu File accanto al documento con Nuovo, Apri, Salva e Salva con nome; annulla e ripeti restano accanto. Nel browser solo le voci con figli mostrano il chevron, e Impostazioni documento non mostra l'occhio. Riservati nel piano gli ID mancanti per le nuove voci, senza implementare i comandi. Il catalogo contiene 36 ID verificati contro `docs/PLAN.md` e 36 icone Lucide distinte; `docs/parity.md` elenca 0 attive e 36 mancanti, tutte disabilitate in M0.
+
+Build Release locale di `sagomacad` e `sagomacad-cli` riuscita. Esaminati gli screenshot finali chiaro 1440×900, scuro 1280×720 e Schizzo contestuale 1280×720, confrontati con il riferimento disponibile `docs/reference/fusion360-ui.png`. La cartella `docs/reference/fusion/` resta assente. Nessuna CI avviata, golden image non sostituita e M1 non iniziato.

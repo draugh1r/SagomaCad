@@ -8,8 +8,8 @@ int main(int argc,char** argv) {
         return 2;
     }
     int width=1440,height=900,scale=1;
-    std::string output,theme="dark",script="[]";
-    bool glyph_test=false;
+    std::string output,theme="light",script="[]";
+    bool glyph_test=false,sketch_mode=false;
     for (int i=2;i<argc;++i) {
         const std::string arg=argv[i];
         if (arg=="--glyph-test") { glyph_test=true; continue; }
@@ -34,16 +34,21 @@ int main(int argc,char** argv) {
     if (!steps.is_array()) { std::cerr<<"--script must be a JSON array\n"; return 2; }
     for (const auto& step:steps) {
         if (!step.is_array() || step.size()!=2 || step[0]!="ui.set" || !step[1].is_object()) {
-            std::cerr<<"M0 snapshot script supports only [\"ui.set\",{\"theme\":...}]\n"; return 2;
+            std::cerr<<"M0 snapshot script supports only ui.set for theme and sketch_mode\n"; return 2;
         }
         if (step[1].contains("theme")) {
             if (!step[1]["theme"].is_string()) return 2;
             theme=step[1]["theme"].get<std::string>();
             if (theme!="dark" && theme!="light") return 2;
         }
+        if (step[1].contains("sketch_mode")) {
+            if (!step[1]["sketch_mode"].is_boolean()) return 2;
+            sketch_mode=step[1]["sketch_mode"].get<bool>();
+        }
     }
     sagomacad::Shell shell(width,height,scale,true,theme=="light");
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
+    shell.state().sketch_mode=sketch_mode;
     if (glyph_test && !shell.glyphs_available()) { std::cerr<<"Missing Latin glyphs in Inter font\n"; return 1; }
     shell.set_glyph_sample(glyph_test);
     for (int frame=0;frame<3;++frame) { shell.poll(); shell.render(); }

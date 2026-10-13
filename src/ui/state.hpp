@@ -3,10 +3,11 @@
 
 namespace sagomacad::ui {
 struct State {
-    std::string theme = "dark";
+    std::string theme = "light";
     bool browser = true;
-    bool properties = true;
+    bool properties = false;
     bool timeline = true;
+    bool sketch_mode = false;
     int width = 1440;
     int height = 900;
 };

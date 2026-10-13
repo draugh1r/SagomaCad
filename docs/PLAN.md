@@ -170,6 +170,8 @@ selection.set {refs}  selection.cycle {screen_point}
 export.stl {body?, path, tolerance}  export.3mf {...}  export.step {...}
 ```
 
+ID riservati per le voci della barra Fusion, senza implementazione nel traguardo M0: `document.saveAs`, `construction.plane`, `construction.axis`, `construction.point`, `inspect.measure`, `inspect.section`, `import.step`. Il menu «Salva con nome» richiede sempre un percorso nuovo; `document.save` continua a salvare il documento corrente.
+
 Comandi puramente di vista (zoom, orbita, vista predefinita, tema, pannelli) appartengono alla shell UI, non al motore.
 
 ---

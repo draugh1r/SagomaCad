@@ -1,16 +1,20 @@
 #include "shell.hpp"
 #include "ui/theme.hpp"
+#include "ui/toolbar_catalog.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
+#include <lunasvg.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <cfloat>
+#include <span>
 #include <vector>
 
 namespace sagomacad {
@@ -48,6 +52,16 @@ void panel(const char* name, const char* label, const ui::Theme& t, auto content
         contents();
     }
     ImGui::End();
+}
+void icon(ImDrawList* dl, unsigned int texture, ImVec2 a, float size, ImU32 color) {
+    if (texture) dl->AddImage(static_cast<ImTextureID>(texture),a,{a.x+size,a.y+size},{0,0},{1,1},color);
+}
+void centered_text(ImDrawList* dl, ImVec2 center, std::string_view label, ImU32 color, float wrap=0, float font_size=0) {
+    const std::string value(label);
+    if (font_size<=0) font_size=ImGui::GetFontSize();
+    const ImVec2 size=ImGui::GetFont()->CalcTextSizeA(font_size,FLT_MAX,wrap,value.c_str());
+    dl->AddText(ImGui::GetFont(),font_size,{center.x-size.x*0.5f,center.y},color,
+        value.c_str(),nullptr,wrap);
 }
 }
 
@@ -97,10 +111,34 @@ Shell::Shell(int width, int height, int scale, bool hidden, bool light) : scale_
 }
 Shell::~Shell() {
     if (imgui_ready_) { ImGui_ImplOpenGL3_Shutdown(); ImGui_ImplSDL3_Shutdown(); }
+    for (const auto& [_,texture] : icon_textures_) glDeleteTextures(1,&texture);
     if (ImGui::GetCurrentContext()) ImGui::DestroyContext();
     if (context_) SDL_GL_DestroyContext(context_);
     if (window_) SDL_DestroyWindow(window_);
     SDL_Quit();
+}
+unsigned int Shell::icon_texture(std::string_view name) {
+    const std::string key(name);
+    if (const auto it=icon_textures_.find(key);it!=icon_textures_.end()) return it->second;
+    const auto path=std::string(SAGOMACAD_ASSET_DIR)+"/icons/lucide/"+key+".svg";
+    auto doc=lunasvg::Document::loadFromFile(path);
+    if (!doc) { icon_textures_[key]=0; return 0; }
+    auto bitmap=doc->renderToBitmap(48,48);
+    bitmap.convertToRGBA();
+    auto* data=bitmap.data();
+    for (int y=0;y<bitmap.height();++y) for (int x=0;x<bitmap.width();++x) {
+        auto* pixel=data+y*bitmap.stride()+x*4;
+        pixel[0]=pixel[1]=pixel[2]=255;
+    }
+    unsigned int texture=0;
+    glGenTextures(1,&texture);
+    glBindTexture(GL_TEXTURE_2D,texture);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,bitmap.width(),bitmap.height(),0,GL_RGBA,GL_UNSIGNED_BYTE,data);
+    glBindTexture(GL_TEXTURE_2D,0);
+    icon_textures_[key]=texture;
+    return texture;
 }
 bool Shell::poll() {
     SDL_Event event;
@@ -126,40 +164,165 @@ void Shell::draw() {
         ImGui::DockBuilderSetNodeSize(dock_id,screen);
         ImGuiID middle=dock_id, header=0, timeline=0, browser=0, properties=0;
         ImGui::DockBuilderSplitNode(middle,ImGuiDir_Up,t.toolbar_height*z/screen.y,&header,&middle);
-        ImGui::DockBuilderSplitNode(middle,ImGuiDir_Down,t.timeline_height*z/(screen.y-t.toolbar_height*z),&timeline,&middle);
+        const float timeline_height=glyph_sample_?t.timeline_glyph_height:t.timeline_height;
+        ImGui::DockBuilderSplitNode(middle,ImGuiDir_Down,timeline_height*z/(screen.y-t.toolbar_height*z),&timeline,&middle);
         ImGui::DockBuilderSplitNode(middle,ImGuiDir_Left,t.sidebar_width*z/screen.x,&browser,&middle);
-        ImGui::DockBuilderSplitNode(middle,ImGuiDir_Right,t.inspector_width*z/(screen.x-t.sidebar_width*z),&properties,&middle);
-        for (ImGuiID node : {header,timeline,browser,properties,middle})
+        if (state_.properties)
+            ImGui::DockBuilderSplitNode(middle,ImGuiDir_Right,t.inspector_width*z/(screen.x-t.sidebar_width*z),&properties,&middle);
+        std::vector<ImGuiID> nodes={header,timeline,browser,middle};
+        if (properties) nodes.push_back(properties);
+        for (ImGuiID node : nodes)
             ImGui::DockBuilderGetNode(node)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
         ImGui::DockBuilderDockWindow("SagomaCad  |  Solido",header);
         ImGui::DockBuilderDockWindow("Browser",browser);
-        ImGui::DockBuilderDockWindow("Proprietà",properties);
+        if (properties) ImGui::DockBuilderDockWindow("Proprietà",properties);
         ImGui::DockBuilderDockWindow("Timeline",timeline);
         ImGui::DockBuilderDockWindow("Viewport",middle);
         ImGui::DockBuilderFinish(dock_id);
         dock_initialized=true;
     }
     panel("SagomaCad  |  Solido", nullptr, t, [&] {
-        ImGui::TextColored(vec(t.accent), "SagomaCad"); ImGui::SameLine();
-        ImGui::TextDisabled("  |  Nuovo documento");
-        ImGui::SameLine(); ImGui::TextDisabled("   SOLIDO     SCHIZZO");
+        ImDrawList* dl=ImGui::GetWindowDrawList();
+        const ImVec2 p=ImGui::GetCursorScreenPos();
+        const float width=ImGui::GetContentRegionAvail().x;
+        const std::span<const std::string_view> registered_ids{};
+        auto command_button=[&](const ui::ToolbarCommand& command,ImVec2 a,ImVec2 size,bool show_label) {
+            const bool available=ui::command_available(command.id,registered_ids);
+            const std::string id(command.id);
+            ImGui::SetCursorScreenPos(a);
+            ImGui::PushID(id.c_str());
+            ImGui::BeginDisabled(!available);
+            ImGui::InvisibleButton("command",size);
+            ImGui::EndDisabled();
+            const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+            if (!available && hovered) ImGui::SetTooltip("Non ancora disponibile");
+            if (hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(t.panel_alt),t.rounding*z);
+            const float icon_size=(show_label?21.0f:17.0f)*z;
+            icon(dl,icon_texture(command.icon),{a.x+(size.x-icon_size)*0.5f,a.y+2*z},icon_size,
+                 packed(available?t.text:t.muted));
+            if (show_label) centered_text(dl,{a.x+size.x*0.5f,a.y+26*z},command.label,
+                packed(available?t.text:t.muted),size.x-4*z,12.5f*z);
+            ImGui::PopID();
+        };
+        auto popup_command=[&](const ui::ToolbarCommand& command,float item_width) {
+            const bool available=ui::command_available(command.id,registered_ids);
+            ImDrawList* popup_dl=ImGui::GetWindowDrawList();
+            ImGui::PushID(command.id.data());
+            ImGui::BeginDisabled(!available);
+            ImGui::InvisibleButton("item",{item_width*z,27*z});
+            ImGui::EndDisabled();
+            const ImVec2 q=ImGui::GetItemRectMin();
+            const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+            if (hovered) popup_dl->AddRectFilled(q,{q.x+item_width*z,q.y+27*z},packed(t.panel_alt));
+            icon(popup_dl,icon_texture(command.icon),{q.x+4*z,q.y+4*z},18*z,packed(available?t.text:t.muted));
+            popup_dl->AddText({q.x+30*z,q.y+5*z},packed(available?t.text:t.muted),std::string(command.label).c_str());
+            if (!available && hovered) ImGui::SetTooltip("Non ancora disponibile");
+            ImGui::PopID();
+        };
+        dl->AddText(p,packed(t.accent),"SagomaCad");
+        dl->AddText({p.x+126*z,p.y},packed(t.text),"Nuovo documento");
+        const ImVec2 file_pos={p.x+276*z,p.y-2*z};
+        ImGui::SetCursorScreenPos(file_pos);
+        if (ImGui::InvisibleButton("file.menu",{76*z,24*z})) ImGui::OpenPopup("file_commands");
+        if (ImGui::IsItemHovered()) dl->AddRectFilled(file_pos,{file_pos.x+76*z,file_pos.y+24*z},packed(t.panel_alt),t.rounding*z);
+        icon(dl,icon_texture("file-text"),{file_pos.x+4*z,file_pos.y+3*z},18*z,packed(t.text));
+        dl->AddText({file_pos.x+29*z,file_pos.y+3*z},packed(t.text),"File");
+        icon(dl,icon_texture("chevron-down"),{file_pos.x+57*z,file_pos.y+6*z},12*z,packed(t.muted));
+        if (ImGui::BeginPopup("file_commands")) {
+            for (const auto& command:ui::file_menu_commands()) popup_command(command,190);
+            ImGui::EndPopup();
+        }
+        float action_x=p.x+364*z;
+        for (const auto& command:ui::edit_toolbar_commands()) {
+            command_button(command,{action_x,p.y-2*z},{29*z,24*z},false);
+            action_x+=32*z;
+        }
+        dl->AddLine({p.x,p.y+27*z},{p.x+width,p.y+27*z},packed(t.border));
+        static int selected_tab=0;
+        static bool previous_sketch_mode=false;
+        if (state_.sketch_mode!=previous_sketch_mode) {
+            selected_tab=state_.sketch_mode?1:0;
+            previous_sketch_mode=state_.sketch_mode;
+        }
+        float tab_x=p.x+2*z;
+        const auto tabs=ui::toolbar_catalog();
+        for (int i=0;i<static_cast<int>(tabs.size());++i) {
+            if (tabs[i].contextual && !state_.sketch_mode) continue;
+            const std::string label(tabs[i].label);
+            const float tab_width=ImGui::CalcTextSize(label.c_str()).x+23*z;
+            ImGui::SetCursorScreenPos({tab_x,p.y+29*z});
+            ImGui::PushID(i);
+            if (ImGui::InvisibleButton("tab",{tab_width,23*z})) selected_tab=i;
+            ImGui::PopID();
+            dl->AddText({tab_x+9*z,p.y+33*z},packed(i==selected_tab?t.text:t.muted),label.c_str());
+            if (i==selected_tab) dl->AddLine({tab_x+8*z,p.y+52*z},{tab_x+tab_width-8*z,p.y+52*z},packed(t.accent),2*z);
+            tab_x+=tab_width;
+        }
+        dl->AddLine({p.x,p.y+55*z},{p.x+width,p.y+55*z},packed(t.border));
+        const auto& groups=tabs[selected_tab].groups;
+        const float group_width=std::min(t.ribbon_group_width*z,(width-4*z)/std::max<size_t>(1,groups.size()));
+        for (size_t i=0;i<groups.size();++i) {
+            const auto& group=groups[i];
+            const float x=p.x+i*group_width;
+            const size_t primary_count=std::min(group.primary_count,group.commands.size());
+            const float item_width=(group_width-8*z)/static_cast<float>(primary_count);
+            for (size_t j=0;j<primary_count;++j)
+                command_button(group.commands[j],{x+2*z+j*item_width,p.y+60*z},{item_width,43*z},true);
+            const std::string popup_id="group_"+std::to_string(i);
+            ImGui::SetCursorScreenPos({x+4*z,p.y+118*z});
+            ImGui::PushID(popup_id.c_str());
+            if (ImGui::InvisibleButton("menu",{group_width-10*z,22*z})) ImGui::OpenPopup("commands");
+            if (ImGui::IsItemHovered()) dl->AddRectFilled({x+4*z,p.y+118*z},{x+group_width-6*z,p.y+140*z},packed(t.panel_alt));
+            centered_text(dl,{x+group_width*0.5f-6*z,p.y+122*z},group.label,packed(t.muted));
+            icon(dl,icon_texture("chevron-down"),{x+group_width-25*z,p.y+122*z},13*z,packed(t.muted));
+            if (ImGui::BeginPopup("commands")) {
+                for (const auto& command:group.commands) popup_command(command,190);
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
+            dl->AddLine({x+group_width-1*z,p.y+61*z},{x+group_width-1*z,p.y+140*z},packed(t.border));
+        }
+        ImGui::SetCursorScreenPos({p.x,p.y+142*z});
+        ImGui::Dummy({width,1*z});
     }, ImGuiWindowFlags_NoScrollbar);
     if (state_.browser) panel("Browser", ui::labels.browser, t, [&] {
-        ImGui::TextDisabled("%s", ui::labels.document); ImGui::Separator();
-        ImGui::TextUnformatted("  Origine"); ImGui::TextDisabled("    Piano XY");
-        ImGui::TextDisabled("    Piano XZ"); ImGui::TextDisabled("    Piano YZ");
-        ImGui::Spacing(); ImGui::TextDisabled("%s", ui::labels.bodies); ImGui::Separator();
-        ImGui::TextDisabled("  Nessun corpo");
+        auto row=[&](const char* text,int depth,bool has_children,bool expanded,bool show_eye,bool visible) {
+            ImDrawList* dl=ImGui::GetWindowDrawList();
+            const ImVec2 q=ImGui::GetCursorScreenPos();
+            const float indent=depth*15*z;
+            if (has_children)
+                icon(dl,icon_texture(expanded?"chevron-down":"chevron-right"),{q.x+indent,q.y+2*z},13*z,packed(t.muted));
+            if (show_eye)
+                icon(dl,icon_texture(visible?"eye":"eye-off"),{q.x+indent+17*z,q.y+1*z},15*z,packed(t.muted));
+            dl->AddText({q.x+indent+39*z,q.y+1*z},packed(depth==0?t.text:t.muted),text);
+            ImGui::Dummy({1,23*z});
+        };
+        row("Nuovo documento",0,true,true,true,true);
+        row("Impostazioni documento",1,false,false,false,true);
+        row("Viste salvate",1,false,false,true,true);
+        row("Origine",1,true,true,true,true);
+        row("Piano XY",2,false,false,true,true);
+        row("Piano XZ",2,false,false,true,true);
+        row("Piano YZ",2,false,false,true,true);
+        row("Corpi",1,false,false,true,true);
+        row("Schizzi",1,false,false,true,true);
     });
     if (state_.properties) panel("Proprietà", ui::labels.properties, t, [&] {
         ImGui::TextDisabled("%s", ui::labels.selection); ImGui::Separator();
         ImGui::TextDisabled("Nessun elemento selezionato");
     });
-    if (state_.timeline) panel("Timeline", ui::labels.timeline, t, [&] {
-        ImGui::TextDisabled("%s", ui::labels.feature_history); ImGui::Separator();
+    if (state_.timeline) panel("Timeline", nullptr, t, [&] {
+        ImDrawList* dl=ImGui::GetWindowDrawList();
+        const ImVec2 q=ImGui::GetCursorScreenPos();
+        dl->AddText({q.x,q.y+2*z},packed(t.muted),ui::labels.timeline);
+        const char* controls[]={"skip-back","step-back","play","step-forward","skip-forward"};
+        for (int i=0;i<5;++i)
+            icon(dl,icon_texture(controls[i]),{q.x+105*z+i*28*z,q.y},17*z,packed(t.muted));
+        dl->AddLine({q.x+255*z,q.y+9*z},{q.x+ImGui::GetContentRegionAvail().x,q.y+9*z},packed(t.border));
+        ImGui::Dummy({1,20*z});
         ImGui::TextDisabled("Il documento è vuoto");
         if (glyph_sample_) ImGui::TextUnformatted("àèéìòù ÀÈÉÌÒÙ");
-    });
+    }, ImGuiWindowFlags_NoScrollbar);
     panel("Viewport", nullptr, t, [&] {
         const ImVec2 a = ImGui::GetCursorScreenPos();
         const ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -167,16 +330,34 @@ void Shell::draw() {
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(a,b,packed(t.viewport));
         dl->PushClipRect(a,b,true);
-        const float step = 32.0f*z;
-        const float cx = std::round((a.x+b.x)*0.5f/step)*step;
-        const float cy = std::round((a.y+b.y)*0.5f/step)*step;
-        for (float x=cx; x>=a.x; x-=step) dl->AddLine({x,a.y},{x,b.y},packed((std::fmod(std::round((x-cx)/step),5.0f)==0) ? t.grid_major:t.grid_minor));
-        for (float x=cx+step; x<=b.x; x+=step) dl->AddLine({x,a.y},{x,b.y},packed((std::fmod(std::round((x-cx)/step),5.0f)==0) ? t.grid_major:t.grid_minor));
-        for (float y=cy; y>=a.y; y-=step) dl->AddLine({a.x,y},{b.x,y},packed((std::fmod(std::round((y-cy)/step),5.0f)==0) ? t.grid_major:t.grid_minor));
-        for (float y=cy+step; y<=b.y; y+=step) dl->AddLine({a.x,y},{b.x,y},packed((std::fmod(std::round((y-cy)/step),5.0f)==0) ? t.grid_major:t.grid_minor));
-        dl->AddLine({a.x,cy},{b.x,cy},packed(t.axis_x),2*z);
-        dl->AddLine({cx,a.y},{cx,b.y},packed(t.axis_y),2*z);
-        dl->AddCircleFilled({cx,cy},3*z,packed(t.accent));
+        const float step=t.grid_step*z;
+        const float cx=(a.x+b.x)*0.5f;
+        const float cy=(a.y+b.y)*0.5f;
+        const float run=(b.y-a.y)/t.grid_slope;
+        const int count=static_cast<int>(std::ceil((b.x-a.x+run)/step))+1;
+        for (int i=-count;i<=count;++i) {
+            const float x=cx+i*step;
+            const ImU32 color=packed(i%5==0?t.grid_major:t.grid_minor);
+            dl->AddLine({x,a.y},{x+run,b.y},color);
+            dl->AddLine({x,a.y},{x-run,b.y},color);
+        }
+        dl->AddLine({a.x,cy-(a.x-cx)*t.grid_slope},{b.x,cy-(b.x-cx)*t.grid_slope},packed(t.axis_x),1.5f*z);
+        dl->AddLine({a.x,cy+(a.x-cx)*t.grid_slope},{b.x,cy+(b.x-cx)*t.grid_slope},packed(t.axis_y),1.5f*z);
+        dl->AddCircleFilled({cx,cy},2.5f*z,packed(t.accent));
+        const float cube=t.viewcube_size*z;
+        const ImVec2 cube_a={b.x-cube-t.padding*z,a.y+t.padding*z};
+        const ImVec2 cube_b={cube_a.x+cube,cube_a.y+cube};
+        dl->AddRectFilled(cube_a,cube_b,packed(t.panel),t.rounding*z);
+        dl->AddRect(cube_a,cube_b,packed(t.border),t.rounding*z);
+        dl->AddText({cube_a.x+20*z,cube_a.y+24*z},packed(t.text),"TOP");
+        dl->AddText({cube_a.x+cube-11*z,cube_a.y-7*z},packed(t.axis_y),"Z");
+        const ImVec2 nav_a={cx-t.nav_width*z*0.5f,b.y-t.nav_height*z-t.padding*z};
+        const ImVec2 nav_b={nav_a.x+t.nav_width*z,nav_a.y+t.nav_height*z};
+        dl->AddRectFilled(nav_a,nav_b,packed(t.panel),t.rounding*z);
+        dl->AddRect(nav_a,nav_b,packed(t.border),t.rounding*z);
+        const char* nav_icons[]={"hand","orbit","zoom-in","maximize"};
+        for (int i=0;i<4;++i)
+            icon(dl,icon_texture(nav_icons[i]),{nav_a.x+26*z+i*50*z,nav_a.y+6*z},18*z,packed(t.muted));
         dl->PopClipRect();
         ImGui::InvisibleButton("canvas",avail);
     });
