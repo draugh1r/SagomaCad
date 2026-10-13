@@ -1,5 +1,9 @@
 # Devlog
 
+## 2026-10-13 — Unità implicita nel dialog parametri
+
+Corretto il caso segnalato con `Nome = larghezza`, `Unità = mm`, `Espressione = larghezza = 40`: dopo aver separato la scorciatoia, l'espressione `40` è scalare; ora il valutatore applica l'unità dichiarata al risultato scalare. Il valore è 40 mm e i parametri dipendenti ereditano la dimensione. Aggiunti test per mm, pollici e per la scorciatoia UI. Build separata `build/agent-unit-fix` verde, CTest 12/12 e controllo dei livelli verde. Lo screenshot offscreen mostra la riga senza errore. L'eseguibile della build precedente resta aperto e Windows ne impedisce la sostituzione; non è stato chiuso per preservare l'eventuale lavoro non salvato.
+
 ## 2026-10-13 — Correzione dialog Cambia parametri
 
 La tabella ora ha le colonne Nome, Unità, Espressione, Valore e Commento, con etichette e colori delle intestazioni nei token del tema. Il commento è persistito nel documento con default per i file esistenti. `+` crea una riga; le celle si modificano direttamente, Invio conferma con `param.set`, Esc annulla, e il valore mostra un'anteprima durante la digitazione. La scorciatoia `nome = espressione` viene separata automaticamente se Nome è vuoto o coincide; i nomi incoerenti producono un errore leggibile. Gli errori del comando arrivano allo stato UI e sono mostrati sotto Espressione, nella cella Valore e nei tooltip. Aggiunto un test mirato che confronta il messaggio UI con quello restituito da `param.set` per una divisione per zero; testati anche scorciatoia, commento, anteprima e token chiaro/scuro.

@@ -21,7 +21,17 @@ int main() {
         fill(state.parameter_expression,"larghezza = 40 mm");
         require(ui::submit_parameter(state,engine),"assegnazione con Nome vuoto");
         require(engine.session().document.parameters[0].name=="larghezza","nome non estratto");
+        state.parameter_editing=true;
+        state.editing_parameter_name="larghezza";
+        fill(state.parameter_name,"larghezza");
+        fill(state.parameter_unit,"mm");
+        fill(state.parameter_expression,"larghezza = 40");
+        require(ui::submit_parameter(state,engine),"il numero usa l'unità della colonna");
+        require(state.parameter_error.empty() &&
+                std::abs(engine::evaluated_parameters_json(engine.session().document)[0]["value"].get<double>()-40)<1e-9,
+                "scorciatoia con unità dichiarata");
         fill(state.parameter_name,"foro");
+        fill(state.parameter_unit,"");
         fill(state.parameter_expression,"foro = larghezza / 4");
         require(ui::submit_parameter(state,engine),"assegnazione con nome coincidente");
         require(std::abs(engine::evaluated_parameters_json(engine.session().document)[1]["value"].get<double>()-10)<1e-9,

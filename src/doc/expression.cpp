@@ -74,6 +74,12 @@ public:
             if (!declared.empty()) {
                 const auto unit = units.find(declared);
                 if (unit == units.end()) throw std::runtime_error("Unità sconosciuta: " + declared);
+                if (state.quantity.dimension == Dimension::Scalar) {
+                    state.quantity.value *= unit->second.scale;
+                    state.quantity.dimension = unit->second.dimension;
+                    if (!std::isfinite(state.quantity.value))
+                        throw std::runtime_error("Risultato numerico non finito");
+                }
                 if (unit->second.dimension != state.quantity.dimension)
                     throw std::runtime_error("Unità incompatibili nel parametro " + name);
             }

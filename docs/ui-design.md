@@ -7,3 +7,4 @@ Nel viewport la griglia isometrica, gli assi, l'indicatore di vista e la barra d
 ## Cambia parametri (M1)
 
 Il pannello mostra Nome, Unità, Espressione, Valore e Commento. `+` crea una riga; un clic in una cella apre la modifica diretta. Invio conferma tramite `param.set`, Esc annulla. Il valore viene ricalcolato nell'anteprima mentre si modifica l'espressione. Il campo Espressione accetta anche `nome = espressione` se Nome è vuoto o coincide. Errori del comando e dell'anteprima compaiono in rosso sotto la cella e nel tooltip. Testo e colori delle intestazioni e degli errori provengono da `src/ui/theme.hpp` per i temi chiaro e scuro.
+Un'espressione numerica senza suffisso, per esempio `40`, assume l'unità della colonna Unità (`mm` → 40 mm, `in` → 1 in). Le espressioni già dimensionali conservano la propria unità e vengono convertite per mostrare il valore nella colonna.

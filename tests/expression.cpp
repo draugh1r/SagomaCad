@@ -35,6 +35,17 @@ int main() {
         require(!evaluate_expression(document, std::string(256, '-') + "1", result, error),
                 "catena unaria senza limite");
 
+        document.parameters = {{"larghezza", "40", "mm"},
+                               {"foro", "larghezza / 4", "mm"},
+                               {"imperiale", "1", "in"}};
+        rows = evaluate_parameters(document);
+        require(rows[0].value && near(*rows[0].value, 40.0) && rows[0].error.empty(),
+                "numero senza suffisso usa la colonna Unità");
+        require(rows[1].value && near(*rows[1].value, 10.0),
+                "il riferimento eredita la dimensione dichiarata");
+        require(rows[2].value && near(*rows[2].value, 1.0),
+                "numero senza suffisso usa anche le unità imperiali");
+
         document.parameters = {{"a", "b + 1 mm", ""}, {"b", "a + 1 mm", ""}};
         rows = evaluate_parameters(document);
         require(!rows[0].value && !rows[1].value &&
