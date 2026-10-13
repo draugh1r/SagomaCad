@@ -50,7 +50,8 @@ std::vector<CommandSpec> feature_specs() {
              const auto body_id=found->second.data["body_id"].get<std::string>();
              found->second.data["dimensions"]=std::move(dimensions);
              found->second.name=name;
-             for (auto& body:session.document.bodies) if (body.id==body_id) body.name=name;
+             if (found->second.data.value("operation",std::string("new"))=="new")
+                 for (auto& body:session.document.bodies) if (body.id==body_id) body.name=name;
              return {true,{{"feature_id",id}}, {}};
          },true},
         {"feature.suppress","Sopprimi feature",{"Timeline","Modifica"},std::nullopt,

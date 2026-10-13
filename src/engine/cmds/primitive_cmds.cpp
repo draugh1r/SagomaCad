@@ -1,6 +1,7 @@
 #include "engine/command.hpp"
 #include "engine/cmds/validation.hpp"
 #include "doc/expression.hpp"
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -25,14 +26,22 @@ std::string expression_field(const nlohmann::json& object,const char* key) {
 
 std::vector<CommandSpec> primitive_specs() {
     return {{"primitive.add","Primitiva",{"Solido","Crea"},std::nullopt,
-             "{kind: box|cylinder|sphere, dimensions: {width,depth,height|radius,height|radius}, position?: {x,y,z}, operation?: new, name?: string}",{},
+             "{kind: box|cylinder|sphere, dimensions: {width,depth,height|radius,height|radius}, position?: {x,y,z}, operation?: new|subtract, body?: id, name?: string}",{},
              [](Session& session,const nlohmann::json& params)->CommandResult {
-                 only_keys(params,{"kind","dimensions","position","operation","name"});
+                 only_keys(params,{"kind","dimensions","position","operation","body","name"});
                  const auto kind=string_arg(params,"kind",true,16);
                  if (kind!="box" && kind!="cylinder" && kind!="sphere")
                      return CommandResult::failure("Primitiva sconosciuta: "+kind);
-                 if (params.contains("operation") && string_arg(params,"operation",true,16)!="new")
-                     return CommandResult::failure("In M2 è disponibile solo operation=new");
+                 const auto operation=params.contains("operation")?string_arg(params,"operation",true,16):"new";
+                 if (operation!="new" && operation!="subtract")
+                     return CommandResult::failure("operation deve essere new o subtract");
+                 std::string target_body;
+                 if (operation=="subtract") {
+                     target_body=string_arg(params,"body",true,256);
+                     const auto found=std::find_if(session.document.bodies.begin(),session.document.bodies.end(),
+                         [&](const auto& body){return body.id==target_body && body.kind==doc::BodyKind::BRep;});
+                     if (found==session.document.bodies.end()) return CommandResult::failure("Corpo B-rep da sottrarre non trovato: "+target_body);
+                 } else if (params.contains("body")) return CommandResult::failure("body è ammesso solo per operation=subtract");
                  if (!params.contains("dimensions") || !params["dimensions"].is_object())
                      return CommandResult::failure("dimensions deve essere un oggetto");
                  const auto& dimensions=params["dimensions"];
@@ -60,7 +69,8 @@ std::vector<CommandSpec> primitive_specs() {
                  }
                  for (const auto* axis:{"x","y","z"})
                      length_value(session.document,position[axis].get<std::string>(),false,std::string("position.")+axis);
-                 const std::string default_name=kind=="box"?"Box":kind=="cylinder"?"Cilindro":"Sfera";
+                 const std::string default_name=operation=="subtract"?"Taglio "+kind:
+                     kind=="box"?"Box":kind=="cylinder"?"Cilindro":"Sfera";
                  const auto name=params.contains("name")?string_arg(params,"name",true,256):default_name;
                  std::size_t serial=session.document.timeline.size()+1;
                  std::string feature_id,body_id;
@@ -68,14 +78,15 @@ std::vector<CommandSpec> primitive_specs() {
                      feature_id="primitive-"+std::to_string(serial);
                      body_id="body-"+std::to_string(serial++);
                  } while (session.document.features.contains(feature_id));
+                 if (operation=="subtract") body_id=target_body;
                  doc::Feature feature;
                  feature.id=feature_id;
                  feature.name=name;
                  feature.type="primitive."+kind;
                  feature.kind=doc::FeatureKind::Exact;
-                 feature.data={{"dimensions",stored_dimensions},{"position",position},{"body_id",body_id}};
+                 feature.data={{"dimensions",stored_dimensions},{"position",position},{"body_id",body_id},{"operation",operation}};
                  session.document.features.emplace(feature_id,std::move(feature));
-                 session.document.bodies.push_back({body_id,name,doc::BodyKind::BRep,true,"#8B9BA6"});
+                 if (operation=="new") session.document.bodies.push_back({body_id,name,doc::BodyKind::BRep,true,"#8B9BA6"});
                  session.document.timeline.push_back(feature_id);
                  session.document.rollback=session.document.timeline.size();
                  return {true,{{"feature_id",feature_id},{"body_id",body_id}}, {}};

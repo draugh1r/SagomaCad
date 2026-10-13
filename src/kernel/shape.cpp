@@ -1,5 +1,8 @@
 #include "kernel/shape.hpp"
 #include <BRepGProp.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepBndLib.hxx>
+#include <Bnd_Box.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
@@ -73,13 +76,34 @@ Result<MassProperties> mass_properties(const Shape& shape) noexcept {
         GProp_GProps volume,area;
         BRepGProp::VolumeProperties(shape.impl_->shape,volume);
         BRepGProp::SurfaceProperties(shape.impl_->shape,area);
-        const MassProperties result{volume.Mass(),area.Mass()};
+        Bnd_Box bounds;
+        BRepBndLib::Add(shape.impl_->shape,bounds);
+        if (bounds.IsVoid()) return Result<MassProperties>::failure("Bounding box non valida");
+        double xmin=0,ymin=0,zmin=0,xmax=0,ymax=0,zmax=0;
+        bounds.Get(xmin,ymin,zmin,xmax,ymax,zmax);
+        const auto center=volume.CentreOfMass();
+        const MassProperties result{volume.Mass(),area.Mass(),
+            {center.X(),center.Y(),center.Z()},{xmin,ymin,zmin},{xmax,ymax,zmax}};
         if (!std::isfinite(result.volume) || !std::isfinite(result.area) || result.volume<=0.0 || result.area<=0.0)
             return Result<MassProperties>::failure("Proprietà geometriche non valide");
         return Result<MassProperties>::success(result);
     } catch (const Standard_Failure& e) { return Result<MassProperties>::failure(occt_message(e)); }
       catch (const std::exception& e) { return Result<MassProperties>::failure(e.what()); }
       catch (...) { return Result<MassProperties>::failure("Errore imprevisto nel calcolo delle proprietà"); }
+}
+Result<Shape> subtract(const Shape& target,const Shape& cutter) noexcept {
+    if (!target.impl_ || !cutter.impl_) return Result<Shape>::failure("Forme del taglio non valide");
+    try {
+        BRepAlgoAPI_Cut operation(target.impl_->shape,cutter.impl_->shape);
+        operation.Build();
+        if (!operation.IsDone() || operation.Shape().IsNull())
+            return Result<Shape>::failure("Sottrazione OpenCascade fallita");
+        auto result=Shape(std::make_shared<Shape::Impl>(operation.Shape()));
+        if (!mass_properties(result)) return Result<Shape>::failure("La sottrazione ha prodotto un corpo vuoto");
+        return Result<Shape>::success(std::move(result));
+    } catch (const Standard_Failure& e) { return Result<Shape>::failure(occt_message(e)); }
+      catch (const std::exception& e) { return Result<Shape>::failure(e.what()); }
+      catch (...) { return Result<Shape>::failure("Errore imprevisto nella sottrazione"); }
 }
 Result<Shape> translate(const Shape& shape,double x,double y,double z) noexcept {
     if (!shape.impl_) return Result<Shape>::failure("Forma vuota");

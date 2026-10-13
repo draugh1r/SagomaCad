@@ -74,9 +74,26 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                 snapshot_.features.back().error="Corpo della feature non trovato";
                 continue;
             }
-            body->exact=result.shape;
-            body->final=result.shape;
-            body->error=result.error;
+            const auto operation=it->second.data.value("operation",std::string("new"));
+            if (operation=="subtract") {
+                if (!body->exact || !result.shape) {
+                    snapshot_.features.back().error=result.error.empty()?"Corpo sorgente o utensile del taglio assente":result.error;
+                    continue;
+                }
+                auto cut=kernel::subtract(*body->exact,*result.shape);
+                if (!cut) {
+                    snapshot_.features.back().error=cut.error;
+                    body->error=cut.error;
+                    continue;
+                }
+                body->exact=*cut.value;
+                body->final=*cut.value;
+                body->error.clear();
+            } else if (operation=="new") {
+                body->exact=result.shape;
+                body->final=result.shape;
+                body->error=result.error;
+            } else snapshot_.features.back().error="Operazione sconosciuta: "+operation;
         } catch (const std::exception& e) { snapshot_.features.back().error=e.what(); }
     }
     return snapshot_;
