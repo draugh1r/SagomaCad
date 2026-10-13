@@ -1,6 +1,8 @@
 #pragma once
+#include "engine/command.hpp"
 #include <cstddef>
 #include <span>
+#include <string>
 #include <string_view>
 
 namespace sagomacad::ui {
@@ -23,5 +25,10 @@ struct ToolbarTab {
 std::span<const ToolbarTab> toolbar_catalog();
 std::span<const ToolbarCommand> file_menu_commands();
 std::span<const ToolbarCommand> edit_toolbar_commands();
-bool command_available(std::string_view id, std::span<const std::string_view> registered_ids);
+struct CommandAvailability {
+    bool registered = false;
+    bool enabled = false;
+    std::string reason = "Non ancora disponibile";
+};
+CommandAvailability command_availability(std::string_view id, const engine::Engine* engine);
 }

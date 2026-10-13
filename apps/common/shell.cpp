@@ -12,10 +12,12 @@
 #include <stb_image_write.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <filesystem>
 #include <cfloat>
-#include <span>
+#include <cctype>
 #include <vector>
+#include <cstring>
 
 namespace sagomacad {
 namespace {
@@ -156,6 +158,18 @@ void Shell::draw() {
     const auto& t = ui::theme(state_.theme == "light");
     const float z = static_cast<float>(scale_);
     const ImVec2 screen = ImGui::GetIO().DisplaySize;
+    const auto& input=ImGui::GetIO();
+    if ((input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_K)) ||
+        (!input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_S))) {
+        state_.palette_open=true;
+        state_.palette_focus=true;
+    }
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z)) invoke_command("edit.undo");
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y)) invoke_command("edit.redo");
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_N)) invoke_command("document.new");
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) invoke_command("document.open");
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
+        invoke_command(input.KeyShift?"document.saveAs":"document.save");
     const ImGuiID dock_id=ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
     static bool dock_initialized=false;
     if (!dock_initialized) {
@@ -185,17 +199,18 @@ void Shell::draw() {
         ImDrawList* dl=ImGui::GetWindowDrawList();
         const ImVec2 p=ImGui::GetCursorScreenPos();
         const float width=ImGui::GetContentRegionAvail().x;
-        const std::span<const std::string_view> registered_ids{};
         auto command_button=[&](const ui::ToolbarCommand& command,ImVec2 a,ImVec2 size,bool show_label) {
-            const bool available=ui::command_available(command.id,registered_ids);
+            const auto status=ui::command_availability(command.id,engine_);
+            const bool available=status.enabled;
             const std::string id(command.id);
             ImGui::SetCursorScreenPos(a);
             ImGui::PushID(id.c_str());
             ImGui::BeginDisabled(!available);
-            ImGui::InvisibleButton("command",size);
+            const bool clicked=ImGui::InvisibleButton("command",size);
             ImGui::EndDisabled();
             const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
-            if (!available && hovered) ImGui::SetTooltip("Non ancora disponibile");
+            if (!available && hovered) ImGui::SetTooltip("%s",status.reason.c_str());
+            if (clicked && available) invoke_command(command.id);
             if (hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(t.panel_alt),t.rounding*z);
             const float icon_size=(show_label?21.0f:17.0f)*z;
             icon(dl,icon_texture(command.icon),{a.x+(size.x-icon_size)*0.5f,a.y+2*z},icon_size,
@@ -205,23 +220,26 @@ void Shell::draw() {
             ImGui::PopID();
         };
         auto popup_command=[&](const ui::ToolbarCommand& command,float item_width) {
-            const bool available=ui::command_available(command.id,registered_ids);
+            const auto status=ui::command_availability(command.id,engine_);
+            const bool available=status.enabled;
             ImDrawList* popup_dl=ImGui::GetWindowDrawList();
             ImGui::PushID(command.id.data());
             ImGui::BeginDisabled(!available);
-            ImGui::InvisibleButton("item",{item_width*z,27*z});
+            const bool clicked=ImGui::InvisibleButton("item",{item_width*z,27*z});
             ImGui::EndDisabled();
             const ImVec2 q=ImGui::GetItemRectMin();
             const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
             if (hovered) popup_dl->AddRectFilled(q,{q.x+item_width*z,q.y+27*z},packed(t.panel_alt));
             icon(popup_dl,icon_texture(command.icon),{q.x+4*z,q.y+4*z},18*z,packed(available?t.text:t.muted));
             popup_dl->AddText({q.x+30*z,q.y+5*z},packed(available?t.text:t.muted),std::string(command.label).c_str());
-            if (!available && hovered) ImGui::SetTooltip("Non ancora disponibile");
+            if (!available && hovered) ImGui::SetTooltip("%s",status.reason.c_str());
+            if (clicked && available) { invoke_command(command.id); ImGui::CloseCurrentPopup(); }
             ImGui::PopID();
         };
         dl->AddText(p,packed(t.accent),"SagomaCad");
-        dl->AddText({p.x+126*z,p.y},packed(t.text),"Nuovo documento");
-        const ImVec2 file_pos={p.x+276*z,p.y-2*z};
+        const std::string document_name=engine_?engine_->session().document.name:"Nuovo documento";
+        dl->AddText({p.x+126*z,p.y},packed(t.text),document_name.c_str());
+        const ImVec2 file_pos={p.x+126*z+ImGui::CalcTextSize(document_name.c_str()).x+26*z,p.y-2*z};
         ImGui::SetCursorScreenPos(file_pos);
         if (ImGui::InvisibleButton("file.menu",{76*z,24*z})) ImGui::OpenPopup("file_commands");
         if (ImGui::IsItemHovered()) dl->AddRectFilled(file_pos,{file_pos.x+76*z,file_pos.y+24*z},packed(t.panel_alt),t.rounding*z);
@@ -232,7 +250,7 @@ void Shell::draw() {
             for (const auto& command:ui::file_menu_commands()) popup_command(command,190);
             ImGui::EndPopup();
         }
-        float action_x=p.x+364*z;
+        float action_x=file_pos.x+88*z;
         for (const auto& command:ui::edit_toolbar_commands()) {
             command_button(command,{action_x,p.y-2*z},{29*z,24*z},false);
             action_x+=32*z;
@@ -297,7 +315,8 @@ void Shell::draw() {
             dl->AddText({q.x+indent+39*z,q.y+1*z},packed(depth==0?t.text:t.muted),text);
             ImGui::Dummy({1,23*z});
         };
-        row("Nuovo documento",0,true,true,true,true);
+        const std::string browser_name=engine_?engine_->session().document.name:"Nuovo documento";
+        row(browser_name.c_str(),0,true,true,true,true);
         row("Impostazioni documento",1,false,false,false,true);
         row("Viste salvate",1,false,false,true,true);
         row("Origine",1,true,true,true,true);
@@ -361,6 +380,116 @@ void Shell::draw() {
         dl->PopClipRect();
         ImGui::InvisibleButton("canvas",avail);
     });
+    draw_overlays(t);
+}
+void Shell::invoke_command(std::string_view id) {
+    if (!engine_) return;
+    const auto availability=ui::command_availability(id,engine_);
+    if (!availability.enabled) { state_.status_message=availability.reason; return; }
+    if (id=="param.list" || id=="param.set" || id=="param.delete") {
+        state_.parameters_open=true;
+        return;
+    }
+    if (id=="document.open" || id=="document.saveAs" ||
+        (id=="document.save" && engine_->session().path.empty())) {
+        state_.file_command= id=="document.save" ? "document.saveAs" : std::string(id);
+        state_.file_dialog_open=true;
+        state_.file_path.fill('\0');
+        return;
+    }
+    const auto result=engine_->execute(id);
+    state_.status_message=result.ok ? std::string() : result.error;
+}
+void Shell::draw_overlays(const ui::Theme& t) {
+    const float z=static_cast<float>(scale_);
+    const ImVec2 display=ImGui::GetIO().DisplaySize;
+    if (state_.palette_open) {
+        ImGui::SetNextWindowPos({(display.x-t.palette_width*z)*0.5f,t.toolbar_height*z+24*z},ImGuiCond_Always);
+        ImGui::SetNextWindowSize({t.palette_width*z,t.palette_height*z},ImGuiCond_Always);
+        if (ImGui::Begin("Comandi##palette",&state_.palette_open,ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove)) {
+            ImGui::TextColored(vec(t.muted),"COMANDI");
+            ImGui::Separator();
+            if (state_.palette_focus) { ImGui::SetKeyboardFocusHere(); state_.palette_focus=false; }
+            ImGui::InputTextWithHint("##search","Cerca un comando...",state_.palette_query.data(),state_.palette_query.size());
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) state_.palette_open=false;
+            ImGui::BeginChild("results",{0,0},false);
+            if (engine_) for (const auto& spec:engine_->registry().specs()) {
+                auto lower=[](std::string value) { for (char& c:value) c=static_cast<char>(std::tolower(static_cast<unsigned char>(c))); return value; };
+                const std::string query=lower(state_.palette_query.data());
+                if (!query.empty() && lower(spec.label).find(query)==std::string::npos && lower(spec.id).find(query)==std::string::npos) continue;
+                const auto availability=ui::command_availability(spec.id,engine_);
+                ImGui::PushID(spec.id.c_str());
+                ImGui::BeginDisabled(!availability.enabled);
+                const bool clicked=ImGui::Selectable((spec.label+"  ##command").c_str());
+                ImGui::EndDisabled();
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s",availability.enabled?spec.id.c_str():availability.reason.c_str());
+                if (clicked) { invoke_command(spec.id); state_.palette_open=false; }
+                ImGui::PopID();
+            }
+            ImGui::EndChild();
+        }
+        ImGui::End();
+    }
+    if (state_.parameters_open) {
+        ImGui::SetNextWindowPos({(display.x-t.parameter_width*z)*0.5f,
+            std::max(t.toolbar_height*z+24*z,(display.y-t.parameter_height*z)*0.5f)},ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize({std::min(t.parameter_width*z,display.x-24*z),std::min(t.parameter_height*z,display.y-24*z)},ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Cambia parametri##parameters",&state_.parameters_open)) {
+            ImGui::TextColored(vec(t.muted),"%s",ui::labels.parameters);
+            ImGui::Separator();
+            if (ImGui::BeginTable("parameters",4,ImGuiTableFlags_Borders|ImGuiTableFlags_RowBg|ImGuiTableFlags_SizingStretchProp,{0,200*z})) {
+                for (const char* heading:{"Nome","Espressione","Valore calcolato","Unità"}) ImGui::TableSetupColumn(heading);
+                ImGui::TableHeadersRow();
+                if (engine_) for (const auto& row:engine::evaluated_parameters_json(engine_->session().document)) {
+                    const std::string name=row.value("name",std::string());
+                    const std::string expression=row.value("expression",std::string());
+                    const std::string unit=row.value("unit",std::string());
+                    ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
+                    if (ImGui::Selectable(name.c_str())) {
+                        std::snprintf(state_.parameter_name.data(),state_.parameter_name.size(),"%s",name.c_str());
+                        std::snprintf(state_.parameter_expression.data(),state_.parameter_expression.size(),"%s",expression.c_str());
+                    }
+                    ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(expression.c_str());
+                    ImGui::TableSetColumnIndex(2);
+                    if (row["value"].is_number()) ImGui::Text("%.6g",row["value"].get<double>());
+                    else ImGui::TextColored(vec(t.axis_x),"%s",row.value("error",std::string()).c_str());
+                    ImGui::TableSetColumnIndex(3); ImGui::TextUnformatted(unit.c_str());
+                }
+                ImGui::EndTable();
+            }
+            ImGui::Separator();
+            ImGui::TextUnformatted("Nome"); ImGui::SameLine(120*z);
+            ImGui::InputText("##parameter_name",state_.parameter_name.data(),state_.parameter_name.size());
+            ImGui::TextUnformatted("Espressione"); ImGui::SameLine(120*z);
+            ImGui::InputText("##parameter_expression",state_.parameter_expression.data(),state_.parameter_expression.size());
+            if (ImGui::Button("Imposta") && engine_) {
+                const auto result=engine_->execute("param.set",{{"name",state_.parameter_name.data()},{"expression",state_.parameter_expression.data()}});
+                state_.status_message=result.ok?std::string():result.error;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Elimina") && engine_) {
+                const auto result=engine_->execute("param.delete",{{"name",state_.parameter_name.data()}});
+                state_.status_message=result.ok?std::string():result.error;
+            }
+            if (!state_.status_message.empty()) ImGui::TextColored(vec(t.axis_x),"%s",state_.status_message.c_str());
+        }
+        ImGui::End();
+    }
+    if (state_.file_dialog_open) {
+        ImGui::SetNextWindowPos({(display.x-t.file_dialog_width*z)*0.5f,(display.y-160*z)*0.5f},ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize({t.file_dialog_width*z,160*z},ImGuiCond_Appearing);
+        if (ImGui::Begin("Percorso documento##file",&state_.file_dialog_open,ImGuiWindowFlags_NoResize)) {
+            ImGui::TextUnformatted("File .sagomacad");
+            ImGui::InputText("##path",state_.file_path.data(),state_.file_path.size());
+            if (ImGui::Button("Conferma") && engine_) {
+                const auto result=engine_->execute(state_.file_command,{{"path",state_.file_path.data()}});
+                state_.status_message=result.ok?std::string():result.error;
+                if (result.ok) state_.file_dialog_open=false;
+            }
+            if (!state_.status_message.empty()) ImGui::TextColored(vec(t.axis_x),"%s",state_.status_message.c_str());
+        }
+        ImGui::End();
+    }
 }
 bool Shell::glyphs_available() const {
     if (!imgui_ready_) return false;
@@ -402,6 +531,8 @@ nlohmann::json Shell::inspect() const {
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
-        {"docking",true},{"fixed_layout",true},{"tabs_visible",false}};
+        {"docking",true},{"fixed_layout",true},{"tabs_visible",false},
+        {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
+        {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }
 }

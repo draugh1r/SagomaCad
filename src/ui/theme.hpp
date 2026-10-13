@@ -11,15 +11,17 @@ struct SectionLabels {
     const char* selection;
     const char* timeline;
     const char* feature_history;
+    const char* parameters;
 };
 inline constexpr SectionLabels labels {
     "BROWSER", "DOCUMENTO", "CORPI", "PROPRIETÀ", "SELEZIONE",
-    "TIMELINE", "CRONOLOGIA DELLE FEATURE"
+    "TIMELINE", "CRONOLOGIA DELLE FEATURE", "PARAMETRI"
 };
 struct Theme {
     Color background, panel, panel_alt, viewport, text, muted, border, accent, axis_x, axis_y, grid_major, grid_minor;
     float rounding, spacing, padding, sidebar_width, inspector_width, timeline_height, toolbar_height;
     float grid_step, grid_slope, viewcube_size, nav_width, nav_height, ribbon_group_width, timeline_glyph_height;
+    float palette_width, palette_height, parameter_width, parameter_height, file_dialog_width;
 };
 inline constexpr Theme dark {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},
@@ -27,7 +29,8 @@ inline constexpr Theme dark {
     {0.19f,0.22f,0.26f}, {0.25f,0.58f,0.91f}, {0.87f,0.30f,0.28f},
     {0.34f,0.75f,0.47f}, {0.18f,0.23f,0.29f}, {0.12f,0.16f,0.20f},
     3.0f, 7.0f, 10.0f, 244.0f, 254.0f, 62.0f, 164.0f,
-    25.0f, 0.52f, 68.0f, 224.0f, 30.0f, 180.0f, 124.0f
+    25.0f, 0.52f, 68.0f, 224.0f, 30.0f, 180.0f, 124.0f,
+    480.0f, 320.0f, 800.0f, 420.0f, 480.0f
 };
 inline constexpr Theme light {
     {0.95f,0.96f,0.97f}, {0.985f,0.988f,0.992f}, {0.94f,0.95f,0.96f},
@@ -35,7 +38,8 @@ inline constexpr Theme light {
     {0.78f,0.80f,0.82f}, {0.08f,0.40f,0.73f}, {0.82f,0.33f,0.32f},
     {0.31f,0.68f,0.40f}, {0.84f,0.86f,0.88f}, {0.91f,0.92f,0.93f},
     3.0f, 7.0f, 10.0f, 244.0f, 254.0f, 62.0f, 164.0f,
-    25.0f, 0.52f, 68.0f, 224.0f, 30.0f, 180.0f, 124.0f
+    25.0f, 0.52f, 68.0f, 224.0f, 30.0f, 180.0f, 124.0f,
+    480.0f, 320.0f, 800.0f, 420.0f, 480.0f
 };
 inline constexpr const Theme& theme(bool is_light) { return is_light ? light : dark; }
 }

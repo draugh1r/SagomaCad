@@ -44,6 +44,7 @@ int main(int argc,char** argv) {
     sagomacad::Shell shell(1440,900,1,false,true);
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
     sagomacad::engine::Engine engine;
+    shell.bind_engine(&engine);
     std::unique_ptr<sagomacad::ControlServer> server;
     {
         session_file=std::filesystem::absolute(session_file);

@@ -14,7 +14,7 @@ int main(int argc,char** argv) {
     }
     int width=1440,height=900,scale=1;
     std::string output,theme="light",script="[]";
-    bool glyph_test=false,sketch_mode=false;
+    bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false;
     for (int i=2;i<argc;++i) {
         const std::string arg=argv[i];
         if (arg=="--glyph-test") { glyph_test=true; continue; }
@@ -37,23 +37,32 @@ int main(int argc,char** argv) {
     }
     auto steps=nlohmann::json::parse(script,nullptr,false);
     if (!steps.is_array()) { std::cerr<<"--script must be a JSON array\n"; return 2; }
+    sagomacad::engine::Engine engine;
     for (const auto& step:steps) {
-        if (!step.is_array() || step.size()!=2 || step[0]!="ui.set" || !step[1].is_object()) {
-            std::cerr<<"M0 snapshot script supports only ui.set for theme and sketch_mode\n"; return 2;
-        }
-        if (step[1].contains("theme")) {
-            if (!step[1]["theme"].is_string()) return 2;
-            theme=step[1]["theme"].get<std::string>();
-            if (theme!="dark" && theme!="light") return 2;
-        }
-        if (step[1].contains("sketch_mode")) {
-            if (!step[1]["sketch_mode"].is_boolean()) return 2;
-            sketch_mode=step[1]["sketch_mode"].get<bool>();
-        }
+        if (!step.is_array() || step.size()!=2 || !step[0].is_string() || !step[1].is_object()) return 2;
+        const auto method=step[0].get<std::string>();
+        const auto& params=step[1];
+        if (method=="engine.execute") {
+            if (!params.contains("command") || !params["command"].is_string()) return 2;
+            const auto result=engine.execute(params["command"].get<std::string>(),params.value("params",nlohmann::json::object()));
+            if (!result.ok) { std::cerr<<result.error<<'\n'; return 1; }
+        } else if (method=="ui.set") {
+            if (params.contains("theme")) {
+                if (!params["theme"].is_string()) return 2;
+                theme=params["theme"].get<std::string>();
+                if (theme!="dark" && theme!="light") return 2;
+            }
+            for (auto [key,target]:{std::pair{"sketch_mode",&sketch_mode},std::pair{"palette",&palette_open},std::pair{"parameters",&parameters_open}}) {
+                if (params.contains(key)) { if (!params[key].is_boolean()) return 2; *target=params[key].get<bool>(); }
+            }
+        } else { std::cerr<<"Unknown snapshot method: "<<method<<'\n'; return 2; }
     }
     sagomacad::Shell shell(width,height,scale,true,theme=="light");
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
+    shell.bind_engine(&engine);
     shell.state().sketch_mode=sketch_mode;
+    shell.state().palette_open=palette_open;
+    shell.state().parameters_open=parameters_open;
     if (glyph_test && !shell.glyphs_available()) { std::cerr<<"Missing Latin glyphs in Inter font\n"; return 1; }
     shell.set_glyph_sample(glyph_test);
     for (int frame=0;frame<3;++frame) { shell.poll(); shell.render(); }

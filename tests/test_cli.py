@@ -51,15 +51,22 @@ with tempfile.TemporaryDirectory() as directory:
         execute("param.set", {"name": "larghezza", "expression": "40 mm"})
         execute("param.set", {"name": "foro", "expression": "larghezza / 4"})
         assert execute("param.list")[1]["value"] == 10
+        ui_state = invoke("call", "ui.inspect", "{}", *options)["result"]
+        assert ui_state["parameters"][1]["value"] == 10
         execute("param.set", {"name": "larghezza", "expression": "80 mm"})
         assert execute("param.list")[1]["value"] == 20
+        assert invoke("call", "ui.inspect", "{}", *options)["result"]["parameters"][1]["value"] == 20
         execute("edit.undo")
         assert execute("param.list")[1]["value"] == 10
+        assert invoke("call", "ui.inspect", "{}", *options)["result"]["parameters"][1]["value"] == 10
         execute("edit.redo")
         assert execute("param.list")[1]["value"] == 20
         saved = root / "control.sagomacad"
         execute("document.saveAs", {"path": str(saved)})
         assert saved.is_file()
+        execute("document.new")
+        execute("document.open", {"path": str(saved)})
+        assert invoke("call", "ui.inspect", "{}", *options)["result"]["parameters"][1]["value"] == 20
         shot = Path(invoke("call", "ui.screenshot", json.dumps({"path": "cli.png"}),
                            *options)["result"]["path"])
         assert shot.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
@@ -91,5 +98,17 @@ with tempfile.TemporaryDirectory() as directory:
     listed = invoke("call", "engine.execute", json.dumps({"command": "param.list"}),
                     "--headless", headless)["result"]
     assert listed[1]["value"] == 20
+
+    preview = root / "parameters.png"
+    preview_script = [["engine.execute", {"command": "param.set", "params":
+                                   {"name": "larghezza", "expression": "40 mm"}}],
+                      ["engine.execute", {"command": "param.set", "params":
+                                   {"name": "foro", "expression": "larghezza / 4"}}],
+                      ["ui.set", {"parameters": True}]]
+    completed = subprocess.run([str(cli), "snapshot", "--size", "640x480", "--out",
+                                str(preview), "--script", json.dumps(preview_script)],
+                               capture_output=True, text=True, encoding="utf-8", timeout=15)
+    assert completed.returncode == 0, completed.stderr
+    assert preview.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 
 print("CLI control, session discovery, headless run and screenshot passed")

@@ -1,5 +1,4 @@
 #include "ui/toolbar_catalog.hpp"
-#include <algorithm>
 
 namespace sagomacad::ui {
 namespace {
@@ -24,7 +23,7 @@ constexpr ToolbarCommand modify[] = {
     {"face.pushPull", "Premi/tira", "move"},
     {"feature.fillet", "Raccordo", "blend"},
     {"feature.chamfer", "Smusso", "diamond"},
-    {"param.list", "Parametri", "list"},
+    {"param.list", "Cambia parametri", "list"},
 };
 constexpr ToolbarCommand construct[] = {
     {"construction.plane", "Piano", "between-horizontal-start"},
@@ -84,7 +83,15 @@ constexpr ToolbarTab tabs[] = {
 std::span<const ToolbarTab> toolbar_catalog() { return tabs; }
 std::span<const ToolbarCommand> file_menu_commands() { return file_menu; }
 std::span<const ToolbarCommand> edit_toolbar_commands() { return edit_actions; }
-bool command_available(std::string_view id, std::span<const std::string_view> registered_ids) {
-    return std::find(registered_ids.begin(), registered_ids.end(), id) != registered_ids.end();
+CommandAvailability command_availability(std::string_view id, const engine::Engine* session_engine) {
+    if (!session_engine) return {};
+    const auto* spec = session_engine->registry().find(id);
+    if (!spec) return {};
+    try {
+        const auto state = spec->enabled ? spec->enabled(session_engine->session()) : engine::Status{};
+        return {true, state.ok, state.error};
+    } catch (const std::exception& e) {
+        return {true, false, e.what()};
+    }
 }
 }

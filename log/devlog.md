@@ -1,5 +1,13 @@
 # Devlog
 
+## 2026-10-13 — M1
+
+Completate in sei commit separati le tappe Documento, Espressioni, Registro e storia, fuzz dei comandi, client CLI e UI. Il formato `.sagomacad` usa JSON versionato con default e salvataggio atomico; corpi `brep | mesh` e feature `exact | sdf` sono dati del documento, senza implementare geometria SDF. Il parser valuta unità e riferimenti e segnala cicli, incompatibilità dimensionali e divisioni per zero. Il registro espone 10 comandi, undo/redo e coalescenza. Il fuzz ha esercitato 60 casi: 57 errori controllati e 3 chiamate vuote valide. Il client usa il file di sessione per chiamare l'app e supporta script e file headless.
+
+La barra e il menu File si attivano dal registro; S e Ctrl+K aprono la palette. Modifica > Cambia parametri apre la tabella con nome, espressione, valore calcolato e unità. I test di integrazione verificano `larghezza = 40 mm`, `foro = larghezza / 4`, aggiornamento a 80 mm, undo/redo, salvataggio, riapertura e osservazione dal canale UI. Esaminati `m1-palette-light-1440x900.png` e `m1-parameters-dark-1280x720.png` e confrontati con il riferimento disponibile `docs/reference/fusion360-ui.png`; la cartella `docs/reference/fusion/` non è nel workspace. Il pannello parametri è stato abbassato per non sovrapporsi alla barra a 1280×720. Build Release, CTest 11/11 e controllo dei livelli verdi su Windows.
+
+Su Windows `docs/agents.md` e il già esistente `docs/AGENTS.md` indicano lo stesso file: la guida CLI richiesta è in `docs/agent-cli.md` per preservare le istruzioni del progetto. Le nuove immagini sono screenshot di verifica; nessuna golden image è stata aggiornata. M1.5 e M2 non iniziati.
+
 ## 2026-10-09 — M0
 
 Creati i nove target CMake per i livelli, il manifest vcpkg, la shell SDL3/OpenGL con docking Dear ImGui, griglia e assi, temi a token e font Inter con licenza. La CLI produce PNG da un contesto OpenGL nascosto; il server TCP loopback implementa `auth`, `ui.inspect` e `ui.screenshot` con percorsi limitati alla radice di automazione. Aggiunti controllo degli include, test e workflow CI Windows/macOS/Linux.

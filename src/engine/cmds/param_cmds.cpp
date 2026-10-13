@@ -53,7 +53,7 @@ std::vector<CommandSpec> parameter_specs() {
                  if (row.at("name") == name) return {true, row, {}};
              return CommandResult::failure("Parametro non trovato dopo la modifica");
          }, true},
-        {"param.list", "Elenca parametri", {"Solido", "Modifica"}, std::nullopt,
+        {"param.list", "Cambia parametri", {"Solido", "Modifica"}, std::nullopt,
          "{}; restituisce nome, espressione, valore calcolato e unità", {},
          [](Session& session, const nlohmann::json& params) -> CommandResult {
              only_keys(params, {});
