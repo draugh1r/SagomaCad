@@ -4,4 +4,6 @@ vcpkg_installed/
 .private/
 .sagomacad/
 docs/reference/
+export/*
+!export/.gitkeep
 *.user

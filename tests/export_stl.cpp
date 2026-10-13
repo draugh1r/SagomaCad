@@ -10,6 +10,7 @@
 static double volume_from_stl(const std::filesystem::path& path) {
     std::ifstream file(path,std::ios::binary); require(file);
     file.seekg(80); std::uint32_t count=0; file.read(reinterpret_cast<char*>(&count),4); require(count>=12);
+    require(std::filesystem::file_size(path)==84u+50u*count);
     double volume=0;
     for (std::uint32_t i=0;i<count;++i) {
         std::array<float,12> fields{}; std::uint16_t attributes=0;
@@ -26,14 +27,21 @@ int main() {
     require(engine.execute("param.set",{{"name","larghezza"},{"expression","40 mm"},{"unit","mm"}}).ok);
     const auto added=engine.execute("primitive.add",{{"kind","box"},{"dimensions",{{"width","larghezza"},{"depth","larghezza"},{"height","20 mm"}}}});
     require(added.ok);
-    const auto path=std::filesystem::temp_directory_path()/"sagomacad-m2-export-test.stl";
+    const auto requested=std::filesystem::temp_directory_path()/"sagomacad-m2-export-test";
+    std::filesystem::path path;
     const auto export_box=[&](const char* stage) {
-        const auto result=engine.execute("export.stl",{{"path",path.string()},{"stage",stage},{"tolerance",0.05}});
+        const auto result=engine.execute("export.stl",{{"path",requested.string()},{"stage",stage},{"tolerance",0.05}});
         require(result.ok);
+        path=result.value.at("path").get<std::string>();
+        require(path.filename()==requested.filename().string()+".stl");
+        require(path.extension()==".stl");
+        require(path.parent_path().filename()=="export");
+        require(std::filesystem::exists(path));
+        require(!std::filesystem::exists(requested));
     };
     export_box("exact"); require(std::abs(volume_from_stl(path)-32000.0)<1.0);
     require(engine.execute("param.set",{{"name","larghezza"},{"expression","60 mm"},{"unit","mm"}}).ok);
     export_box("final"); require(std::abs(volume_from_stl(path)-72000.0)<1.0);
-    require(!engine.execute("export.stl",{{"path",path.string()},{"tolerance",0.0}}).ok);
+    require(!engine.execute("export.stl",{{"path",requested.string()},{"tolerance",0.0}}).ok);
     std::filesystem::remove(path);
 }

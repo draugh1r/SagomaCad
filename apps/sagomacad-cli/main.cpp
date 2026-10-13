@@ -17,7 +17,7 @@ int main(int argc,char** argv) {
     }
     int width=1440,height=900,scale=1;
     std::string output,theme="light",script="[]";
-    bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false;
+    bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false,export_dialog=false;
     nlohmann::json parameter_draft,feature_draft;
     std::string feature_edit_id;
     for (int i=2;i<argc;++i) {
@@ -57,7 +57,7 @@ int main(int argc,char** argv) {
                 theme=params["theme"].get<std::string>();
                 if (theme!="dark" && theme!="light") return 2;
             }
-            for (auto [key,target]:{std::pair{"sketch_mode",&sketch_mode},std::pair{"palette",&palette_open},std::pair{"parameters",&parameters_open}}) {
+            for (auto [key,target]:{std::pair{"sketch_mode",&sketch_mode},std::pair{"palette",&palette_open},std::pair{"parameters",&parameters_open},std::pair{"export_dialog",&export_dialog}}) {
                 if (params.contains(key)) { if (!params[key].is_boolean()) return 2; *target=params[key].get<bool>(); }
             }
             if (params.contains("parameter_draft")) {
@@ -81,6 +81,10 @@ int main(int argc,char** argv) {
     shell.state().sketch_mode=sketch_mode;
     shell.state().palette_open=palette_open;
     shell.state().parameters_open=parameters_open;
+    if (export_dialog) {
+        shell.state().file_dialog_open=true;
+        shell.state().file_command="export.stl";
+    }
     if (!feature_edit_id.empty()) {
         if (!shell.open_feature_editor(feature_edit_id)) return 2;
         const auto type=engine.session().document.features.at(feature_edit_id).type;

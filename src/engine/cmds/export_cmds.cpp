@@ -3,7 +3,9 @@
 #include "regen/regenerator.hpp"
 #include "mesh/surface.hpp"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <filesystem>
 
 namespace sagomacad::engine::cmds {
 std::vector<CommandSpec> export_specs() {
@@ -12,7 +14,14 @@ std::vector<CommandSpec> export_specs() {
         [](const Session& session) { return session.document.bodies.empty()?Status::failure("Nessun corpo da esportare"):Status{}; },
         [](Session& session,const nlohmann::json& params)->CommandResult {
             only_keys(params,{"path","body","tolerance","stage"});
-            const auto path=string_arg(params,"path",true,4096);
+            const auto requested_path=string_arg(params,"path",true,4096);
+            auto filename=std::filesystem::path(requested_path).filename();
+            if (filename.empty() || filename=="." || filename=="..")
+                return CommandResult::failure("Nome del file STL non valido");
+            auto extension=filename.extension().string();
+            std::transform(extension.begin(),extension.end(),extension.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+            if (extension!=".stl") filename.replace_extension(".stl");
+            const auto path=std::filesystem::path(SAGOMACAD_EXPORT_DIR)/filename;
             const auto body=params.contains("body")?string_arg(params,"body",true,256):session.document.bodies.front().id;
             const auto stage=params.contains("stage")?string_arg(params,"stage",true,16):"final";
             if (stage!="exact" && stage!="final") return CommandResult::failure("stage deve essere exact o final");
@@ -31,9 +40,12 @@ std::vector<CommandSpec> export_specs() {
             if (!shape) return CommandResult::failure(found->error.empty()?"Lo stadio richiesto non contiene una forma":found->error);
             auto surface=mesh::build(*shape,tolerance);
             if (!surface) return CommandResult::failure(surface.error);
+            std::error_code directory_error;
+            std::filesystem::create_directories(path.parent_path(),directory_error);
+            if (directory_error) return CommandResult::failure("Impossibile creare la cartella export: "+directory_error.message());
             auto result=mesh::write_stl(*surface.value,path);
             if (!result) return CommandResult::failure(result.error);
-            return {true,{{"path",path},{"body",body},{"stage",stage},{"triangles",*result.value}}, {}};
+            return {true,{{"path",path.string()},{"body",body},{"stage",stage},{"triangles",*result.value}}, {}};
         },false}};
 }
 }

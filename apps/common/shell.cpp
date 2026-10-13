@@ -817,8 +817,9 @@ void Shell::draw_overlays(const ui::Theme& t) {
     if (state_.file_dialog_open) {
         ImGui::SetNextWindowPos({(display.x-t.file_dialog_width*z)*0.5f,(display.y-160*z)*0.5f},ImGuiCond_Appearing);
         ImGui::SetNextWindowSize({t.file_dialog_width*z,160*z},ImGuiCond_Appearing);
-        if (ImGui::Begin("Percorso documento##file",&state_.file_dialog_open,ImGuiWindowFlags_NoResize)) {
-            ImGui::TextUnformatted(state_.file_command=="export.stl"?"File .stl":"File .sagomacad");
+        const char* dialog_title=state_.file_command=="export.stl"?"Esporta STL##file":"Percorso documento##file";
+        if (ImGui::Begin(dialog_title,&state_.file_dialog_open,ImGuiWindowFlags_NoResize)) {
+            ImGui::TextUnformatted(state_.file_command=="export.stl"?"Nome file .stl (salvato in export/)":"File .sagomacad");
             ImGui::InputText("##path",state_.file_path.data(),state_.file_path.size());
             if (ImGui::Button("Conferma") && engine_) {
                 const auto result=engine_->execute(state_.file_command,{{"path",state_.file_path.data()}});
