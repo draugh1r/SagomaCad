@@ -15,6 +15,12 @@ struct State {
     bool palette_focus = false;
     bool parameters_open = false;
     bool file_dialog_open = false;
+    bool primitive_editor_open = false;
+    bool primitive_create_open = false;
+    int primitive_kind = 0;
+    std::string primitive_feature_id;
+    std::string primitive_error;
+    std::array<std::array<char,4096>,3> primitive_dimensions{};
     std::string file_command;
     std::string status_message;
     std::string parameter_error;

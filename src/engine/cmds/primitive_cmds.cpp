@@ -79,6 +79,35 @@ std::vector<CommandSpec> primitive_specs() {
                  session.document.timeline.push_back(feature_id);
                  session.document.rollback=session.document.timeline.size();
                  return {true,{{"feature_id",feature_id},{"body_id",body_id}}, {}};
+             },true},
+            {"primitive.edit","Modifica primitiva",{"Solido","Modifica"},std::nullopt,
+             "{feature_id: string, dimensions: object, name?: string}",{},
+             [](Session& session,const nlohmann::json& params)->CommandResult {
+                 only_keys(params,{"feature_id","dimensions","name"});
+                 const auto id=string_arg(params,"feature_id",true,256);
+                 auto found=session.document.features.find(id);
+                 if (found==session.document.features.end() || found->second.type.rfind("primitive.",0)!=0)
+                     return CommandResult::failure("Primitiva sconosciuta: "+id);
+                 if (!params.contains("dimensions") || !params["dimensions"].is_object())
+                     return CommandResult::failure("dimensions deve essere un oggetto");
+                 const auto& values=params["dimensions"];
+                 const auto kind=found->second.type.substr(10);
+                 if (kind=="box") only_keys(values,{"width","depth","height"});
+                 else if (kind=="cylinder") only_keys(values,{"radius","height"});
+                 else only_keys(values,{"radius"});
+                 auto dimensions=found->second.data.at("dimensions");
+                 for (const auto* field:{"width","depth","height","radius"}) if (values.contains(field)) {
+                     const auto expression=expression_field(values,field);
+                     length_value(session.document,expression,true,field);
+                     dimensions[field]=expression;
+                 }
+                 found->second.data["dimensions"]=std::move(dimensions);
+                 if (params.contains("name")) {
+                     found->second.name=string_arg(params,"name",true,256);
+                     const auto body_id=found->second.data.at("body_id").get<std::string>();
+                     for (auto& body:session.document.bodies) if (body.id==body_id) body.name=found->second.name;
+                 }
+                 return {true,{{"feature_id",id}}, {}};
              },true}};
 }
 } // namespace sagomacad::engine::cmds

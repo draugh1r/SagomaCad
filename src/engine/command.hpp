@@ -85,6 +85,7 @@ std::vector<CommandSpec> parameter_specs();
 std::vector<CommandSpec> edit_specs();
 std::vector<CommandSpec> primitive_specs();
 std::vector<CommandSpec> export_specs();
+std::vector<CommandSpec> body_specs();
 }
 
 } // namespace sagomacad::engine

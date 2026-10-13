@@ -1,12 +1,12 @@
-# Parità dei comandi della UI — M1
+# Parità dei comandi della UI — M2
 
-Il catalogo della barra è definito in `src/ui/toolbar_catalog.cpp`. Ogni voce ha un ID presente in `docs/PLAN.md` e un'icona Lucide distinta. Lo stato di ciascuna voce viene dal registro dei comandi: **7 voci registrate, 29 mancanti**. Le voci mancanti sono disabilitate e mostrano «Non ancora disponibile». Annulla e Ripeti sono registrati ma si abilitano solo quando la storia contiene la rispettiva operazione.
+Il catalogo della barra è definito in `src/ui/toolbar_catalog.cpp`. Ogni voce ha un ID presente in `docs/PLAN.md` e un'icona Lucide distinta. Lo stato di ciascuna voce viene dal registro dei comandi: **9 voci registrate, 27 mancanti**. Le voci mancanti sono disabilitate e mostrano «Non ancora disponibile». Annulla e Ripeti sono registrati ma si abilitano solo quando la storia contiene la rispettiva operazione.
 
-La palette (S o Ctrl+K) mostra inoltre i tre comandi registrati che non hanno una voce dedicata nella barra: `document.inspect`, `param.set` e `param.delete`. `param.list` apre il pannello Modifica > Cambia parametri, dove si possono impostare ed eliminare parametri.
+La palette (S o Ctrl+K) mostra anche i comandi registrati senza voce dedicata nella barra: `document.inspect`, `param.set`, `param.delete`, `primitive.edit` e `body.visibility`. `param.list` apre il pannello dei parametri. `primitive.add` apre il dialogo per box, cilindro e sfera; `export.stl` chiede il percorso ed è disponibile quando esiste un corpo.
 
 La scheda Schizzo è contestuale e compare solo quando `sketch_mode` è attivo. Le schede Superficie, Lamiera e Plastica sono state rimosse. Mesh, Gestisci e Utilità restano predisposte senza gruppi. Ogni gruppo mostra due o tre comandi principali; il menu sotto il gruppo contiene tutte le sue voci. Gli ID nuovi per le sole voci UI sono riservati nel piano, senza implementazione del comando.
 
-| Area | Voce | ID previsto in PLAN.md | Stato M1 |
+| Area | Voce | ID previsto in PLAN.md | Stato M2 |
 | --- | --- | --- | --- |
 | Menu file | Nuovo | `document.new` | Attivo |
 | Menu file | Apri | `document.open` | Attivo |
@@ -18,7 +18,7 @@ La scheda Schizzo è contestuale e compare solo quando `sketch_mode` è attivo. 
 | Solido / Crea | Estrudi | `feature.extrude` | Mancante |
 | Solido / Crea | Rivolvi | `feature.revolve` | Mancante |
 | Solido / Crea | Foro | `feature.hole` | Mancante |
-| Solido / Crea | Primitiva | `primitive.add` | Mancante |
+| Solido / Crea | Primitiva | `primitive.add` | Attivo |
 | Solido / Modifica | Premi/tira | `face.pushPull` | Mancante |
 | Solido / Modifica | Raccordo | `feature.fillet` | Mancante |
 | Solido / Modifica | Smusso | `feature.chamfer` | Mancante |
@@ -32,7 +32,7 @@ La scheda Schizzo è contestuale e compare solo quando `sketch_mode` è attivo. 
 | Solido / Inserisci | Importa STEP | `import.step` | Mancante |
 | Solido / Seleziona | Seleziona | `selection.set` | Mancante |
 | Solido / Seleziona | Scorri | `selection.cycle` | Mancante |
-| Solido / Esporta | STL | `export.stl` | Mancante |
+| Solido / Esporta | STL | `export.stl` | Contestuale |
 | Solido / Esporta | 3MF | `export.3mf` | Mancante |
 | Solido / Esporta | STEP | `export.step` | Mancante |
 | Schizzo / Disegna | Linea | `sketch.line` | Mancante |

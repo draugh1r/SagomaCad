@@ -16,6 +16,13 @@ int main() {
         const auto& feature=engine.session().document.features.at(box.value.at("feature_id").get<std::string>());
         require(feature.type=="primitive.box" && feature.data["dimensions"]["width"]=="larghezza",
                 "espressione non conservata");
+        const auto feature_id=box.value.at("feature_id").get<std::string>();
+        require(engine.execute("primitive.edit",{{"feature_id",feature_id},{"dimensions",{{"height","25 mm"}}}}).ok,
+                "modifica primitiva");
+        require(engine.session().document.features.at(feature_id).data["dimensions"]["height"]=="25 mm",
+                "modifica espressione non conservata");
+        require(!engine.execute("primitive.edit",{{"feature_id",feature_id},{"dimensions",{{"height","-1 mm"}}}}).ok,
+                "dimensione negativa accettata");
         require(engine.execute("primitive.add",{{"kind","cylinder"},
             {"dimensions",{{"radius","5 mm"},{"height","20 mm"}}}}).ok,"cilindro");
         require(engine.execute("primitive.add",{{"kind","sphere"},

@@ -405,7 +405,25 @@ void Shell::draw() {
         row("Piano XY",2,false,false,true,true);
         row("Piano XZ",2,false,false,true,true);
         row("Piano YZ",2,false,false,true,true);
-        row("Corpi",1,false,false,true,true);
+        const bool has_bodies=engine_ && !engine_->session().document.bodies.empty();
+        row("Corpi",1,has_bodies,has_bodies,true,true);
+        if (has_bodies) for (const auto& body:engine_->session().document.bodies) {
+            const ImVec2 q=ImGui::GetCursorScreenPos();
+            const ImVec2 eye_pos={q.x+47*z,q.y+1*z};
+            ImGui::SetCursorScreenPos(eye_pos);
+            ImGui::PushID(body.id.c_str());
+            if (ImGui::InvisibleButton("visibility",{18*z,18*z})) {
+                const auto result=engine_->execute("body.visibility",{{"body",body.id},{"visible",!body.visible}});
+                if (!result.ok) state_.status_message=result.error;
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",body.visible?"Nascondi corpo":"Mostra corpo");
+            ImGui::PopID();
+            ImDrawList* dl=ImGui::GetWindowDrawList();
+            icon(dl,icon_texture(body.visible?"eye":"eye-off"),eye_pos,15*z,packed(t.muted));
+            icon(dl,icon_texture("box"),{q.x+67*z,q.y+1*z},15*z,packed(t.muted));
+            dl->AddText({q.x+87*z,q.y+1*z},packed(t.text),body.name.c_str());
+            ImGui::SetCursorScreenPos(q); ImGui::Dummy({1,23*z});
+        }
         row("Schizzi",1,false,false,true,true);
     });
     if (state_.properties) panel("Proprietà", ui::labels.properties, t, [&] {
@@ -421,7 +439,39 @@ void Shell::draw() {
             icon(dl,icon_texture(controls[i]),{q.x+105*z+i*28*z,q.y},17*z,packed(t.muted));
         dl->AddLine({q.x+255*z,q.y+9*z},{q.x+ImGui::GetContentRegionAvail().x,q.y+9*z},packed(t.border));
         ImGui::Dummy({1,20*z});
-        ImGui::TextDisabled("Il documento è vuoto");
+        if (!engine_ || engine_->session().document.timeline.empty()) ImGui::TextDisabled("Il documento è vuoto");
+        else {
+            const auto& document=engine_->session().document;
+            const auto& snapshot=regenerator_.evaluate(document);
+            for (const auto& id:document.timeline) {
+                const auto found=document.features.find(id);
+                if (found==document.features.end()) continue;
+                const auto& feature=found->second;
+                const auto error=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;});
+                const bool failed=error!=snapshot.features.end() && !error->error.empty();
+                const char* glyph=feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"cylinder":"circle";
+                const ImVec2 pos=ImGui::GetCursorScreenPos();
+                ImGui::PushID(id.c_str());
+                const bool clicked=ImGui::InvisibleButton("feature",{100*z,23*z});
+                const bool double_clicked=clicked && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s",feature.name.c_str(),failed?error->error.c_str():"\nDoppio clic per modificare");
+                ImGui::PopID();
+                icon(dl,icon_texture(glyph),{pos.x+3*z,pos.y+2*z},17*z,packed(failed?t.error:t.muted));
+                dl->AddText({pos.x+24*z,pos.y+2*z},packed(failed?t.error:t.text),feature.name.c_str());
+                if (double_clicked) {
+                    state_.primitive_feature_id=id; state_.primitive_editor_open=true; state_.primitive_error.clear();
+                    const auto& dimensions=feature.data.at("dimensions");
+                    const bool box=feature.type=="primitive.box",cylinder=feature.type=="primitive.cylinder";
+                    const std::array<const char*,3> keys=box?std::array<const char*,3>{"width","depth","height"}:
+                        cylinder?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
+                    for (int i=0;i<3;++i) {
+                        state_.primitive_dimensions[i].fill('\0');
+                        if (keys[i]) std::snprintf(state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size(),"%s",dimensions.at(keys[i]).get<std::string>().c_str());
+                    }
+                }
+                ImGui::SameLine();
+            }
+        }
         if (glyph_sample_) ImGui::TextUnformatted("àèéìòù ÀÈÉÌÒÙ");
     }, ImGuiWindowFlags_NoScrollbar);
     panel("Viewport", nullptr, t, [&] {
@@ -517,8 +567,14 @@ void Shell::invoke_command(std::string_view id) {
         state_.parameters_open=true;
         return;
     }
+    if (id=="primitive.add") {
+        state_.primitive_create_open=true; state_.primitive_kind=0; state_.primitive_error.clear();
+        for (auto& buffer:state_.primitive_dimensions) std::snprintf(buffer.data(),buffer.size(),"40 mm");
+        std::snprintf(state_.primitive_dimensions[2].data(),state_.primitive_dimensions[2].size(),"20 mm");
+        return;
+    }
     if (id=="document.open" || id=="document.saveAs" ||
-        (id=="document.save" && engine_->session().path.empty())) {
+        id=="export.stl" || (id=="document.save" && engine_->session().path.empty())) {
         state_.file_command= id=="document.save" ? "document.saveAs" : std::string(id);
         state_.file_dialog_open=true;
         state_.file_path.fill('\0');
@@ -530,6 +586,67 @@ void Shell::invoke_command(std::string_view id) {
 void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);
     const ImVec2 display=ImGui::GetIO().DisplaySize;
+    if (state_.primitive_create_open && engine_) {
+        ImGui::SetNextWindowPos({display.x*0.5f,display.y*0.5f},ImGuiCond_Appearing,{0.5f,0.5f});
+        ImGui::SetNextWindowSize({420*z,0},ImGuiCond_Appearing);
+        if (ImGui::Begin("Crea primitiva",&state_.primitive_create_open,ImGuiWindowFlags_AlwaysAutoResize)) {
+            const char* types[]={"Box","Cilindro","Sfera"};
+            ImGui::Combo("Tipo",&state_.primitive_kind,types,3);
+            const std::array<const char*,3> keys=state_.primitive_kind==0?std::array<const char*,3>{"width","depth","height"}:
+                state_.primitive_kind==1?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
+            const std::array<const char*,3> labels=state_.primitive_kind==0?std::array<const char*,3>{"Larghezza","Profondità","Altezza"}:
+                state_.primitive_kind==1?std::array<const char*,3>{"Raggio","Altezza",nullptr}:std::array<const char*,3>{"Raggio",nullptr,nullptr};
+            for (int i=0;i<3;++i) if (keys[i]) {
+                ImGui::TextUnformatted(labels[i]); ImGui::SetNextItemWidth(370*z); ImGui::PushID(i);
+                ImGui::InputText("##dimension",state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size());
+                ImGui::PopID();
+            }
+            if (!state_.primitive_error.empty()) ImGui::TextColored(vec(t.error),"%s",state_.primitive_error.c_str());
+            if (ImGui::Button("Crea")) {
+                nlohmann::json dimensions=nlohmann::json::object();
+                for (int i=0;i<3;++i) if (keys[i]) dimensions[keys[i]]=state_.primitive_dimensions[i].data();
+                const auto result=engine_->execute("primitive.add",{{"kind",std::array<const char*,3>{"box","cylinder","sphere"}[state_.primitive_kind]},{"dimensions",dimensions}});
+                if (result.ok) { state_.primitive_create_open=false; state_.primitive_error.clear(); }
+                else state_.primitive_error=result.error;
+            }
+            ImGui::SameLine(); if (ImGui::Button("Annulla")) state_.primitive_create_open=false;
+        }
+        ImGui::End();
+    }
+    if (state_.primitive_editor_open && engine_) {
+        ImGui::SetNextWindowPos({display.x*0.5f,display.y*0.5f},ImGuiCond_Appearing,{0.5f,0.5f});
+        ImGui::SetNextWindowSize({420*z,0},ImGuiCond_Appearing);
+        if (ImGui::Begin("Modifica primitiva",&state_.primitive_editor_open,ImGuiWindowFlags_AlwaysAutoResize)) {
+            const auto found=engine_->session().document.features.find(state_.primitive_feature_id);
+            if (found==engine_->session().document.features.end()) { state_.primitive_editor_open=false; }
+            else {
+                const auto& feature=found->second;
+                ImGui::TextUnformatted(feature.name.c_str()); ImGui::Separator();
+                const bool box=feature.type=="primitive.box",cylinder=feature.type=="primitive.cylinder";
+                const std::array<const char*,3> keys=box?std::array<const char*,3>{"width","depth","height"}:
+                    cylinder?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
+                const std::array<const char*,3> labels=box?std::array<const char*,3>{"Larghezza","Profondità","Altezza"}:
+                    cylinder?std::array<const char*,3>{"Raggio","Altezza",nullptr}:std::array<const char*,3>{"Raggio",nullptr,nullptr};
+                for (int i=0;i<3;++i) if (keys[i]) {
+                    ImGui::TextUnformatted(labels[i]);
+                    ImGui::SetNextItemWidth(370*z);
+                    ImGui::PushID(i);
+                    ImGui::InputText("##dimension",state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size());
+                    ImGui::PopID();
+                }
+                if (!state_.primitive_error.empty()) ImGui::TextColored(vec(t.error),"%s",state_.primitive_error.c_str());
+                if (ImGui::Button("Conferma")) {
+                    nlohmann::json dimensions=nlohmann::json::object();
+                    for (int i=0;i<3;++i) if (keys[i]) dimensions[keys[i]]=state_.primitive_dimensions[i].data();
+                    const auto result=engine_->execute("primitive.edit",{{"feature_id",state_.primitive_feature_id},{"dimensions",dimensions}});
+                    if (result.ok) { state_.primitive_editor_open=false; state_.primitive_error.clear(); }
+                    else state_.primitive_error=result.error;
+                }
+                ImGui::SameLine(); if (ImGui::Button("Annulla")) state_.primitive_editor_open=false;
+            }
+        }
+        ImGui::End();
+    }
     if (state_.palette_open) {
         ImGui::SetNextWindowPos({(display.x-t.palette_width*z)*0.5f,t.toolbar_height*z+24*z},ImGuiCond_Always);
         ImGui::SetNextWindowSize({t.palette_width*z,t.palette_height*z},ImGuiCond_Always);
@@ -687,7 +804,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
         ImGui::SetNextWindowPos({(display.x-t.file_dialog_width*z)*0.5f,(display.y-160*z)*0.5f},ImGuiCond_Appearing);
         ImGui::SetNextWindowSize({t.file_dialog_width*z,160*z},ImGuiCond_Appearing);
         if (ImGui::Begin("Percorso documento##file",&state_.file_dialog_open,ImGuiWindowFlags_NoResize)) {
-            ImGui::TextUnformatted("File .sagomacad");
+            ImGui::TextUnformatted(state_.file_command=="export.stl"?"File .stl":"File .sagomacad");
             ImGui::InputText("##path",state_.file_path.data(),state_.file_path.size());
             if (ImGui::Button("Conferma") && engine_) {
                 const auto result=engine_->execute(state_.file_command,{{"path",state_.file_path.data()}});
