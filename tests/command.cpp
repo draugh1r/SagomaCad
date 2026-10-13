@@ -49,6 +49,10 @@ int main() {
         require(engine.session().history.size() == steps + 1, "trascinamento non coalesciuto");
         good(engine.execute("edit.undo"));
         require(std::abs(value(engine, "foro") - 20.0) < 1e-9, "undo del trascinamento");
+        good(engine.execute("param.set", {{"name", "base"}, {"old_name", "larghezza"},
+                                          {"expression", "80 mm"}, {"comment", "Lato esterno"}}));
+        require(std::abs(value(engine, "foro") - 20.0) < 1e-9, "rinomina mantiene le dipendenze");
+        require(engine.session().document.parameters[0].comment == "Lato esterno", "commento parametro");
         require(!engine.execute("param.set", {{"name", 12}, {"expression", "1 mm"}}).ok,
                 "tipo errato accettato");
         require(!engine.execute("comando.inesistente").ok, "id inesistente accettato");

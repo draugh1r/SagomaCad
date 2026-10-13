@@ -1,6 +1,7 @@
 #include "shell.hpp"
 #include "ui/theme.hpp"
 #include "ui/toolbar_catalog.hpp"
+#include "ui/parameter_editor.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
 #include <imgui.h>
@@ -46,6 +47,9 @@ void style(const ui::Theme& t, int scale) {
     c[ImGuiCol_TabDimmedSelectedOverline] = vec(t.accent);
     c[ImGuiCol_DockingEmptyBg] = vec(t.background);
     c[ImGuiCol_Separator] = vec(t.border); c[ImGuiCol_ResizeGrip] = vec(t.border);
+    c[ImGuiCol_TableHeaderBg] = vec(t.table_header);
+    c[ImGuiCol_TableRowBg] = vec(t.panel);
+    c[ImGuiCol_TableRowBgAlt] = vec(t.panel_alt);
 }
 void panel(const char* name, const char* label, const ui::Theme& t, auto contents, ImGuiWindowFlags extra = 0) {
     constexpr auto fixed = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
@@ -437,41 +441,122 @@ void Shell::draw_overlays(const ui::Theme& t) {
         if (ImGui::Begin("Cambia parametri##parameters",&state_.parameters_open)) {
             ImGui::TextColored(vec(t.muted),"%s",ui::labels.parameters);
             ImGui::Separator();
-            if (ImGui::BeginTable("parameters",4,ImGuiTableFlags_Borders|ImGuiTableFlags_RowBg|ImGuiTableFlags_SizingStretchProp,{0,200*z})) {
-                for (const char* heading:{"Nome","Espressione","Valore calcolato","Unità"}) ImGui::TableSetupColumn(heading);
+            if (ImGui::Button("+##add_parameter")) {
+                state_.parameter_editing=true;
+                state_.editing_parameter_name.clear();
+                state_.parameter_name.fill('\0');
+                state_.parameter_unit.fill('\0');
+                state_.parameter_expression.fill('\0');
+                state_.parameter_comment.fill('\0');
+                state_.parameter_error.clear();
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Aggiungi parametro");
+            ImGui::SameLine(); ImGui::TextDisabled("Invio conferma · Esc annulla");
+            if (state_.parameter_editing && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                state_.parameter_editing=false;
+                state_.editing_parameter_name.clear();
+                state_.parameter_error.clear();
+            }
+            bool commit_requested=false;
+            if (ImGui::BeginTable("parameters",5,ImGuiTableFlags_Borders|ImGuiTableFlags_RowBg|
+                                  ImGuiTableFlags_SizingStretchProp|ImGuiTableFlags_ScrollY,{0,270*z})) {
+                const auto& h=ui::parameter_table_labels;
+                ImGui::TableSetupColumn(h.name,ImGuiTableColumnFlags_WidthStretch,1.3f);
+                ImGui::TableSetupColumn(h.unit,ImGuiTableColumnFlags_WidthStretch,0.6f);
+                ImGui::TableSetupColumn(h.expression,ImGuiTableColumnFlags_WidthStretch,2.0f);
+                ImGui::TableSetupColumn(h.value,ImGuiTableColumnFlags_WidthStretch,1.0f);
+                ImGui::TableSetupColumn(h.comment,ImGuiTableColumnFlags_WidthStretch,1.5f);
+                ImGui::TableSetupScrollFreeze(0,1);
+                ImGui::PushStyleColor(ImGuiCol_Text,vec(t.table_header_text));
                 ImGui::TableHeadersRow();
+                ImGui::PopStyleColor();
+                auto edit_row=[&](const char* identity) {
+                    ImGui::PushID(identity);
+                    ImGui::TableNextRow();
+                    const auto preview=engine_?ui::preview_parameter(state_,*engine_):doc::EvaluatedParameter{};
+                    const std::string error=!state_.parameter_error.empty()?state_.parameter_error:preview.error;
+                    auto input=[&](int column,const char* id,auto& buffer,bool show_error) {
+                        ImGui::TableSetColumnIndex(column);
+                        if (show_error && !error.empty()) {
+                            ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg,packed(t.error_cell));
+                            ImGui::PushStyleColor(ImGuiCol_Text,vec(t.error));
+                        }
+                        ImGui::SetNextItemWidth(-1.0f);
+                        if (ImGui::InputText(id,buffer.data(),buffer.size(),ImGuiInputTextFlags_EnterReturnsTrue)) commit_requested=true;
+                        if (ImGui::IsItemEdited()) state_.parameter_error.clear();
+                        if (show_error && !error.empty()) {
+                            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",error.c_str());
+                            ImGui::TextWrapped("%s",error.c_str());
+                            ImGui::PopStyleColor();
+                        }
+                    };
+                    input(0,"##name",state_.parameter_name,false);
+                    input(1,"##unit",state_.parameter_unit,false);
+                    input(2,"##expression",state_.parameter_expression,true);
+                    ImGui::TableSetColumnIndex(3);
+                    if (!error.empty()) {
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg,packed(t.error_cell));
+                        ImGui::TextColored(vec(t.error),"Errore");
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",error.c_str());
+                    }
+                    else if (preview.value) ImGui::Text("%.6g",*preview.value);
+                    input(4,"##comment",state_.parameter_comment,false);
+                    ImGui::PopID();
+                };
                 if (engine_) for (const auto& row:engine::evaluated_parameters_json(engine_->session().document)) {
                     const std::string name=row.value("name",std::string());
-                    const std::string expression=row.value("expression",std::string());
-                    const std::string unit=row.value("unit",std::string());
-                    ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
-                    if (ImGui::Selectable(name.c_str())) {
-                        std::snprintf(state_.parameter_name.data(),state_.parameter_name.size(),"%s",name.c_str());
-                        std::snprintf(state_.parameter_expression.data(),state_.parameter_expression.size(),"%s",expression.c_str());
+                    if (state_.parameter_editing && state_.editing_parameter_name==name) {
+                        edit_row(name.c_str()); continue;
                     }
-                    ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(expression.c_str());
-                    ImGui::TableSetColumnIndex(2);
-                    if (row["value"].is_number()) ImGui::Text("%.6g",row["value"].get<double>());
-                    else ImGui::TextColored(vec(t.axis_x),"%s",row.value("error",std::string()).c_str());
-                    ImGui::TableSetColumnIndex(3); ImGui::TextUnformatted(unit.c_str());
+                    ImGui::PushID(name.c_str());
+                    ImGui::TableNextRow();
+                    auto cell=[&](int column,const std::string& value,bool is_error) {
+                        ImGui::TableSetColumnIndex(column);
+                        if (is_error) ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg,packed(t.error_cell));
+                        if (is_error) ImGui::PushStyleColor(ImGuiCol_Text,vec(t.error));
+                        if (ImGui::Selectable((value+"##cell"+std::to_string(column)).c_str())) {
+                            state_.parameter_editing=true;
+                            state_.editing_parameter_name=name;
+                            std::snprintf(state_.parameter_name.data(),state_.parameter_name.size(),"%s",name.c_str());
+                            std::snprintf(state_.parameter_unit.data(),state_.parameter_unit.size(),"%s",row.value("unit",std::string()).c_str());
+                            std::snprintf(state_.parameter_expression.data(),state_.parameter_expression.size(),"%s",row.value("expression",std::string()).c_str());
+                            std::snprintf(state_.parameter_comment.data(),state_.parameter_comment.size(),"%s",row.value("comment",std::string()).c_str());
+                            state_.parameter_error.clear();
+                        }
+                        if (is_error) {
+                            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",row.value("error",std::string()).c_str());
+                            ImGui::PopStyleColor();
+                        }
+                    };
+                    const bool bad=!row.value("error",std::string()).empty();
+                    cell(0,name,false);
+                    cell(1,row.value("unit",std::string()),false);
+                    cell(2,row.value("expression",std::string()),bad);
+                    char formatted_value[64]{};
+                    if (row["value"].is_number()) std::snprintf(formatted_value,sizeof(formatted_value),"%.6g",row["value"].get<double>());
+                    else std::snprintf(formatted_value,sizeof(formatted_value),"%s","Errore");
+                    cell(3,formatted_value,bad);
+                    cell(4,row.value("comment",std::string()),false);
+                    ImGui::PopID();
                 }
+                if (state_.parameter_editing && state_.editing_parameter_name.empty()) edit_row("new");
                 ImGui::EndTable();
             }
-            ImGui::Separator();
-            ImGui::TextUnformatted("Nome"); ImGui::SameLine(120*z);
-            ImGui::InputText("##parameter_name",state_.parameter_name.data(),state_.parameter_name.size());
-            ImGui::TextUnformatted("Espressione"); ImGui::SameLine(120*z);
-            ImGui::InputText("##parameter_expression",state_.parameter_expression.data(),state_.parameter_expression.size());
-            if (ImGui::Button("Imposta") && engine_) {
-                const auto result=engine_->execute("param.set",{{"name",state_.parameter_name.data()},{"expression",state_.parameter_expression.data()}});
-                state_.status_message=result.ok?std::string():result.error;
+            if (state_.parameter_editing) {
+                if (ImGui::Button("Conferma") || commit_requested) {
+                    if (engine_) ui::submit_parameter(state_,*engine_);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Annulla")) { state_.parameter_editing=false; state_.parameter_error.clear(); }
+                if (!state_.editing_parameter_name.empty()) {
+                    ImGui::SameLine();
+                    if (ImGui::Button("Elimina") && engine_) {
+                        const auto result=engine_->execute("param.delete",{{"name",state_.editing_parameter_name}});
+                        state_.parameter_error=result.ok?std::string():result.error;
+                        if (result.ok) state_.parameter_editing=false;
+                    }
+                }
             }
-            ImGui::SameLine();
-            if (ImGui::Button("Elimina") && engine_) {
-                const auto result=engine_->execute("param.delete",{{"name",state_.parameter_name.data()}});
-                state_.status_message=result.ok?std::string():result.error;
-            }
-            if (!state_.status_message.empty()) ImGui::TextColored(vec(t.axis_x),"%s",state_.status_message.c_str());
         }
         ImGui::End();
     }

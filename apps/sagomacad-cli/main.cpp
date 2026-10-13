@@ -1,6 +1,8 @@
 #include "shell.hpp"
 #include "fuzz.hpp"
 #include "client.hpp"
+#include "ui/parameter_editor.hpp"
+#include <cstdio>
 #include <iostream>
 #include <string>
 
@@ -15,6 +17,7 @@ int main(int argc,char** argv) {
     int width=1440,height=900,scale=1;
     std::string output,theme="light",script="[]";
     bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false;
+    nlohmann::json parameter_draft;
     for (int i=2;i<argc;++i) {
         const std::string arg=argv[i];
         if (arg=="--glyph-test") { glyph_test=true; continue; }
@@ -55,6 +58,11 @@ int main(int argc,char** argv) {
             for (auto [key,target]:{std::pair{"sketch_mode",&sketch_mode},std::pair{"palette",&palette_open},std::pair{"parameters",&parameters_open}}) {
                 if (params.contains(key)) { if (!params[key].is_boolean()) return 2; *target=params[key].get<bool>(); }
             }
+            if (params.contains("parameter_draft")) {
+                if (!params["parameter_draft"].is_object()) return 2;
+                parameter_draft=params["parameter_draft"];
+                parameters_open=true;
+            }
         } else { std::cerr<<"Unknown snapshot method: "<<method<<'\n'; return 2; }
     }
     sagomacad::Shell shell(width,height,scale,true,theme=="light");
@@ -63,6 +71,26 @@ int main(int argc,char** argv) {
     shell.state().sketch_mode=sketch_mode;
     shell.state().palette_open=palette_open;
     shell.state().parameters_open=parameters_open;
+    if (parameter_draft.is_object()) {
+        auto& state=shell.state();
+        state.parameter_editing=true;
+        auto copy=[](auto& buffer,const nlohmann::json& source,const char* key)->bool {
+            if (!source.contains(key)) return true;
+            if (!source[key].is_string()) return false;
+            const auto value=source[key].get<std::string>();
+            if (value.size()>=buffer.size()) return false;
+            std::snprintf(buffer.data(),buffer.size(),"%s",value.c_str());
+            return true;
+        };
+        if (!copy(state.parameter_name,parameter_draft,"name") ||
+            !copy(state.parameter_unit,parameter_draft,"unit") ||
+            !copy(state.parameter_expression,parameter_draft,"expression") ||
+            !copy(state.parameter_comment,parameter_draft,"comment")) return 2;
+        if (parameter_draft.contains("submit")) {
+            if (!parameter_draft["submit"].is_boolean()) return 2;
+            if (parameter_draft["submit"].get<bool>()) sagomacad::ui::submit_parameter(state,engine);
+        }
+    }
     if (glyph_test && !shell.glyphs_available()) { std::cerr<<"Missing Latin glyphs in Inter font\n"; return 1; }
     shell.set_glyph_sample(glyph_test);
     for (int frame=0;frame<3;++frame) { shell.poll(); shell.render(); }

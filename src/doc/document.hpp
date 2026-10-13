@@ -18,6 +18,7 @@ struct Parameter {
     std::string name;
     std::string expression;
     std::string unit;
+    std::string comment;
     bool operator==(const Parameter&) const = default;
 };
 

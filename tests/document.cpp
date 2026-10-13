@@ -17,7 +17,8 @@ int main() {
                           ("sagomacad-document-" + std::to_string(nonce) + ".sagomacad");
         Document source;
         source.name = "Prova àèé";
-        source.parameters = {{"larghezza", "40 mm", "mm"}, {"foro", "larghezza / 4", "mm"}};
+        source.parameters = {{"larghezza", "40 mm", "mm", "Lato esterno"},
+                             {"foro", "larghezza / 4", "mm", ""}};
         Feature feature;
         feature.id = "f1";
         feature.name = "Schizzo";
@@ -44,7 +45,8 @@ int main() {
         require(from_json({{"parameters", nlohmann::json::array({{{"name", "x"}}})},
                            {"bodies", nlohmann::json::array({{{"id", "b"}}})},
                            {"features", {{"f", {{"id", "f"}}}}}}, old, error), error.c_str());
-        require(old.parameters[0].expression.empty() && old.parameters[0].unit.empty(), "default parametro");
+        require(old.parameters[0].expression.empty() && old.parameters[0].unit.empty() &&
+                old.parameters[0].comment.empty(), "default parametro");
         require(old.bodies[0].kind == BodyKind::BRep && old.bodies[0].visible, "default corpo");
         require(old.features.at("f").kind == FeatureKind::Exact, "default feature");
         require(old.timeline.empty() && old.rollback == 0, "default timeline");

@@ -25,7 +25,8 @@ bool object_or_null(const nlohmann::json& value) { return value.is_object() || v
 nlohmann::json to_json(const Document& document) {
     nlohmann::json parameters = nlohmann::json::array();
     for (const auto& parameter : document.parameters)
-        parameters.push_back({{"name", parameter.name}, {"expression", parameter.expression}, {"unit", parameter.unit}});
+        parameters.push_back({{"name", parameter.name}, {"expression", parameter.expression},
+                              {"unit", parameter.unit}, {"comment", parameter.comment}});
 
     nlohmann::json features = nlohmann::json::object();
     for (const auto& [key, feature] : document.features)
@@ -59,7 +60,8 @@ bool from_json(const nlohmann::json& value, Document& document, std::string& err
                 if (!item.is_object()) throw std::runtime_error("un parametro deve essere un oggetto");
                 result.parameters.push_back({field(item, "name", std::string{}),
                                              field(item, "expression", std::string{}),
-                                             field(item, "unit", std::string{})});
+                                             field(item, "unit", std::string{}),
+                                             field(item, "comment", std::string{})});
             }
         }
         if (const auto it = value.find("timeline"); it != value.end() && !it->is_null())

@@ -1,5 +1,13 @@
 # Devlog
 
+## 2026-10-13 — Correzione dialog Cambia parametri
+
+La tabella ora ha le colonne Nome, Unità, Espressione, Valore e Commento, con etichette e colori delle intestazioni nei token del tema. Il commento è persistito nel documento con default per i file esistenti. `+` crea una riga; le celle si modificano direttamente, Invio conferma con `param.set`, Esc annulla, e il valore mostra un'anteprima durante la digitazione. La scorciatoia `nome = espressione` viene separata automaticamente se Nome è vuoto o coincide; i nomi incoerenti producono un errore leggibile. Gli errori del comando arrivano allo stato UI e sono mostrati sotto Espressione, nella cella Valore e nei tooltip. Aggiunto un test mirato che confronta il messaggio UI con quello restituito da `param.set` per una divisione per zero; testati anche scorciatoia, commento, anteprima e token chiaro/scuro.
+
+Esaminati gli screenshot chiaro 1440×900, scuro 1280×720 e dell'errore nel tema chiaro. `docs/reference/fusion/` non è presente; l'unica immagine disponibile è `docs/reference/fusion360-ui.png`, che mostra la schermata principale senza il dialog dei parametri. Gli screenshot nuovi sono verifiche, non golden approvate.
+
+Verifica finale Windows: build Release riuscita, CTest 12/12, controllo dei livelli verde, fuzz 60 casi senza crash. L'anteprima segnala anche un nome già usato per una nuova riga, senza mostrare il valore del parametro esistente.
+
 ## 2026-10-13 — M1
 
 Completate in sei commit separati le tappe Documento, Espressioni, Registro e storia, fuzz dei comandi, client CLI e UI. Il formato `.sagomacad` usa JSON versionato con default e salvataggio atomico; corpi `brep | mesh` e feature `exact | sdf` sono dati del documento, senza implementare geometria SDF. Il parser valuta unità e riferimenti e segnala cicli, incompatibilità dimensionali e divisioni per zero. Il registro espone 10 comandi, undo/redo e coalescenza. Il fuzz ha esercitato 60 casi: 57 errori controllati e 3 chiamate vuote valide. Il client usa il file di sessione per chiamare l'app e supporta script e file headless.
