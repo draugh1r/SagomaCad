@@ -1,4 +1,5 @@
 #include "mcp.hpp"
+#include "mcp_visual.hpp"
 #include "automation/mcp/server.hpp"
 #include "automation/dispatch.hpp"
 #include "automation/control_client.hpp"
@@ -37,12 +38,6 @@ bool read_explicit(int port,const fs::path& token_path,Remote& remote) {
     std::string error;
     return sagomacad::automation::control_call(port,remote.token,"engine.commands",Json::object(),response,error)
         && response.contains("result");
-}
-Json visual_unavailable(std::string_view name,const Json&) {
-    const Json data={{"code","mcp.not_ready"},{"message","Tool in preparazione: "+std::string(name)},
-                     {"suggestion","Usa document_inspect e i comandi disponibili"}};
-    return {{"isError",true},{"content",Json::array({{{"type","text"},{"text",data.dump()}}})},
-            {"structuredContent",data}};
 }
 }
 
@@ -103,7 +98,10 @@ int mcp_cli(int argc,char** argv) {
             return {{"error",{{"message",error}}}};
         return reply;
     };
-    sagomacad::automation::mcp::Server server(commands,visual_unavailable,bridge,std::move(roots));
+    const auto visuals=[&](std::string_view name,const Json& args)->Json {
+        return mcp_visual_tool(name,args,commands,bridge,engine);
+    };
+    sagomacad::automation::mcp::Server server(commands,visuals,bridge,std::move(roots));
     server.serve(std::cin,std::cout);
     return 0;
 }

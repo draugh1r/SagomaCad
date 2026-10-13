@@ -1,5 +1,7 @@
 #include "automation/mcp/server.hpp"
 #include <algorithm>
+#include <cctype>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -61,6 +63,39 @@ bool string_field(const Json& value,const char* key,bool required=false) {
 Server::Server(Handler commands,Handler visuals,bool bridge,std::vector<std::filesystem::path> roots)
     :commands_(std::move(commands)),visuals_(std::move(visuals)),bridge_(bridge),roots_(std::move(roots)) {}
 
+bool Server::in_roots(const std::filesystem::path& path) const {
+    const auto canonical=std::filesystem::weakly_canonical(path);
+    for (const auto& root:roots_) {
+        auto a=canonical.begin(),b=root.begin();
+        while (a!=canonical.end() && b!=root.end() && *a==*b) { ++a; ++b; }
+        if (b==root.end()) return true;
+    }
+    return false;
+}
+
+std::optional<std::filesystem::path> Server::document_path(const Json& a,bool saving,std::string& error) {
+    std::filesystem::path relative;
+    if (a.contains("path")) {
+        const auto value=a["path"].get<std::string>();
+        relative=std::filesystem::u8path(value);
+        if (relative.empty() || relative.is_absolute() || relative.has_root_name()) {
+            error="Usa un percorso relativo a una radice consentita"; return std::nullopt;
+        }
+        for (const auto& part:relative) if (part=="..") { error="Il percorso non può contenere .."; return std::nullopt; }
+        relative=roots_.front()/relative;
+    } else if (saving) {
+        const auto reply=commands_("engine.execute",{{"command","document.inspect"},{"params",Json::object()}});
+        if (reply.contains("error") || !reply.at("result").contains("path") || !reply["result"]["path"].is_string()) {
+            error="Impossibile conoscere il percorso del documento"; return std::nullopt;
+        }
+        relative=std::filesystem::u8path(reply["result"]["path"].get<std::string>());
+    } else { error="path è obbligatorio"; return std::nullopt; }
+    if (relative.empty() || relative.extension()!=".sagomacad" || !in_roots(relative)) {
+        error="Il file .sagomacad deve essere in una radice consentita"; return std::nullopt;
+    }
+    return std::filesystem::weakly_canonical(relative);
+}
+
 Json Server::invoke(std::string_view method,const Json& params) {
     const auto reply=commands_(method,params);
     if (!reply.is_object()) return tool_error("bridge.invalid_reply","Risposta del motore non valida","Riprova o riavvia l'app");
@@ -77,20 +112,25 @@ Json Server::tool(std::string_view name,const Json& a) {
         if (!valid_keys(a,{"filter"}) || !string_field(a,"filter")) return tool_error("mcp.invalid_arguments","filter deve essere una stringa");
         auto result=invoke("engine.commands",Json::object());
         if (result.value("isError",false)) return result;
+        auto commands=result["structuredContent"];
         if (a.contains("filter")) {
             auto filtered=Json::array();
             const auto needle=a["filter"].get<std::string>();
-            for (const auto& command:result["structuredContent"])
+            for (const auto& command:commands)
                 if (command.value("id",std::string()).find(needle)!=std::string::npos ||
                     command.value("label",std::string()).find(needle)!=std::string::npos) filtered.push_back(command);
-            result=tool_success(filtered);
+            commands=std::move(filtered);
         }
-        return result;
+        return tool_success({{"commands",std::move(commands)}});
     }
     if (name=="command_run") {
         if (!valid_keys(a,{"command","params"}) || !string_field(a,"command",true) ||
             (a.contains("params") && !a["params"].is_object()))
             return tool_error("mcp.invalid_arguments","command deve essere una stringa e params un oggetto");
+        const auto command=a["command"].get<std::string>();
+        if (command=="document.open" || command=="document.save" || command=="document.saveAs" || command=="export.stl")
+            return tool_error("mcp.path_policy","Usa document_open, document_save o export per i file",
+                              "Questi tool verificano radice consentita e overwrite");
         return invoke("engine.execute",{{"command",a["command"]},{"params",a.value("params",Json::object())}});
     }
     if (name=="batch_run") {
@@ -107,14 +147,66 @@ Json Server::tool(std::string_view name,const Json& a) {
         if (!a.empty()) return tool_error("mcp.invalid_arguments","Questo tool non accetta argomenti");
         return invoke("engine.execute",{{"command","document.inspect"},{"params",Json::object()}});
     }
-    if (name=="document_open" || name=="document_save" || name=="export")
-        return tool_error("mcp.not_ready","Tool file in preparazione");
-    if (name=="render_view" || name=="mass_properties" || name=="ui_screenshot")
+    if (name=="document_open" || name=="document_save") {
+        const bool saving=name=="document_save";
+        if (!valid_keys(a,saving?std::initializer_list<std::string_view>{"path","overwrite"}:
+                              std::initializer_list<std::string_view>{"path"}) ||
+            !string_field(a,"path",!saving) ||
+            (a.contains("overwrite") && !a["overwrite"].is_boolean()))
+            return tool_error("mcp.invalid_arguments","path deve essere una stringa e overwrite un booleano");
+        std::string error;
+        const auto path=document_path(a,saving,error);
+        if (!path) return tool_error("mcp.path_denied",error,"Usa un percorso relativo alla radice consentita");
+        if (saving && std::filesystem::exists(*path) && !a.value("overwrite",false))
+            return tool_error("mcp.overwrite_required","Il file esiste già: passa overwrite=true");
+        const auto bytes=path->u8string();
+        const std::string utf8(bytes.begin(),bytes.end());
+        return invoke("engine.execute",{{"command",saving?"document.saveAs":"document.open"},{"params",{{"path",utf8}}}});
+    }
+    if (name=="mass_properties") {
+        if (!valid_keys(a,{"body"}) || !string_field(a,"body"))
+            return tool_error("mcp.invalid_arguments","body deve essere una stringa");
+        return invoke("engine.execute",{{"command","model.mass_properties"},{"params",a}});
+    }
+    if (name=="export") {
+        if (!valid_keys(a,{"format","path","body","stage","tolerance","overwrite"}) ||
+            !string_field(a,"format",true) || !string_field(a,"path",true) ||
+            !string_field(a,"body") || !string_field(a,"stage") ||
+            (a.contains("tolerance") && !a["tolerance"].is_number()) ||
+            (a.contains("overwrite") && !a["overwrite"].is_boolean()))
+            return tool_error("mcp.invalid_arguments","Parametri export non validi");
+        if (a["format"]!="stl") return tool_error("mcp.unsupported_format","Solo STL è disponibile in M2");
+        auto filename=std::filesystem::u8path(a["path"].get<std::string>());
+        if (filename.empty() || filename.is_absolute() || filename.has_root_name() ||
+            filename.has_parent_path() || filename=="." || filename=="..")
+            return tool_error("mcp.path_denied","export.path deve contenere solo il nome del file");
+        auto extension=filename.extension().string();
+        std::transform(extension.begin(),extension.end(),extension.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+        if (extension!=".stl") filename.replace_extension(".stl");
+        const auto destination=std::filesystem::path(SAGOMACAD_EXPORT_DIR)/filename;
+        if (!in_roots(destination)) return tool_error("mcp.path_denied","La cartella export non è in una radice consentita");
+        if (std::filesystem::exists(destination) && !a.value("overwrite",false))
+            return tool_error("mcp.overwrite_required","Lo STL esiste già: passa overwrite=true");
+        Json params={{"path",filename.string()}};
+        for (const auto* key:{"body","stage","tolerance"}) if (a.contains(key)) params[key]=a[key];
+        return invoke("engine.execute",{{"command","export.stl"},{"params",params}});
+    }
+    if (name=="render_view") return visuals_(name,a);
+    if (name=="ui_screenshot") {
+        if (!bridge_) return tool_error("mcp.bridge_required","ui_screenshot richiede l'app aperta","Avvia SagomaCad e usa la modalità bridge");
         return visuals_(name,a);
+    }
     return tool_error("mcp.unknown_tool","Tool MCP sconosciuto: "+std::string(name),"Consulta tools/list");
 }
 
 std::optional<Json> Server::handle(const Json& request) {
+    if (request.is_array()) {
+        if (request.empty()) return rpc_error(nullptr,-32600,"mcp.invalid_request","Il batch JSON-RPC è vuoto");
+        Json replies=Json::array();
+        for (const auto& item:request) if (const auto reply=handle(item)) replies.push_back(*reply);
+        if (replies.empty()) return std::nullopt;
+        return replies;
+    }
     if (!request.is_object()) return rpc_error(nullptr,-32600,"mcp.invalid_request","La richiesta deve essere un oggetto JSON");
     const auto id=request.value("id",Json(nullptr));
     if (!request.contains("jsonrpc") || request["jsonrpc"]!="2.0" ||

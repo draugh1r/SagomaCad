@@ -42,6 +42,7 @@ target_link_libraries(sagomacad_engine PUBLIC sagomacad_core sagomacad_doc sagom
 add_library(sagomacad_automation STATIC src/automation/dispatch.cpp src/automation/mcp/server.cpp
   src/automation/control_client.cpp src/automation/session_file.cpp)
 target_include_directories(sagomacad_automation PUBLIC ${PROJECT_SOURCE_DIR}/src)
+target_compile_definitions(sagomacad_automation PRIVATE SAGOMACAD_EXPORT_DIR="${PROJECT_SOURCE_DIR}/export")
 target_link_libraries(sagomacad_automation PUBLIC sagomacad_engine nlohmann_json::nlohmann_json)
 if(WIN32)
   target_link_libraries(sagomacad_automation PRIVATE ws2_32)
@@ -59,7 +60,7 @@ endif()
 add_executable(sagomacad apps/sagomacad/main.cpp)
 target_link_libraries(sagomacad PRIVATE sagomacad_shell)
 add_executable(sagomacad-cli apps/sagomacad-cli/main.cpp apps/sagomacad-cli/fuzz.cpp
-  apps/sagomacad-cli/client.cpp apps/sagomacad-cli/mcp.cpp)
+  apps/sagomacad-cli/client.cpp apps/sagomacad-cli/mcp.cpp apps/sagomacad-cli/mcp_visual.cpp)
 target_compile_definitions(sagomacad-cli PRIVATE SAGOMACAD_PROJECT_ROOT="${PROJECT_SOURCE_DIR}")
 target_link_libraries(sagomacad-cli PRIVATE sagomacad_shell)
 set_target_properties(sagomacad PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/apps/sagomacad$<0:>")
@@ -119,3 +120,7 @@ add_test(NAME cli COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test
   $<TARGET_FILE:sagomacad> $<TARGET_FILE:sagomacad-cli>)
 add_test(NAME mcp_conformance COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_mcp.py
   $<TARGET_FILE:sagomacad-cli>)
+add_test(NAME mcp_integration COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_mcp_integration.py
+  headless $<TARGET_FILE:sagomacad> $<TARGET_FILE:sagomacad-cli> ${PROJECT_SOURCE_DIR})
+add_test(NAME mcp_bridge COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_mcp_integration.py
+  bridge $<TARGET_FILE:sagomacad> $<TARGET_FILE:sagomacad-cli> ${PROJECT_SOURCE_DIR})

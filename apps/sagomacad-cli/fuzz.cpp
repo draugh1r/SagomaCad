@@ -1,5 +1,7 @@
 #include "fuzz.hpp"
 #include "engine/command.hpp"
+#include "automation/mcp/server.hpp"
+#include "automation/dispatch.hpp"
 #include <iostream>
 #include <limits>
 #include <string>
@@ -10,6 +12,21 @@ int fuzz_commands() {
         std::size_t cases = 0;
         std::size_t rejected = 0;
         std::size_t valid_empty = 0;
+        std::size_t mcp_cases = 0;
+        sagomacad::engine::Engine mcp_engine;
+        sagomacad::automation::mcp::Server mcp_server(
+            [&](std::string_view method,const nlohmann::json& params) {
+                return sagomacad::automation::dispatch(mcp_engine,method,params);
+            },
+            [](std::string_view,const nlohmann::json&) {return nlohmann::json::object();},
+            false,{});
+        const auto mcp_call=[&](const nlohmann::json& arguments) {
+            const auto reply=mcp_server.handle({{"jsonrpc","2.0"},{"id",1},{"method","tools/call"},
+                {"params",{{"name","command_run"},{"arguments",arguments}}}});
+            ++mcp_cases;
+            if (!reply || !reply->contains("result") || !(*reply)["result"].value("isError",false))
+                throw std::runtime_error("Fuzz MCP: input non valido accettato");
+        };
         for (const auto& spec : catalog.registry().specs()) {
             {
                 sagomacad::engine::Engine engine;
@@ -37,6 +54,7 @@ int fuzz_commands() {
                     return 1;
                 }
                 ++rejected;
+                mcp_call({{"command",spec.id},{"params",params}});
             }
             sagomacad::engine::Engine engine;
             const auto missing = engine.execute(spec.id + ".inesistente");
@@ -46,10 +64,20 @@ int fuzz_commands() {
                 return 1;
             }
             ++rejected;
+            mcp_call({{"command",spec.id+".inesistente"}});
+        }
+        for (const auto& malformed : {nlohmann::json{{"command",7}},nlohmann::json{{"params",false}}})
+            mcp_call(malformed);
+        for (const auto& malformed : {nlohmann::json(nullptr),nlohmann::json::array({1})}) {
+            const auto reply=mcp_server.handle({{"jsonrpc","2.0"},{"id",1},{"method","tools/call"},
+                {"params",{{"name","command_run"},{"arguments",malformed}}}});
+            ++mcp_cases;
+            if (!reply || !reply->contains("error") || (*reply)["error"].value("code",0)!=-32602)
+                throw std::runtime_error("Fuzz MCP: errore JSON-RPC mancante");
         }
         std::cout << nlohmann::json({{"commands", catalog.registry().specs().size()},
                                     {"cases", cases}, {"rejected", rejected},
-                                    {"valid_empty", valid_empty}}).dump() << '\n';
+                                    {"valid_empty", valid_empty},{"mcp_cases",mcp_cases}}).dump() << '\n';
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "Fuzz interrotto: " << e.what() << '\n';

@@ -29,7 +29,7 @@ def main():
         tools = call("tools/list")["result"]["tools"]
         names = {tool["name"] for tool in tools}
         assert {"commands_list", "command_run", "batch_run", "undo", "redo", "document_inspect", "render_view", "mass_properties", "export", "ui_screenshot"} <= names
-        commands = call("tools/call", {"name": "commands_list", "arguments": {}})["result"]["structuredContent"]
+        commands = call("tools/call", {"name": "commands_list", "arguments": {}})["result"]["structuredContent"]["commands"]
         assert any(command["id"] == "param.set" for command in commands)
         set_result = call("tools/call", {"name": "command_run", "arguments": {"command": "param.set", "params": {"name": "larghezza", "expression": "40 mm"}}})
         assert not set_result["result"].get("isError"), set_result
@@ -43,6 +43,15 @@ def main():
         assert call("does/not/exist")["error"]["code"] == -32601
         assert call("tools/call", {"name": 3})["error"]["code"] == -32602
         assert call("resources/read", {"uri": "sagomacad://missing"})["error"]["data"]["code"] == "mcp.unknown_resource"
+        process.stdin.write(json.dumps([
+            {"jsonrpc": "2.0", "id": 101, "method": "ping"},
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 102, "method": "does/not/exist"},
+        ]) + "\n")
+        process.stdin.flush()
+        batch = json.loads(process.stdout.readline())
+        assert [entry["id"] for entry in batch] == [101, 102]
+        assert batch[1]["error"]["code"] == -32601
         process.stdin.write("{bad json\n")
         process.stdin.flush()
         assert json.loads(process.stdout.readline())["error"]["code"] == -32700

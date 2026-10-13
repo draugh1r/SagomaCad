@@ -20,7 +20,8 @@ public:
     const std::string& error() const { return error_; }
     bool poll();
     void render();
-    bool screenshot(const std::string& path, std::string& error);
+    bool screenshot(const std::string& path, std::string& error, bool viewport_only=false,
+                    int output_width=0,int output_height=0);
     void set_glyph_sample(bool enabled) { glyph_sample_ = enabled; }
     bool glyphs_available() const;
     nlohmann::json inspect() const;
@@ -40,6 +41,7 @@ private:
     int scale_ = 1;
     bool imgui_ready_ = false;
     bool glyph_sample_ = false;
+    ui::Viewport current_viewport_{};
     std::unordered_map<std::string, unsigned int> icon_textures_;
     unsigned int icon_texture(std::string_view name);
     void draw();

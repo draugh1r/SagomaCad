@@ -1,5 +1,6 @@
 #include "engine/command.hpp"
 #include "engine/cmds/validation.hpp"
+#include "regen/regenerator.hpp"
 
 namespace sagomacad::engine::cmds {
 namespace {
@@ -57,8 +58,16 @@ std::vector<CommandSpec> document_specs() {
          "{}; restituisce modello, parametri calcolati e stato della storia", {},
          [](Session& session, const nlohmann::json& params) -> CommandResult {
              only_keys(params, {});
+             regen::Regenerator regenerator;
+             const auto& snapshot=regenerator.evaluate(session.document);
+             nlohmann::json feature_states=nlohmann::json::array(),body_states=nlohmann::json::array();
+             for (const auto& feature:snapshot.features)
+                 feature_states.push_back({{"id",feature.id},{"error",feature.error}});
+             for (const auto& body:snapshot.bodies)
+                 body_states.push_back({{"id",body.id},{"error",body.error},{"has_shape",body.final.has_value()}});
              return {true, {{"document", doc::to_json(session.document)},
                             {"parameters", evaluated_parameters_json(session.document)},
+                            {"regeneration",{{"features",feature_states},{"bodies",body_states}}},
                             {"path", to_utf8(session.path)},
                             {"history", {{"undo", session.history.can_undo()},
                                          {"redo", session.history.can_redo()},

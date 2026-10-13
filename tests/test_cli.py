@@ -66,11 +66,19 @@ with tempfile.TemporaryDirectory() as directory:
         feature_id = added["feature_id"]
         execute("feature.edit", {"feature_id": feature_id,
                                  "dimensions": {"width": "60 mm"}})
+        assert abs(execute("model.mass_properties", {"body": added["body_id"]})["volume_mm3"] - 96000) < .001
         inspected = execute("document.inspect")
         assert inspected["document"]["features"][feature_id]["data"]["dimensions"]["width"] == "60 mm"
         execute("edit.undo")
         assert execute("document.inspect")["document"]["features"][feature_id]["data"]["dimensions"]["width"] == "larghezza"
         execute("edit.redo")
+        batch = invoke("call", "engine.batch", json.dumps({"steps": [
+            {"command": "param.set", "params": {"name": "batch_a", "expression": "2 mm"}},
+            {"command": "param.set", "params": {"name": "batch_b", "expression": "batch_a * 2"}},
+        ]}), *options)["result"]
+        assert len(batch["results"]) == 2
+        execute("edit.undo")
+        assert all(p["name"] != "batch_a" for p in execute("param.list"))
         saved = root / "control.sagomacad"
         execute("document.saveAs", {"path": str(saved)})
         assert saved.is_file()

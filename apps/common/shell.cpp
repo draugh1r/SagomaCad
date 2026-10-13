@@ -468,7 +468,7 @@ void Shell::draw() {
                 const auto& feature=found->second;
                 const auto error=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;});
                 const bool failed=error!=snapshot.features.end() && !error->error.empty();
-                const char* glyph=feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"cylinder":"circle";
+                const char* glyph=feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"circle-dot":"circle";
                 const ImVec2 pos=ImGui::GetCursorScreenPos();
                 ImGui::PushID(id.c_str());
                 ImGui::InvisibleButton("feature",{100*z,23*z});
@@ -505,6 +505,7 @@ void Shell::draw() {
         const ImVec2 b = {a.x+avail.x,a.y+avail.y};
         ImDrawList* dl = ImGui::GetWindowDrawList();
         const ui::Viewport viewport{a.x,a.y,avail.x,avail.y};
+        current_viewport_=viewport;
         ImGui::InvisibleButton("canvas",avail);
         if (ImGui::IsItemHovered()) {
             const auto& io=ImGui::GetIO();
@@ -850,17 +851,46 @@ void Shell::render() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window_);
 }
-bool Shell::screenshot(const std::string& path, std::string& error) {
+bool Shell::screenshot(const std::string& path, std::string& error, bool viewport_only,
+                       int output_width,int output_height) {
     if (path.empty()) { error="empty screenshot path"; return false; }
     int w=0,h=0; SDL_GetWindowSizeInPixels(window_,&w,&h);
     if (w<=0 || h<=0 || w>8192 || h>8192) { error="invalid framebuffer size"; return false; }
+    const int framebuffer_height=h;
+    int x=0,y=0;
+    if (viewport_only) {
+        const auto& display=ImGui::GetIO().DisplaySize;
+        if (display.x<=0 || display.y<=0) { error="invalid viewport"; return false; }
+        const double sx=static_cast<double>(w)/display.x,sy=static_cast<double>(h)/display.y;
+        x=std::clamp(static_cast<int>(std::lround(current_viewport_.x*sx)),0,w);
+        y=std::clamp(static_cast<int>(std::lround(current_viewport_.y*sy)),0,h);
+        w=std::clamp(static_cast<int>(std::lround(current_viewport_.width*sx)),0,w-x);
+        h=std::clamp(static_cast<int>(std::lround(current_viewport_.height*sy)),0,h-y);
+        if (w<=0 || h<=0) { error="empty viewport"; return false; }
+    }
     std::vector<unsigned char> pixels(static_cast<size_t>(w)*h*4);
     glReadBuffer(GL_FRONT);
     glPixelStorei(GL_PACK_ALIGNMENT,1);
-    glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,pixels.data());
+    glReadPixels(x,viewport_only?framebuffer_height-y-h:0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,pixels.data());
     std::vector<unsigned char> flipped(pixels.size());
     const size_t stride=static_cast<size_t>(w)*4;
     for (int y=0;y<h;++y) std::copy_n(pixels.data()+static_cast<size_t>(h-y-1)*stride,stride,flipped.data()+static_cast<size_t>(y)*stride);
+    if (output_width>0 && output_height>0 && (output_width!=w || output_height!=h)) {
+        if (output_width>2048 || output_height>2048 || output_width*output_height>2000000) {
+            error="invalid output size"; return false;
+        }
+        std::vector<unsigned char> resized(static_cast<size_t>(output_width)*output_height*4);
+        for (int row=0;row<output_height;++row) {
+            const int source_y=std::min(h-1,static_cast<int>((static_cast<long long>(row)*h)/output_height));
+            for (int col=0;col<output_width;++col) {
+                const int source_x=std::min(w-1,static_cast<int>((static_cast<long long>(col)*w)/output_width));
+                std::copy_n(flipped.data()+(static_cast<size_t>(source_y)*w+source_x)*4,4,
+                            resized.data()+(static_cast<size_t>(row)*output_width+col)*4);
+            }
+        }
+        flipped=std::move(resized);
+        w=output_width; h=output_height;
+    }
     std::error_code ec;
     const auto parent=std::filesystem::path(path).parent_path();
     if (!parent.empty()) std::filesystem::create_directories(parent,ec);

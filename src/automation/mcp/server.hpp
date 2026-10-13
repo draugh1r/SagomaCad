@@ -20,6 +20,8 @@ public:
 private:
     Json tool(std::string_view name,const Json& arguments);
     Json invoke(std::string_view method,const Json& params);
+    std::optional<std::filesystem::path> document_path(const Json& arguments,bool saving,std::string& error);
+    bool in_roots(const std::filesystem::path& path) const;
     Handler commands_;
     Handler visuals_;
     bool bridge_;

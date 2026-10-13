@@ -69,7 +69,8 @@ std::vector<CommandSpec> primitive_specs() {
                  }
                  for (const auto* axis:{"x","y","z"})
                      length_value(session.document,position[axis].get<std::string>(),false,std::string("position.")+axis);
-                 const std::string default_name=operation=="subtract"?"Taglio "+kind:
+                 const std::string default_name=operation=="subtract"?
+                     (kind=="cylinder"?"Taglio cilindrico":kind=="sphere"?"Taglio sferico":"Taglio box"):
                      kind=="box"?"Box":kind=="cylinder"?"Cilindro":"Sfera";
                  const auto name=params.contains("name")?string_arg(params,"name",true,256):default_name;
                  std::size_t serial=session.document.timeline.size()+1;
