@@ -13,6 +13,23 @@ int main() {
     require(shell.valid());
     shell.bind_engine(&engine);
     for (int frame=0;frame<3;++frame) shell.render();
+    const auto initial_camera=shell.state().camera;
+    auto middle=[&](float x,float y,bool pressed) {
+        ImGui::GetIO().AddMousePosEvent(x,y);
+        ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Middle,pressed);
+        shell.render();
+    };
+    middle(800,500,false); middle(800,500,true); middle(860,530,true); middle(860,530,false);
+    const auto panned=shell.state().camera;
+    require(panned.target.x!=initial_camera.target.x || panned.target.y!=initial_camera.target.y);
+    require(panned.yaw==initial_camera.yaw && panned.pitch==initial_camera.pitch);
+    ImGui::GetIO().AddKeyEvent(ImGuiMod_Shift,true); shell.render();
+    middle(800,500,false); middle(800,500,true); middle(860,530,true); middle(860,530,false);
+    const auto orbited=shell.state().camera;
+    require(orbited.yaw!=panned.yaw && orbited.pitch!=panned.pitch);
+    require(orbited.target.x==panned.target.x && orbited.target.y==panned.target.y && orbited.target.z==panned.target.z);
+    ImGui::GetIO().AddKeyEvent(ImGuiMod_Shift,false); shell.render();
+    shell.state().camera=initial_camera;
     auto step=[&](bool pressed) {
         ImGui::GetIO().AddMousePosEvent(45,885);
         ImGui::GetIO().AddMouseButtonEvent(0,pressed);

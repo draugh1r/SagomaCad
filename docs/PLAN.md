@@ -214,7 +214,7 @@ Stesso schema per linee (lunghezza, angolo), cerchi (diametro), archi. I vincoli
 - **Picking con ID buffer:** si renderizza in un framebuffer nascosto con ogni faccia e spigolo colorati con il proprio id. Leggere il pixel sotto il mouse dà l'entità esatta. Ogni triangolo della mesh conserva l'id della faccia OCCT da cui viene.
 - Clic ripetuto nello stesso punto: scorre tra le entità sovrapposte (`selection.cycle`).
 - Evidenziazione al passaggio del mouse, prima del clic.
-- Navigazione: tasto centrale orbita, Shift+centrale pan, rotella zoom verso il cursore (come Fusion).
+- Navigazione: tasto centrale premuto pan, Shift+centrale orbita, rotella zoom verso il cursore (come Fusion).
 
 ---
 

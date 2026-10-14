@@ -544,8 +544,8 @@ void Shell::draw() {
             const auto& io=ImGui::GetIO();
             if (io.MouseWheel!=0) state_.camera.zoom(io.MouseWheel,io.MousePos.x,io.MousePos.y,viewport);
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
-                if (io.KeyShift) state_.camera.pan(io.MouseDelta.x,io.MouseDelta.y,avail.y);
-                else state_.camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
+                if (io.KeyShift) state_.camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
+                else state_.camera.pan(io.MouseDelta.x,io.MouseDelta.y,avail.y);
             }
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                 if (state_.navigation_mode==0) state_.camera.pan(io.MouseDelta.x,io.MouseDelta.y,avail.y);
