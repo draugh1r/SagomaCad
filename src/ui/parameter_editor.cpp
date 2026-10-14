@@ -45,19 +45,23 @@ doc::EvaluatedParameter preview_parameter(const State& state, const engine::Engi
     doc::EvaluatedParameter result{parsed.name,parsed.expression,state.parameter_unit.data(),std::nullopt,parsed.error};
     if (!parsed.error.empty()) return result;
     if (parsed.name.empty() && parsed.expression.empty()) return result;
-    auto candidate=engine.session().document;
-    auto row=std::find_if(candidate.parameters.begin(),candidate.parameters.end(),
-        [&](const doc::Parameter& parameter) { return parameter.name==state.editing_parameter_name; });
-    if (row==candidate.parameters.end()) {
+    if (state.editing_parameter_name.empty()) {
+        const auto& candidate=engine.session().document;
         if (std::any_of(candidate.parameters.begin(),candidate.parameters.end(),
                         [&](const doc::Parameter& parameter){return parameter.name==parsed.name;})) {
             result.error="Nome già usato: "+parsed.name;
             return result;
         }
-        candidate.parameters.push_back({parsed.name,parsed.expression,state.parameter_unit.data(),state.parameter_comment.data()});
     }
-    else { row->name=parsed.name; row->expression=parsed.expression; row->unit=state.parameter_unit.data(); }
-    for (const auto& evaluated:doc::evaluate_parameters(candidate))
+    engine::Engine candidate;
+    candidate.session().document=engine.session().document;
+    nlohmann::json params={{"name",parsed.name},{"expression",parsed.expression},
+                          {"unit",std::string(state.parameter_unit.data())},
+                          {"comment",std::string(state.parameter_comment.data())}};
+    if (!state.editing_parameter_name.empty()) params["old_name"]=state.editing_parameter_name;
+    const auto applied=candidate.execute("param.set",params);
+    if (!applied.ok) { result.error=applied.error; return result; }
+    for (const auto& evaluated:doc::evaluate_parameters(candidate.session().document))
         if (evaluated.name==parsed.name) return evaluated;
     result.error="Parametro non valido";
     return result;

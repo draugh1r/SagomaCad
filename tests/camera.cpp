@@ -12,5 +12,8 @@ int main() {
     c.orbit(100,40); require(std::abs(c.yaw+0.785398)>0.1);
     c.pan(100,50,700); require(std::abs(c.target.x)+std::abs(c.target.y)+std::abs(c.target.z)>0);
     c.look_from({0,0,1}); require(c.eye().z>c.target.z);
+    require(std::abs(c.forward().x)<1e-10 && std::abs(c.forward().y)<1e-10);
+    require(std::abs(c.right().x*c.right().x+c.right().y*c.right().y+c.right().z*c.right().z-1)<1e-10);
+    require(std::abs(c.up().x*c.forward().x+c.up().y*c.forward().y+c.up().z*c.forward().z)<1e-10);
     c.fit({-20,-20,0},{20,20,20}); require(std::abs(c.distance-120)<1e-8);
 }

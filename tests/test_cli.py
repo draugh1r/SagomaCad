@@ -72,6 +72,11 @@ with tempfile.TemporaryDirectory() as directory:
         execute("edit.undo")
         assert execute("document.inspect")["document"]["features"][feature_id]["data"]["dimensions"]["width"] == "larghezza"
         execute("edit.redo")
+        execute("param.set", {"old_name": "larghezza", "name": "lato", "expression": "80 mm"})
+        assert abs(execute("model.mass_properties", {"body": added["body_id"]})["volume_mm3"] - 96000) < .001
+        invoke("call", "engine.execute", json.dumps({"command": "param.delete", "params": {"name": "lato"}}),
+               *options, success=False)
+        execute("edit.undo")
         batch = invoke("call", "engine.batch", json.dumps({"steps": [
             {"command": "param.set", "params": {"name": "batch_a", "expression": "2 mm"}},
             {"command": "param.set", "params": {"name": "batch_b", "expression": "batch_a * 2"}},

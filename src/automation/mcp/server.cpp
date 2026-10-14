@@ -19,7 +19,7 @@ Json tool_error(std::string code,std::string message,std::string suggestion={}) 
 }
 Json tool_success(const Json& value) {
     return {{"content",Json::array({{{"type","text"},{"text",value.dump()}}})},
-            {"structuredContent",value}};
+            {"structuredContent",value.is_object()?value:Json{{"items",value}}}};
 }
 Json schema(std::initializer_list<std::pair<std::string,Json>> properties={},
             std::initializer_list<std::string> required={}) {
@@ -112,7 +112,7 @@ Json Server::tool(std::string_view name,const Json& a) {
         if (!valid_keys(a,{"filter"}) || !string_field(a,"filter")) return tool_error("mcp.invalid_arguments","filter deve essere una stringa");
         auto result=invoke("engine.commands",Json::object());
         if (result.value("isError",false)) return result;
-        auto commands=result["structuredContent"];
+        auto commands=result["structuredContent"]["items"];
         if (a.contains("filter")) {
             auto filtered=Json::array();
             const auto needle=a["filter"].get<std::string>();

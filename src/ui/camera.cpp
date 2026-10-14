@@ -12,7 +12,10 @@ kernel::Vec3 unit(kernel::Vec3 a) { const double n=std::sqrt(dot(a,a)); return n
 }
 kernel::Vec3 Camera::eye() const { return add(target,mul({std::cos(pitch)*std::cos(yaw),std::cos(pitch)*std::sin(yaw),std::sin(pitch)},distance)); }
 kernel::Vec3 Camera::forward() const { return unit(add(target,mul(eye(),-1))); }
-kernel::Vec3 Camera::right() const { return unit(cross(forward(),{0,0,1})); }
+kernel::Vec3 Camera::right() const {
+    const auto f=forward();
+    return unit(cross(f,std::abs(f.z)>1.0-1e-12?kernel::Vec3{0,1,0}:kernel::Vec3{0,0,1}));
+}
 kernel::Vec3 Camera::up() const { return unit(cross(right(),forward())); }
 Projection Camera::project(kernel::Vec3 point,Viewport v) const {
     const auto delta=add(point,mul(eye(),-1)); const double depth=dot(delta,forward());
@@ -36,7 +39,6 @@ void Camera::zoom(double wheel,double cx,double cy,Viewport v) {
 }
 void Camera::look_from(kernel::Vec3 direction) {
     const auto d=unit(direction); yaw=std::atan2(d.y,d.x); pitch=std::asin(std::clamp(d.z,-1.0,1.0));
-    pitch=std::clamp(pitch,-1.55,1.55);
 }
 void Camera::fit(kernel::Vec3 lo,kernel::Vec3 hi) {
     target=mul(add(lo,hi),0.5);

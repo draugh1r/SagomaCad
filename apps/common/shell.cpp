@@ -82,32 +82,61 @@ bool inside_triangle(ImVec2 p,ImVec2 a,ImVec2 b,ImVec2 c) {
     return n1==n2 && n2==n3;
 }
 double distance2(ImVec2 a,ImVec2 b) { return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y); }
-struct DrawTriangle { ImVec2 a,b,c; double depth; ui::Color color; };
-void draw_surface(ImDrawList* dl,const mesh::Surface& surface,const ui::Camera& camera,ui::Viewport viewport,const ui::Theme& theme,float scale) {
+struct DrawTriangle { ImVec2 a,b,c; double da,db,dc,depth; ui::Color color; };
+bool hides(const DrawTriangle& tri,ImVec2 point,double depth) {
+    const double denominator=(tri.b.y-tri.c.y)*(tri.a.x-tri.c.x)+(tri.c.x-tri.b.x)*(tri.a.y-tri.c.y);
+    if (std::abs(denominator)<1e-10) return false;
+    const double wa=((tri.b.y-tri.c.y)*(point.x-tri.c.x)+(tri.c.x-tri.b.x)*(point.y-tri.c.y))/denominator;
+    const double wb=((tri.c.y-tri.a.y)*(point.x-tri.c.x)+(tri.a.x-tri.c.x)*(point.y-tri.c.y))/denominator;
+    const double wc=1-wa-wb;
+    if (wa<-1e-6 || wb<-1e-6 || wc<-1e-6) return false;
+    const double surface_depth=1/(wa/tri.da+wb/tri.db+wc/tri.dc);
+    return surface_depth<depth-std::max(1e-5,depth*1e-5);
+}
+void draw_surfaces(ImDrawList* dl,const std::vector<mesh::Surface>& surfaces,const ui::Camera& camera,ui::Viewport viewport,const ui::Theme& theme,float scale) {
+    std::vector<const mesh::Surface*> ordered;
+    for (const auto& surface:surfaces) ordered.push_back(&surface);
+    std::sort(ordered.begin(),ordered.end(),[](const auto* a,const auto* b) {
+        return std::array{a->minimum.x,a->minimum.y,a->minimum.z,a->maximum.x,a->maximum.y,a->maximum.z}<
+               std::array{b->minimum.x,b->minimum.y,b->minimum.z,b->maximum.x,b->maximum.y,b->maximum.z};
+    });
     std::vector<DrawTriangle> triangles;
-    triangles.reserve(surface.geometry.triangles.size());
-    for (const auto& tri:surface.geometry.triangles) {
+    for (const auto* surface:ordered) for (const auto& tri:surface->geometry.triangles) {
         const auto a=camera.project(tri.vertices[0],viewport),b=camera.project(tri.vertices[1],viewport),c=camera.project(tri.vertices[2],viewport);
         if (!a.visible || !b.visible || !c.visible) continue;
         const auto& n=tri.normal;
         const double light=std::max(0.0,n.x*0.42+n.y*(-0.35)+n.z*0.84);
-        triangles.push_back({{float(a.x),float(a.y)},{float(b.x),float(b.y)},{float(c.x),float(c.y)},(a.depth+b.depth+c.depth)/3.0,shaded(theme.solid,light)});
+        triangles.push_back({{float(a.x),float(a.y)},{float(b.x),float(b.y)},{float(c.x),float(c.y)},a.depth,b.depth,c.depth,(a.depth+b.depth+c.depth)/3.0,shaded(theme.solid,light)});
     }
     std::sort(triangles.begin(),triangles.end(),[](const auto& a,const auto& b){return a.depth>b.depth;});
+    const auto flags=dl->Flags;
+    dl->Flags&=~ImDrawListFlags_AntiAliasedFill;
     for (const auto& tri:triangles) dl->AddTriangleFilled(tri.a,tri.b,tri.c,packed(tri.color));
-    for (const auto& edge:surface.geometry.edges) for (std::size_t i=1;i<edge.points.size();++i) {
+    dl->Flags=flags;
+    for (const auto* surface:ordered) for (const auto& edge:surface->geometry.edges) {
+      std::vector<ImVec2> visible;
+      auto flush=[&] {
+          if (visible.size()>1) dl->AddPolyline(visible.data(),static_cast<int>(visible.size()),packed(theme.solid_edge),0,1.15f*scale);
+          visible.clear();
+      };
+      for (std::size_t i=1;i<edge.points.size();++i) {
         const auto p=camera.project(edge.points[i-1],viewport),q=camera.project(edge.points[i],viewport);
-        if (!p.visible || !q.visible) continue;
-        const int segments=edge.points.size()==2?20:1;
+        if (!p.visible || !q.visible) { flush(); continue; }
+        const int segments=std::clamp(static_cast<int>(std::ceil(std::hypot(q.x-p.x,q.y-p.y)/4.0)),1,256);
         for (int s=0;s<segments;++s) {
             const double t0=double(s)/segments,t1=double(s+1)/segments,tm=(t0+t1)*0.5;
             const ImVec2 midpoint={float(p.x+(q.x-p.x)*tm),float(p.y+(q.y-p.y)*tm)};
-            const double depth=p.depth+(q.depth-p.depth)*tm;
+            const double depth=1/((1-tm)/p.depth+tm/q.depth);
             bool occluded=false;
-            for (const auto& tri:triangles) if (tri.depth<depth-0.5 && inside_triangle(midpoint,tri.a,tri.b,tri.c)) { occluded=true; break; }
-            if (!occluded) dl->AddLine({float(p.x+(q.x-p.x)*t0),float(p.y+(q.y-p.y)*t0)},
-                                       {float(p.x+(q.x-p.x)*t1),float(p.y+(q.y-p.y)*t1)},packed(theme.solid_edge),1.15f*scale);
+            for (const auto& tri:triangles) if (hides(tri,midpoint,depth)) { occluded=true; break; }
+            if (occluded) flush();
+            else {
+                if (visible.empty()) visible.push_back({float(p.x+(q.x-p.x)*t0),float(p.y+(q.y-p.y)*t0)});
+                visible.push_back({float(p.x+(q.x-p.x)*t1),float(p.y+(q.y-p.y)*t1)});
+            }
         }
+      }
+      flush();
     }
 }
 void draw_view_cube(ImDrawList* dl,ui::Camera& camera,ImVec2 origin,float size,const ui::Theme& theme,bool clicked,ImVec2 mouse) {
@@ -247,15 +276,14 @@ void Shell::draw() {
         state_.palette_open=true;
         state_.palette_focus=true;
     }
-    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z)) invoke_command("edit.undo");
-    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y)) invoke_command("edit.redo");
+    if (input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Z)) invoke_command("edit.undo");
+    if (input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Y)) invoke_command("edit.redo");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_N)) invoke_command("document.new");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) invoke_command("document.open");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
         invoke_command(input.KeyShift?"document.saveAs":"document.save");
     const ImGuiID dock_id=ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-    static bool dock_initialized=false;
-    if (!dock_initialized) {
+    if (!dock_initialized_) {
         ImGui::DockBuilderRemoveNode(dock_id);
         ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dock_id,screen);
@@ -276,7 +304,7 @@ void Shell::draw() {
         ImGui::DockBuilderDockWindow("Timeline",timeline);
         ImGui::DockBuilderDockWindow("Viewport",middle);
         ImGui::DockBuilderFinish(dock_id);
-        dock_initialized=true;
+        dock_initialized_=true;
     }
     panel("SagomaCad  |  Solido", nullptr, t, [&] {
         ImDrawList* dl=ImGui::GetWindowDrawList();
@@ -339,8 +367,8 @@ void Shell::draw() {
             action_x+=32*z;
         }
         dl->AddLine({p.x,p.y+27*z},{p.x+width,p.y+27*z},packed(t.border));
-        static int selected_tab=0;
-        static bool previous_sketch_mode=false;
+        auto& selected_tab=state_.selected_tab;
+        auto& previous_sketch_mode=state_.previous_sketch_mode;
         if (state_.sketch_mode!=previous_sketch_mode) {
             selected_tab=state_.sketch_mode?1:0;
             previous_sketch_mode=state_.sketch_mode;
@@ -506,13 +534,23 @@ void Shell::draw() {
         ImDrawList* dl = ImGui::GetWindowDrawList();
         const ui::Viewport viewport{a.x,a.y,avail.x,avail.y};
         current_viewport_=viewport;
+        const ImVec2 nav_a={(a.x+b.x)*0.5f-t.nav_width*z*0.5f,b.y-t.nav_height*z-t.padding*z};
+        const ImVec2 nav_b={nav_a.x+t.nav_width*z,nav_a.y+t.nav_height*z};
+        ImGui::SetNextItemAllowOverlap();
         ImGui::InvisibleButton("canvas",avail);
-        if (ImGui::IsItemHovered()) {
+        const auto mouse=ImGui::GetIO().MousePos;
+        const bool over_navigation=mouse.x>=nav_a.x && mouse.x<=nav_b.x && mouse.y>=nav_a.y && mouse.y<=nav_b.y;
+        if (ImGui::IsItemHovered() && !over_navigation) {
             const auto& io=ImGui::GetIO();
             if (io.MouseWheel!=0) state_.camera.zoom(io.MouseWheel,io.MousePos.x,io.MousePos.y,viewport);
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
                 if (io.KeyShift) state_.camera.pan(io.MouseDelta.x,io.MouseDelta.y,avail.y);
                 else state_.camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
+            }
+            if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+                if (state_.navigation_mode==0) state_.camera.pan(io.MouseDelta.x,io.MouseDelta.y,avail.y);
+                else if (state_.navigation_mode==1) state_.camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
+                else if (state_.navigation_mode==2) state_.camera.zoom(-io.MouseDelta.y*0.05,viewport.x+viewport.width*0.5,viewport.y+viewport.height*0.5,viewport);
             }
         }
         if (engine_) {
@@ -534,12 +572,7 @@ void Shell::draw() {
                     else state_.status_message=built.error;
                 }
                 if (!surfaces_.empty() && !camera_fitted_) {
-                    auto lo=surfaces_.front().minimum,hi=surfaces_.front().maximum;
-                    for (const auto& surface:surfaces_) {
-                        lo.x=std::min(lo.x,surface.minimum.x);lo.y=std::min(lo.y,surface.minimum.y);lo.z=std::min(lo.z,surface.minimum.z);
-                        hi.x=std::max(hi.x,surface.maximum.x);hi.y=std::max(hi.y,surface.maximum.y);hi.z=std::max(hi.z,surface.maximum.z);
-                    }
-                    state_.camera.fit(lo,hi); camera_fitted_=true;
+                    fit_camera();
                 }
                 if (surfaces_.empty()) camera_fitted_=false;
             }
@@ -572,22 +605,41 @@ void Shell::draw() {
                 line({i*step,-extent,0},{i*step,extent,0},i==0?t.axis_y:(i%5==0?t.grid_major:t.grid_minor));
                 line({-extent,i*step,0},{extent,i*step,0},i==0?t.axis_x:(i%5==0?t.grid_major:t.grid_minor));
             }
-            for (const auto& surface:surfaces_) draw_surface(dl,surface,state_.camera,viewport,t,z);
+            draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
         }
         if (surfaces_.empty()) dl->AddCircleFilled({cx,cy},2.5f*z,packed(t.accent));
         const float cube=t.viewcube_size*z;
         const ImVec2 cube_a={b.x-cube-t.padding*z,a.y+t.padding*z};
         draw_view_cube(dl,state_.camera,cube_a,cube,t,ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left),ImGui::GetIO().MousePos);
-        const ImVec2 nav_a={cx-t.nav_width*z*0.5f,b.y-t.nav_height*z-t.padding*z};
-        const ImVec2 nav_b={nav_a.x+t.nav_width*z,nav_a.y+t.nav_height*z};
         dl->AddRectFilled(nav_a,nav_b,packed(t.panel),t.rounding*z);
         dl->AddRect(nav_a,nav_b,packed(t.border),t.rounding*z);
         const char* nav_icons[]={"hand","orbit","zoom-in","maximize"};
-        for (int i=0;i<4;++i)
-            icon(dl,icon_texture(nav_icons[i]),{nav_a.x+26*z+i*50*z,nav_a.y+6*z},18*z,packed(t.muted));
+        const char* nav_labels[]={"Pan · trascina con il tasto sinistro","Orbita · trascina con il tasto sinistro","Zoom · trascina con il tasto sinistro","Adatta alla finestra"};
+        for (int i=0;i<4;++i) {
+            ImGui::SetCursorScreenPos({nav_a.x+15*z+i*50*z,nav_a.y+2*z});
+            ImGui::PushID(i);
+            const bool clicked=ImGui::InvisibleButton("navigation",{40*z,t.nav_height*z-4*z});
+            const bool hovered=ImGui::IsItemHovered();
+            if (clicked) {
+                if (i==3) fit_camera();
+                else state_.navigation_mode=state_.navigation_mode==i?-1:i;
+            }
+            if (hovered) ImGui::SetTooltip("%s",nav_labels[i]);
+            icon(dl,icon_texture(nav_icons[i]),{nav_a.x+26*z+i*50*z,nav_a.y+6*z},18*z,packed(state_.navigation_mode==i?t.accent:t.muted));
+            ImGui::PopID();
+        }
         dl->PopClipRect();
     });
     draw_overlays(t);
+}
+void Shell::fit_camera() {
+    if (surfaces_.empty()) return;
+    auto lo=surfaces_.front().minimum,hi=surfaces_.front().maximum;
+    for (const auto& surface:surfaces_) {
+        lo.x=std::min(lo.x,surface.minimum.x); lo.y=std::min(lo.y,surface.minimum.y); lo.z=std::min(lo.z,surface.minimum.z);
+        hi.x=std::max(hi.x,surface.maximum.x); hi.y=std::max(hi.y,surface.maximum.y); hi.z=std::max(hi.z,surface.maximum.z);
+    }
+    state_.camera.fit(lo,hi); camera_fitted_=true;
 }
 bool Shell::open_feature_editor(std::string_view feature_id) {
     return engine_ && ui::begin_feature_edit(state_,engine_->session().document,feature_id);
@@ -619,6 +671,19 @@ void Shell::invoke_command(std::string_view id) {
 void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);
     const ImVec2 display=ImGui::GetIO().DisplaySize;
+    if (!state_.status_message.empty() && !state_.file_dialog_open) {
+        ImGui::SetNextWindowPos({t.sidebar_width*z+t.padding*z,
+                                display.y-t.timeline_height*z-t.padding*z},ImGuiCond_Always,{0,1});
+        ImGui::SetNextWindowSize({std::min(t.file_dialog_width*z,display.x-t.sidebar_width*z-2*t.padding*z),0},ImGuiCond_Always);
+        bool open=true;
+        if (ImGui::Begin("Errore##status",&open,ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings)) {
+            ImGui::PushStyleColor(ImGuiCol_Text,vec(t.error));
+            ImGui::TextWrapped("%s",state_.status_message.c_str());
+            ImGui::PopStyleColor();
+        }
+        ImGui::End();
+        if (!open) state_.status_message.clear();
+    }
     if ((state_.primitive_create_open || state_.primitive_editor_open) && engine_) {
         const bool creating=state_.primitive_create_open;
         bool* open=creating?&state_.primitive_create_open:&state_.primitive_editor_open;

@@ -61,6 +61,21 @@ int main() {
         require(ui::light.table_header_text.r!=ui::dark.table_header_text.r &&
                 ui::light.table_header.r!=ui::dark.table_header.r &&
                 ui::light.error_cell.r!=ui::dark.error_cell.r,"token tema chiaro/scuro");
+        state.parameter_editing=true;
+        state.editing_parameter_name="larghezza";
+        fill(state.parameter_name,"base");
+        fill(state.parameter_expression,"80 mm");
+        fill(state.parameter_unit,"mm");
+        const auto before_rename=engine.session().document;
+        const auto renamed_preview=ui::preview_parameter(state,engine);
+        require(renamed_preview.error.empty() && renamed_preview.value && *renamed_preview.value==80,
+                "anteprima rinomina deve mantenere i riferimenti");
+        require(engine.session().document==before_rename,"anteprima modifica il documento");
+        fill(state.parameter_name,"foro");
+        const auto duplicate_preview=ui::preview_parameter(state,engine);
+        require(!duplicate_preview.error.empty(),"anteprima accetta un nome duplicato");
+        require(!ui::submit_parameter(state,engine) && state.parameter_error==duplicate_preview.error,
+                "anteprima e conferma devono mostrare lo stesso errore");
         std::cout<<"Editor parametri: errori UI, scorciatoia, commento e temi verificati\n";
         return 0;
     } catch (const std::exception& e) { std::cerr<<e.what()<<'\n'; return 1; }

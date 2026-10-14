@@ -45,6 +45,7 @@ const CommandSpec* Registry::find(std::string_view id) const {
 }
 
 CommandResult Engine::execute(std::string_view id, const nlohmann::json& params, std::string_view coalesce_key) {
+    std::optional<doc::Document> before;
     try {
         if (id.empty() || id.size() > 128) return CommandResult::failure("ID comando non valido");
         const auto* spec = registry_.find(id);
@@ -53,16 +54,21 @@ CommandResult Engine::execute(std::string_view id, const nlohmann::json& params,
         if (coalesce_key.size() > 128) return CommandResult::failure("Chiave di coalescenza troppo lunga");
         const Status enabled = spec->enabled ? spec->enabled(session_) : Status{};
         if (!enabled.ok) return CommandResult::failure(enabled.error);
-        const doc::Document before = spec->journal ? session_.document : doc::Document{};
+        if (spec->journal) before=session_.document;
         CommandResult result = spec->run(session_, params);
-        if (!result.ok) return result;
+        if (!result.ok) {
+            if (before) session_.document=std::move(*before);
+            return result;
+        }
         if (spec->journal)
-            session_.history.record(before, session_.document,
+            session_.history.record(*before, session_.document,
                                     coalesce_key.empty() ? std::string{} : spec->id + ":" + std::string(coalesce_key));
         return result;
     } catch (const std::exception& e) {
+        if (before) session_.document=std::move(*before);
         return CommandResult::failure(std::string("Errore nel comando: ") + e.what());
     } catch (...) {
+        if (before) session_.document=std::move(*before);
         return CommandResult::failure("Errore imprevisto nel comando");
     }
 }

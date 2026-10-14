@@ -33,6 +33,9 @@ def main():
         assert any(command["id"] == "param.set" for command in commands)
         set_result = call("tools/call", {"name": "command_run", "arguments": {"command": "param.set", "params": {"name": "larghezza", "expression": "40 mm"}}})
         assert not set_result["result"].get("isError"), set_result
+        listed = call("tools/call", {"name": "command_run", "arguments": {"command": "param.list"}})["result"]
+        assert isinstance(listed["structuredContent"], dict), "MCP structuredContent must be an object"
+        assert listed["structuredContent"]["items"][0]["name"] == "larghezza"
         document = call("tools/call", {"name": "document_inspect", "arguments": {}})["result"]["structuredContent"]
         assert document["parameters"][0]["value"] == 40
         resources = call("resources/list")["result"]["resources"]

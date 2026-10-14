@@ -40,6 +40,7 @@ private:
     bool camera_fitted_ = false;
     int scale_ = 1;
     bool imgui_ready_ = false;
+    bool dock_initialized_ = false;
     bool glyph_sample_ = false;
     ui::Viewport current_viewport_{};
     std::unordered_map<std::string, unsigned int> icon_textures_;
@@ -47,5 +48,6 @@ private:
     void draw();
     void draw_overlays(const ui::Theme& theme);
     void invoke_command(std::string_view id);
+    void fit_camera();
 };
 }

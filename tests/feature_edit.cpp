@@ -51,4 +51,19 @@ int main() {
     require(engine.execute("feature.delete",{{"feature_id",id}}).ok);
     require(!engine.session().document.features.contains(id) && engine.session().document.timeline.size()==1);
     require(engine.execute("edit.undo").ok && engine.session().document.features.contains(id));
+
+    const auto before_failed_edit=engine.session().document;
+    const auto steps_before_failed_edit=engine.session().history.size();
+    require(!engine.execute("primitive.edit",{{"feature_id",id},{"dimensions",{{"width","90 mm"}}},{"name",42}}).ok);
+    require(engine.session().document==before_failed_edit);
+    require(engine.session().history.size()==steps_before_failed_edit);
+
+    require(engine.execute("param.set",{{"old_name","larghezza"},{"name","lato"},{"expression","40 mm"}}).ok);
+    require(engine.session().document.features.at(id).data["dimensions"]["depth"]=="lato");
+    require(std::abs(volume(engine.session().document)-48000.0)<1e-6);
+    const auto before_delete=engine.session().document;
+    require(!engine.execute("param.delete",{{"name","lato"}}).ok);
+    require(engine.session().document==before_delete);
+    require(engine.execute("edit.undo").ok);
+    require(engine.session().document.features.at(id).data["dimensions"]["depth"]=="larghezza");
 }

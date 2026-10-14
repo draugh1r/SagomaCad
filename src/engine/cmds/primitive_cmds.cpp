@@ -117,7 +117,8 @@ std::vector<CommandSpec> primitive_specs() {
                  if (params.contains("name")) {
                      found->second.name=string_arg(params,"name",true,256);
                      const auto body_id=found->second.data.at("body_id").get<std::string>();
-                     for (auto& body:session.document.bodies) if (body.id==body_id) body.name=found->second.name;
+                     if (found->second.data.value("operation",std::string("new"))=="new")
+                         for (auto& body:session.document.bodies) if (body.id==body_id) body.name=found->second.name;
                  }
                  return {true,{{"feature_id",id}}, {}};
              },true}};

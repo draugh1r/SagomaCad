@@ -1,5 +1,6 @@
 #include "shell.hpp"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <cstdio>
 #include <cstdlib>
 #define require(condition) do { if (!(condition)) { std::fprintf(stderr,"failed: %s\n",#condition); std::exit(1); } } while (false)
@@ -31,7 +32,45 @@ int main() {
     ImGui::GetIO().AddMousePosEvent(500,500);
     ImGui::GetIO().AddMouseButtonEvent(0,true); shell.render();
     ImGui::GetIO().AddMouseButtonEvent(0,false); shell.render();
+    shell.state().primitive_editor_open=false;
+    shell.render();
+    auto left=[&](float x,float y,bool pressed) {
+        ImGui::GetIO().AddMousePosEvent(x,y);
+        ImGui::GetIO().AddMouseButtonEvent(0,pressed);
+        shell.render();
+    };
+    shell.state().camera.distance=500;
+    left(915,800,false); left(915,800,true); left(915,800,false);
+    require(shell.state().camera.distance<130);
+    left(768,800,false); left(768,800,true); left(768,800,false);
+    require(shell.state().navigation_mode==0);
+    const auto target=shell.state().camera.target;
+    left(840,500,false); left(840,500,true); left(920,520,true); left(920,520,false);
+    require(shell.state().camera.target.x!=target.x || shell.state().camera.target.y!=target.y);
+    const auto document_before_typing=engine.session().document;
+    shell.state().palette_open=true;
+    shell.state().palette_focus=true;
+    shell.render(); shell.render();
+    left(600,260,false); left(600,260,true); left(600,260,false);
+    shell.render();
+    require(ImGui::GetIO().WantTextInput);
+    ImGui::GetIO().AddKeyEvent(ImGuiMod_Ctrl,true);
+    ImGui::GetIO().AddKeyEvent(ImGuiKey_Z,true);
+    shell.render();
+    require(engine.session().document==document_before_typing);
+    ImGui::GetIO().AddKeyEvent(ImGuiMod_Ctrl,false);
+    ImGui::GetIO().AddKeyEvent(ImGuiKey_Z,false);
+    shell.render();
+    shell.state().palette_open=false;
+    ImGui::GetIO().AddMousePosEvent(500,500);
+    ImGui::GetIO().AddMouseButtonEvent(0,true); shell.render();
+    ImGui::GetIO().AddMouseButtonEvent(0,false); shell.render();
     require(!ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
     right(110,454,false); right(110,454,true); right(110,454,false);
     require(ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
+    left(500,500,true); left(500,500,false);
+    shell.state().status_message="Operazione rifiutata: parametro non valido";
+    shell.render(); shell.render();
+    const auto* error_window=ImGui::FindWindowByName("Errore##status");
+    require(error_window && error_window->WasActive && error_window->DrawList->VtxBuffer.Size>0);
 }

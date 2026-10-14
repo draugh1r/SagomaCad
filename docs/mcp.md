@@ -65,3 +65,5 @@ Esempio di sequenza dei tool MCP:
 ```
 
 Il foro dell'esempio ha **diametro 10 mm** (raggio 5 mm). Il volume atteso è `40×40×20 − π×5²×20 ≈ 30 429,204 mm³`. I fallimenti di tool restituiscono `isError`, un codice stabile, un messaggio e, quando possibile, un suggerimento. Gli errori di protocollo usano i codici JSON-RPC standard.
+
+I risultati strutturati MCP sono sempre oggetti: `commands_list` usa `{commands: [...]}`; i comandi che restituiscono una lista, come `param.list`, la espongono in `{items: [...]}`. Il contenuto testuale conserva il JSON originale del risultato del motore.

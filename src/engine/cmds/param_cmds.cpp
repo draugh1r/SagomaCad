@@ -46,6 +46,21 @@ void rename_reference(std::string& expression, std::string_view before, std::str
     }
     expression=std::move(rewritten);
 }
+template<class Visit>
+void feature_expressions(doc::Document& document,Visit visit) {
+    for (auto& [id,feature]:document.features) {
+        if (feature.type.rfind("primitive.",0)!=0 || !feature.data.is_object()) continue;
+        for (const char* key:{"dimensions","position"}) {
+            auto found=feature.data.find(key);
+            if (found==feature.data.end() || !found->is_object()) continue;
+            for (auto& value:*found) if (value.is_string()) {
+                auto expression=value.get<std::string>();
+                visit(expression,feature);
+                value=std::move(expression);
+            }
+        }
+    }
+}
 }
 
 std::vector<CommandSpec> parameter_specs() {
@@ -72,6 +87,9 @@ std::vector<CommandSpec> parameter_specs() {
                          [&](const doc::Parameter& row) { return row.name==name; });
                      if (duplicate!=candidate.parameters.end()) return CommandResult::failure("Nome già usato: " + name);
                      for (auto& row:candidate.parameters) rename_reference(row.expression,old_name,name);
+                     feature_expressions(candidate,[&](std::string& value,const doc::Feature&) {
+                         rename_reference(value,old_name,name);
+                     });
                      it->name=name;
                  }
                  it->expression=expression;
@@ -93,7 +111,7 @@ std::vector<CommandSpec> parameter_specs() {
              return {true, evaluated_parameters_json(session.document), {}};
          }, false},
         {"param.delete", "Elimina parametro", {"Solido", "Modifica"}, std::nullopt,
-         "{name: string}; fallisce se un altro parametro lo usa", {},
+         "{name: string}; fallisce se un parametro o una feature lo usa", {},
          [](Session& session, const nlohmann::json& params) -> CommandResult {
              only_keys(params, {"name"});
              const auto name = string_arg(params, "name", true, 64);
@@ -101,6 +119,14 @@ std::vector<CommandSpec> parameter_specs() {
              const auto it = std::find_if(candidate.parameters.begin(), candidate.parameters.end(),
                                           [&](const doc::Parameter& row) { return row.name == name; });
              if (it == candidate.parameters.end()) return CommandResult::failure("Parametro sconosciuto: " + name);
+             std::string referenced_by;
+             feature_expressions(candidate,[&](std::string& value,const doc::Feature& feature) {
+                 const auto original=value;
+                 rename_reference(value,name,{});
+                 if (value!=original) referenced_by=feature.name.empty()?feature.id:feature.name;
+             });
+             if (!referenced_by.empty())
+                 return CommandResult::failure("Il parametro "+name+" è usato dalla feature "+referenced_by);
              candidate.parameters.erase(it);
              const auto error = invalid_parameter(candidate);
              if (!error.ok) return error;

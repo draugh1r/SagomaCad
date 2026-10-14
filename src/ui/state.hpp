@@ -6,11 +6,14 @@
 namespace sagomacad::ui {
 struct State {
     Camera camera;
+    int navigation_mode = -1; // -1: pointer, 0: pan, 1: orbit, 2: zoom
     std::string theme = "light";
     bool browser = true;
     bool properties = false;
     bool timeline = true;
     bool sketch_mode = false;
+    int selected_tab = 0;
+    bool previous_sketch_mode = false;
     bool palette_open = false;
     bool palette_focus = false;
     bool parameters_open = false;

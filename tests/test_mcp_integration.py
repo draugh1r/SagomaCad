@@ -80,6 +80,19 @@ def headless(cli, root):
         mass = client.ok("mass_properties", {"body": body})
         assert abs(mass["volume_mm3"] - (32000 - math.pi * 500)) < 0.001, mass
         assert mass["bbox_mm"]["max"]["x"] > 39.99
+        before_edit = client.ok("document_inspect")
+        failed_edit = client.call("command_run", {"command": "primitive.edit", "params": {
+            "feature_id": box["feature_id"], "dimensions": {"width": "60 mm"}, "name": 42}})
+        assert failed_edit["isError"]
+        assert client.ok("document_inspect") == before_edit
+        client.ok("command_run", {"command": "param.set", "params": {
+            "old_name": "larghezza", "name": "lato", "expression": "40 mm"}})
+        assert abs(client.ok("mass_properties", {"body": body})["volume_mm3"] - mass["volume_mm3"]) < 0.001
+        assert client.call("command_run", {"command": "param.delete", "params": {"name": "lato"}})["isError"]
+        client.ok("undo")
+        client.ok("redo")
+        client.ok("command_run", {"command": "param.set", "params": {
+            "old_name": "lato", "name": "larghezza", "expression": "40 mm"}})
         for view in ("iso", "top", "front", "right"):
             png(client.call("render_view", {"view": view, "size": "640x480"}), 640, 480)
         before = client.ok("document_inspect")["history"]["steps"]
@@ -107,6 +120,15 @@ def headless(cli, root):
         assert abs(measured_stl - (32000 - math.pi * 500)) < 2.0, measured_stl
         assert client.call("export", {"format": "stl", "path": export_name})["structuredContent"]["code"] == "mcp.overwrite_required"
         assert client.call("ui_screenshot")["structuredContent"]["code"] == "mcp.bridge_required"
+        views = []
+        for order in ((0, 30), (30, 0)):
+            client.ok("command_run", {"command": "document.new"})
+            for z in order:
+                client.ok("command_run", {"command": "primitive.add", "params": {
+                    "kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"},
+                    "position": {"z": f"{z} mm"}}})
+            views.append(png(client.call("render_view", {"view": "iso", "size": "640x480"})))
+        assert views[0] == views[1], "viewport occlusion depends on body creation order"
     finally:
         client.close()
         document_path.unlink(missing_ok=True)
