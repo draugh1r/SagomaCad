@@ -7,4 +7,10 @@ Nel viewport la griglia isometrica, gli assi, l'indicatore di vista e la barra d
 ## Cambia parametri (M1)
 
 Il pannello mostra Nome, Unità, Espressione, Valore e Commento. `+` crea una riga; un clic in una cella apre la modifica diretta. Invio conferma tramite `param.set`, Esc annulla. Il valore viene ricalcolato nell'anteprima mentre si modifica l'espressione. Il campo Espressione accetta anche `nome = espressione` se Nome è vuoto o coincide. Errori del comando e dell'anteprima compaiono in rosso sotto la cella e nel tooltip. Testo e colori delle intestazioni e degli errori provengono da `src/ui/theme.hpp` per i temi chiaro e scuro.
+
+## Cubo di navigazione
+
+`src/ui/view_cube.cpp` costruisce le 26 zone visibili del cubo smussato e ne verifica la selezione. `apps/common/view_cube_widget.cpp` disegna cubo, etichette proiettate sulle facce, assi colorati ed evidenziazione. Geometria, colori, misure ed etichette sono guidati dai token `ViewCubeTokens` in `src/ui/theme.hpp`.
+
+Un clic su faccia, spigolo o vertice allinea la visuale; il trascinamento sinistro sul cubo ruota liberamente la camera. Home torna alla vista isometrica e adatta la scena alla finestra. Le viste allineate mostrano quattro frecce per passare alla faccia adiacente e due frecce circolari per ruotare di 90°. La camera conserva una base coerente anche nelle viste Alto e Basso e durante la rotazione oltre i poli. Il cubo intercetta il mouse senza attivare contemporaneamente Pan o Orbita della barra.
 Un'espressione numerica senza suffisso, per esempio `40`, assume l'unità della colonna Unità (`mm` → 40 mm, `in` → 1 in). Le espressioni già dimensionali conservano la propria unità e vengono convertite per mostrare il valore nella colonna.

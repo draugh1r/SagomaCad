@@ -27,6 +27,21 @@ struct ParameterTableLabels {
 inline constexpr ParameterTableLabels parameter_table_labels {
     "Nome", "Unità", "Espressione", "Valore", "Commento"
 };
+struct ViewCubeTokens {
+    float widget_size=156.0f, cube_size=76.0f, center_x=78.0f, center_y=84.0f;
+    float bevel=0.18f, control_size=20.0f, label_size=13.0f, line_width=1.0f;
+    float projection_scale=0.42f;
+    float axis_length=28.0f, axis_label_gap=5.0f, tooltip_delay=0.6f;
+    std::array<float,2> axis_origin{{20,138}};
+    std::array<std::array<float,2>,7> control_positions{{{16,16},{78,27},{78,141},{21,84},{135,84},{138,36},{112,16}}};
+    Color axis_z{0.20f,0.47f,0.95f}, hover{0.25f,0.65f,1.0f,0.45f};
+    const char* top="TOP";
+    const char* bottom="BOTTOM";
+    const char* front="FRONT";
+    const char* back="BACK";
+    const char* right="RIGHT";
+    const char* left="LEFT";
+};
 struct Theme {
     Color background, panel, panel_alt, viewport, text, muted, border, accent, axis_x, axis_y, grid_major, grid_minor;
     Color table_header, table_header_text, error, error_cell;
@@ -34,6 +49,7 @@ struct Theme {
     float rounding, spacing, padding, sidebar_width, inspector_width, timeline_height, toolbar_height;
     float grid_step, grid_slope, viewcube_size, nav_width, nav_height, ribbon_group_width, timeline_glyph_height;
     float palette_width, palette_height, parameter_width, parameter_height, file_dialog_width;
+    ViewCubeTokens cube;
 };
 inline constexpr Theme dark {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},

@@ -7,7 +7,7 @@ struct Projection { double x=0,y=0,depth=0; bool visible=false; };
 class Camera {
 public:
     kernel::Vec3 target{};
-    double yaw=-0.7853981633974483, pitch=0.6108652381980153, distance=140.0;
+    double yaw=-0.7853981633974483, pitch=0.6154797086703874, roll=0.0, distance=140.0;
     kernel::Vec3 eye() const;
     kernel::Vec3 right() const;
     kernel::Vec3 up() const;
@@ -17,6 +17,9 @@ public:
     void pan(double dx,double dy,double viewport_height);
     void zoom(double wheel,double cursor_x,double cursor_y,Viewport viewport);
     void look_from(kernel::Vec3 direction);
+    void look_from(kernel::Vec3 direction,kernel::Vec3 screen_up);
+    void roll_quarter(int turns);
+    void home();
     void fit(kernel::Vec3 minimum,kernel::Vec3 maximum);
 };
 }

@@ -215,6 +215,7 @@ Stesso schema per linee (lunghezza, angolo), cerchi (diametro), archi. I vincoli
 - Clic ripetuto nello stesso punto: scorre tra le entità sovrapposte (`selection.cycle`).
 - Evidenziazione al passaggio del mouse, prima del clic.
 - Navigazione: tasto centrale premuto pan, Shift+centrale orbita, rotella zoom verso il cursore (come Fusion).
+- View cube: Home ripristina l'isometrica e inquadra il modello; clic sulle 6 facce, 12 spigoli o 8 vertici allinea la camera. Il cubo si ruota trascinandolo, evidenzia la zona sotto il mouse e mostra le etichette delle facce e gli assi X/Y/Z. Nelle viste di faccia compaiono frecce per le viste adiacenti e per ruotare di 90°.
 
 ---
 

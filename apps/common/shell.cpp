@@ -1,4 +1,5 @@
 #include "shell.hpp"
+#include "view_cube_widget.hpp"
 #include "ui/theme.hpp"
 #include "ui/toolbar_catalog.hpp"
 #include "ui/parameter_editor.hpp"
@@ -21,7 +22,6 @@
 #include <vector>
 #include <cstring>
 #include <array>
-#include <bit>
 
 namespace sagomacad {
 namespace {
@@ -76,12 +76,6 @@ ui::Color shaded(ui::Color base,double light) {
     const float intensity=static_cast<float>(std::clamp(0.62+0.38*light,0.27,1.12));
     return {std::min(1.0f,base.r*intensity),std::min(1.0f,base.g*intensity),std::min(1.0f,base.b*intensity),base.a};
 }
-bool inside_triangle(ImVec2 p,ImVec2 a,ImVec2 b,ImVec2 c) {
-    auto sign=[](ImVec2 q,ImVec2 u,ImVec2 v) { return (q.x-v.x)*(u.y-v.y)-(u.x-v.x)*(q.y-v.y); };
-    const bool n1=sign(p,a,b)<0,n2=sign(p,b,c)<0,n3=sign(p,c,a)<0;
-    return n1==n2 && n2==n3;
-}
-double distance2(ImVec2 a,ImVec2 b) { return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y); }
 struct DrawTriangle { ImVec2 a,b,c; double da,db,dc,depth; ui::Color color; };
 bool hides(const DrawTriangle& tri,ImVec2 point,double depth) {
     const double denominator=(tri.b.y-tri.c.y)*(tri.a.x-tri.c.x)+(tri.c.x-tri.b.x)*(tri.a.y-tri.c.y);
@@ -138,44 +132,6 @@ void draw_surfaces(ImDrawList* dl,const std::vector<mesh::Surface>& surfaces,con
       }
       flush();
     }
-}
-void draw_view_cube(ImDrawList* dl,ui::Camera& camera,ImVec2 origin,float size,const ui::Theme& theme,bool clicked,ImVec2 mouse) {
-    const ImVec2 center={origin.x+size*0.5f,origin.y+size*0.5f};
-    std::array<kernel::Vec3,8> points{};
-    std::array<ImVec2,8> screen{};
-    for (int i=0;i<8;++i) {
-        points[i]={i&1?1.0:-1.0,i&2?1.0:-1.0,i&4?1.0:-1.0};
-        const auto& q=points[i];
-        screen[i]={center.x+float((q.x*camera.right().x+q.y*camera.right().y+q.z*camera.right().z)*size*0.26),
-                   center.y-float((q.x*camera.up().x+q.y*camera.up().y+q.z*camera.up().z)*size*0.26)};
-    }
-    struct Face { std::array<int,4> corners; kernel::Vec3 normal; double depth; };
-    std::array<Face,6> faces{{{{0,2,6,4},{-1,0,0},0},{{1,3,7,5},{1,0,0},0},
-        {{0,1,5,4},{0,-1,0},0},{{2,3,7,6},{0,1,0},0},{{0,1,3,2},{0,0,-1},0},{{4,5,7,6},{0,0,1},0}}};
-    const auto eye=camera.eye(); const kernel::Vec3 direction{eye.x-camera.target.x,eye.y-camera.target.y,eye.z-camera.target.z};
-    for (auto& f:faces) f.depth=f.normal.x*direction.x+f.normal.y*direction.y+f.normal.z*direction.z;
-    std::sort(faces.begin(),faces.end(),[](const auto& a,const auto& b){return a.depth<b.depth;});
-    kernel::Vec3 selected{}; bool has_selection=false;
-    for (const auto& f:faces) {
-        if (f.depth<=0) continue;
-        const auto a=screen[f.corners[0]],b=screen[f.corners[1]],c=screen[f.corners[2]],d=screen[f.corners[3]];
-        dl->AddQuadFilled(a,b,c,d,packed(shaded(theme.cube_face,0.4+f.depth/std::max(camera.distance,1.0))));
-        dl->AddQuad(a,b,c,d,packed(theme.cube_edge),1.0f);
-        if (clicked && (inside_triangle(mouse,a,b,c)||inside_triangle(mouse,a,c,d))) { selected=f.normal; has_selection=true; }
-    }
-    if (clicked && has_selection) {
-        // Corners and edges take precedence over the containing face.
-        double best=size*size*0.015;
-        for (int i=0;i<8;++i) { const double d=distance2(mouse,screen[i]); if (d<best) { best=d; selected=points[i]; } }
-        if (best==size*size*0.015) for (int i=0;i<8;++i) for (int j=i+1;j<8;++j) {
-            if (std::popcount(static_cast<unsigned int>(i^j))!=1) continue;
-            const ImVec2 mid={(screen[i].x+screen[j].x)*0.5f,(screen[i].y+screen[j].y)*0.5f};
-            const double d=distance2(mouse,mid);
-            if (d<best) { best=d; selected={(points[i].x+points[j].x)*0.5,(points[i].y+points[j].y)*0.5,(points[i].z+points[j].z)*0.5}; }
-        }
-        camera.look_from(selected);
-    }
-    dl->AddText({origin.x,origin.y+size-12},packed(theme.muted),"VIEW");
 }
 }
 
@@ -540,7 +496,11 @@ void Shell::draw() {
         ImGui::InvisibleButton("canvas",avail);
         const auto mouse=ImGui::GetIO().MousePos;
         const bool over_navigation=mouse.x>=nav_a.x && mouse.x<=nav_b.x && mouse.y>=nav_a.y && mouse.y<=nav_b.y;
-        if (ImGui::IsItemHovered() && !over_navigation) {
+        const ui::CubePoint cube_origin{b.x-t.cube.widget_size*z-t.padding*z,a.y+t.padding*z};
+        const bool over_cube=mouse.x>=cube_origin.x && mouse.x<=cube_origin.x+t.cube.widget_size*z &&
+                             mouse.y>=cube_origin.y && mouse.y<=cube_origin.y+t.cube.widget_size*z;
+        const bool canvas_hovered=ImGui::IsItemHovered();
+        if (canvas_hovered && !over_navigation && !over_cube && !state_.cube_interaction.pressed) {
             const auto& io=ImGui::GetIO();
             if (io.MouseWheel!=0) state_.camera.zoom(io.MouseWheel,io.MousePos.x,io.MousePos.y,viewport);
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
@@ -580,7 +540,6 @@ void Shell::draw() {
         dl->AddRectFilled(a,b,packed(t.viewport));
         dl->PushClipRect(a,b,true);
         const float cx=(a.x+b.x)*0.5f;
-        const float cy=(a.y+b.y)*0.5f;
         {
             const double extent=std::max(20.0,state_.camera.distance*0.8);
             const double step=std::max(5.0,std::pow(10.0,std::floor(std::log10(extent/5.0))));
@@ -599,9 +558,10 @@ void Shell::draw() {
             const auto origin=state_.camera.project({0,0,0},viewport);
             if (origin.visible) dl->AddCircleFilled({float(origin.x),float(origin.y)},2.5f*z,packed(t.accent));
         }
-        const float cube=t.viewcube_size*z;
-        const ImVec2 cube_a={b.x-cube-t.padding*z,a.y+t.padding*z};
-        draw_view_cube(dl,state_.camera,cube_a,cube,t,ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left),ImGui::GetIO().MousePos);
+        if (draw_view_cube_widget(dl,state_.camera,state_.cube_interaction,cube_origin,t,z,canvas_hovered)) {
+            if (surfaces_.empty()) { state_.camera.target={}; state_.camera.distance=140; }
+            else fit_camera();
+        }
         dl->AddRectFilled(nav_a,nav_b,packed(t.panel),t.rounding*z);
         dl->AddRect(nav_a,nav_b,packed(t.border),t.rounding*z);
         const char* nav_icons[]={"hand","orbit","zoom-in","maximize"};
@@ -680,7 +640,8 @@ void Shell::draw_overlays(const ui::Theme& t) {
         bool* open=creating?&state_.primitive_create_open:&state_.primitive_editor_open;
         const float panel_width=std::min(380*z,display.x*0.28f);
         ImGui::SetNextWindowPos({std::max(t.padding*z,display.x-panel_width-2*t.padding*z),
-                                 t.toolbar_height*z+8*t.padding*z},ImGuiCond_Appearing);
+                                 std::max(t.toolbar_height*z+8*t.padding*z,
+                                          t.toolbar_height*z+t.cube.widget_size*z+3*t.padding*z)},ImGuiCond_Appearing);
         ImGui::SetNextWindowSize({panel_width,0},ImGuiCond_Appearing);
         if (ImGui::Begin(creating?"Crea primitiva###primitive_panel":"Modifica feature###primitive_panel",open,ImGuiWindowFlags_AlwaysAutoResize)) {
             const char* types[]={"Box","Cilindro","Sfera"};
