@@ -90,4 +90,16 @@ int main() {
     shell.render(); shell.render();
     const auto* error_window=ImGui::FindWindowByName("Errore##status");
     require(error_window && error_window->WasActive && error_window->DrawList->VtxBuffer.Size>0);
+    shell.state().status_message.clear();
+    require(engine.execute("document.new").ok);
+    shell.render(); shell.render();
+    const auto* empty_view=ImGui::FindWindowByName("Viewport");
+    require(empty_view);
+    const std::vector<ImDrawVert> empty_before(empty_view->DrawList->VtxBuffer.begin(),empty_view->DrawList->VtxBuffer.end());
+    middle(800,500,false); middle(800,500,true); middle(860,530,true); middle(860,530,false);
+    const auto& empty_after=empty_view->DrawList->VtxBuffer;
+    bool grid_moved=empty_before.size()!=static_cast<std::size_t>(empty_after.Size);
+    for (int i=0;!grid_moved && i<empty_after.Size;++i)
+        grid_moved=empty_before[i].pos.x!=empty_after[i].pos.x || empty_before[i].pos.y!=empty_after[i].pos.y;
+    require(grid_moved);
 }

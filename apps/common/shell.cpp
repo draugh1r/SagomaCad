@@ -581,19 +581,7 @@ void Shell::draw() {
         dl->PushClipRect(a,b,true);
         const float cx=(a.x+b.x)*0.5f;
         const float cy=(a.y+b.y)*0.5f;
-        if (surfaces_.empty()) {
-            const float step=t.grid_step*z;
-            const float run=(b.y-a.y)/t.grid_slope;
-            const int count=static_cast<int>(std::ceil((b.x-a.x+run)/step))+1;
-            for (int i=-count;i<=count;++i) {
-                const float x=cx+i*step;
-                const ImU32 color=packed(i%5==0?t.grid_major:t.grid_minor);
-                dl->AddLine({x,a.y},{x+run,b.y},color);
-                dl->AddLine({x,a.y},{x-run,b.y},color);
-            }
-            dl->AddLine({a.x,cy-(a.x-cx)*t.grid_slope},{b.x,cy-(b.x-cx)*t.grid_slope},packed(t.axis_x),1.5f*z);
-            dl->AddLine({a.x,cy+(a.x-cx)*t.grid_slope},{b.x,cy+(b.x-cx)*t.grid_slope},packed(t.axis_y),1.5f*z);
-        } else {
+        {
             const double extent=std::max(20.0,state_.camera.distance*0.8);
             const double step=std::max(5.0,std::pow(10.0,std::floor(std::log10(extent/5.0))));
             const int count=std::min(100,int(extent/step));
@@ -607,7 +595,10 @@ void Shell::draw() {
             }
             draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
         }
-        if (surfaces_.empty()) dl->AddCircleFilled({cx,cy},2.5f*z,packed(t.accent));
+        if (surfaces_.empty()) {
+            const auto origin=state_.camera.project({0,0,0},viewport);
+            if (origin.visible) dl->AddCircleFilled({float(origin.x),float(origin.y)},2.5f*z,packed(t.accent));
+        }
         const float cube=t.viewcube_size*z;
         const ImVec2 cube_a={b.x-cube-t.padding*z,a.y+t.padding*z};
         draw_view_cube(dl,state_.camera,cube_a,cube,t,ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left),ImGui::GetIO().MousePos);
