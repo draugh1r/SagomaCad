@@ -32,6 +32,13 @@ int main() {
             faces+=count==1; edges+=count==2; corners+=count==3;
         }
         require(faces==6 && edges==12 && corners==8);
+        ui::Camera top; top.look_from({0,0,1});
+        const auto square=ui::cube_layout(top,{0,0},t);
+        require(square.faces.size()==1 && square.faces[0].polygon.size()==4);
+        for (const auto p:square.faces[0].polygon) {
+            require(near(std::abs(p.x-t.center_x),square.factor));
+            require(near(std::abs(p.y-t.center_y),square.factor));
+        }
         ui::Camera camera; camera.look_from({0,0,1});
         ui::cube_apply(camera,{ui::CubeKind::Right,{}}); direction(camera,{1,0,0});
         ui::cube_apply(camera,{ui::CubeKind::Left,{}}); direction(camera,{0,0,1});
@@ -42,13 +49,14 @@ int main() {
         ui::cube_apply(camera,{ui::CubeKind::Counterclockwise,{}});
         require(near(camera.right().x,initial_right.x) && near(camera.right().y,initial_right.y));
         camera.roll_quarter(1);
-        const auto rolled_up=camera.up(),rolled_right=camera.right();
         camera.orbit(0,20);
-        const auto after_orbit=camera.forward();
-        require(-(after_orbit.x*rolled_up.x+after_orbit.y*rolled_up.y+after_orbit.z*rolled_up.z)>0);
-        require(near(after_orbit.x*rolled_right.x+after_orbit.y*rolled_right.y+after_orbit.z*rolled_right.z,0));
+        require(near(camera.roll,0) && near(camera.right().z,0));
+        for (int i=0;i<100;++i) {
+            camera.orbit(i%2?25:-10,i%3?8:-15);
+            require(near(camera.roll,0) && near(camera.right().z,0) && camera.up().z>0);
+        }
         camera.look_from({0,0,1});
-        camera.orbit(0,500); require(camera.eye().z<camera.target.z);
+        camera.orbit(0,500); require(camera.up().z>=0 && near(camera.right().z,0));
         ui::cube_apply(camera,{ui::CubeKind::Home,{}}); direction(camera,{1,-1,1}); require(near(camera.roll,0));
         require(ui::cube_hit(ui::cube_layout(camera,{0,0},t),{-500,-500}).kind==ui::CubeKind::None);
         std::puts("View cube: 6 faces, 12 edges, 8 corners, Home and rotation verified");

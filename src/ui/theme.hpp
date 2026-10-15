@@ -29,7 +29,7 @@ inline constexpr ParameterTableLabels parameter_table_labels {
 };
 struct ViewCubeTokens {
     float widget_size=156.0f, cube_size=76.0f, center_x=78.0f, center_y=84.0f;
-    float bevel=0.18f, control_size=20.0f, label_size=13.0f, line_width=1.0f;
+    float hit_band=0.18f, control_size=20.0f, label_size=13.0f, line_width=1.0f;
     float projection_scale=0.42f;
     float axis_length=28.0f, axis_label_gap=5.0f, tooltip_delay=0.6f;
     std::array<float,2> axis_origin{{20,138}};

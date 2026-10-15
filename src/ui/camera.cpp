@@ -9,10 +9,6 @@ kernel::Vec3 mul(kernel::Vec3 a,double k) { return {a.x*k,a.y*k,a.z*k}; }
 double dot(kernel::Vec3 a,kernel::Vec3 b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
 kernel::Vec3 cross(kernel::Vec3 a,kernel::Vec3 b) { return {a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x}; }
 kernel::Vec3 unit(kernel::Vec3 a) { const double n=std::sqrt(dot(a,a)); return n>1e-12?mul(a,1/n):kernel::Vec3{0,0,1}; }
-kernel::Vec3 rotate(kernel::Vec3 value,kernel::Vec3 axis,double angle) {
-    return add(add(mul(value,std::cos(angle)),mul(cross(axis,value),std::sin(angle))),
-               mul(axis,dot(axis,value)*(1-std::cos(angle))));
-}
 }
 kernel::Vec3 Camera::eye() const { return add(target,mul({std::cos(pitch)*std::cos(yaw),std::cos(pitch)*std::sin(yaw),std::sin(pitch)},distance)); }
 kernel::Vec3 Camera::forward() const { return unit(add(target,mul(eye(),-1))); }
@@ -30,13 +26,10 @@ Projection Camera::project(kernel::Vec3 point,Viewport v) const {
             v.y+v.height*0.5-dot(delta,up())*focal/depth,depth,true};
 }
 void Camera::orbit(double dx,double dy) {
-    auto direction=mul(forward(),-1),screen_up=up();
-    const auto horizontal_axis=screen_up;
-    const auto vertical_axis=rotate(right(),horizontal_axis,-dx*0.008);
-    direction=rotate(direction,horizontal_axis,-dx*0.008);
-    direction=rotate(direction,vertical_axis,-dy*0.008);
-    screen_up=rotate(screen_up,vertical_axis,-dy*0.008);
-    look_from(direction,screen_up);
+    constexpr double pole=1.5707963267948966-1e-5;
+    yaw=std::remainder(yaw-dx*0.008,6.283185307179586);
+    pitch=std::clamp(pitch+dy*0.008,-pole,pole);
+    roll=0;
 }
 void Camera::pan(double dx,double dy,double h) {
     if (h<=0) return;

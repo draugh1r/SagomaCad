@@ -32,8 +32,9 @@ int main(int argc,char** argv) {
             for (const auto& control:cube.controls) if (control.kind==kind) { target=control.center; found=true; }
             for (const auto& part:cube.parts)
                 if (part.hit.kind==kind && part.hit.direction.x==direction.x && part.hit.direction.y==direction.y && part.hit.direction.z==direction.z) {
+                    target={};
                     for (const auto p:part.polygon) { target.x+=p.x/part.polygon.size(); target.y+=p.y/part.polygon.size(); }
-                    found=true;
+                    found=true; break;
                 }
             require(found); mouse(target,false); mouse(target,true); mouse(target,false); shell.render();
         };
@@ -58,13 +59,16 @@ int main(int argc,char** argv) {
         require(near(shell.state().camera.forward().x,-1/std::sqrt(3.0)));
         select(ui::CubeKind::Home);
         const auto cube=layout(); ui::CubePoint edge{};
-        for (const auto& part:cube.parts) if (part.hit.kind==ui::CubeKind::Edge && part.hit.direction.y==-1 && part.hit.direction.z==1)
+        for (const auto& part:cube.parts) if (part.hit.kind==ui::CubeKind::Edge && part.hit.direction.y==-1 && part.hit.direction.z==1) {
             for (const auto p:part.polygon) { edge.x+=p.x/part.polygon.size(); edge.y+=p.y/part.polygon.size(); }
+            break;
+        }
         mouse(edge,false); shell.render(); screenshot("edge-hover");
         const auto before=shell.state().camera;
         mouse(edge,true); mouse({edge.x+25,edge.y+15},true); mouse({edge.x+25,edge.y+15},false);
         require(!near(shell.state().camera.yaw,before.yaw) && !near(shell.state().camera.pitch,before.pitch));
         require(shell.state().camera.target.x==before.target.x && !shell.state().cube_interaction.pressed);
+        require(near(shell.state().camera.roll,0) && near(shell.state().camera.right().z,0));
         require(shell.open_feature_editor("primitive-1"));
         shell.render(); shell.render();
         const auto* editor=ImGui::FindWindowByName("Modifica feature###primitive_panel");

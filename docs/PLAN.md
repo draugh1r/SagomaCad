@@ -214,7 +214,7 @@ Stesso schema per linee (lunghezza, angolo), cerchi (diametro), archi. I vincoli
 - **Picking con ID buffer:** si renderizza in un framebuffer nascosto con ogni faccia e spigolo colorati con il proprio id. Leggere il pixel sotto il mouse dà l'entità esatta. Ogni triangolo della mesh conserva l'id della faccia OCCT da cui viene.
 - Clic ripetuto nello stesso punto: scorre tra le entità sovrapposte (`selection.cycle`).
 - Evidenziazione al passaggio del mouse, prima del clic.
-- Navigazione: tasto centrale premuto pan, Shift+centrale orbita, rotella zoom verso il cursore (come Fusion).
+- Navigazione: tasto centrale premuto pan, Shift+centrale orbita vincolata all'asse Z del mondo senza roll, rotella zoom verso il cursore (come Fusion). L'inclinazione laterale cambia solo con le rotazioni esplicite del cubo.
 - View cube: Home ripristina l'isometrica e inquadra il modello; clic sulle 6 facce, 12 spigoli o 8 vertici allinea la camera. Il cubo si ruota trascinandolo, evidenzia la zona sotto il mouse e mostra le etichette delle facce e gli assi X/Y/Z. Nelle viste di faccia compaiono frecce per le viste adiacenti e per ruotare di 90°.
 
 ---

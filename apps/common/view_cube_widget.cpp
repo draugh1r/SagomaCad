@@ -20,7 +20,7 @@ void face_text(ImDrawList* draw,const ui::CubePart& part,const ui::Camera& camer
     const auto text_size=font->CalcTextSizeA(font_size,1000,0,part.label);
     const auto center=point(ui::cube_project(part.center,camera,layout,tokens,scale));
     const ImVec2 start={center.x-text_size.x*0.5f,center.y-text_size.y*0.5f};
-    const double units=std::min(1/layout.factor,(2-2*tokens.bevel)*0.9/std::max(1.0f,text_size.x));
+    const double units=std::min(1/layout.factor,(2-2*tokens.hit_band)*0.9/std::max(1.0f,text_size.x));
     const int first=draw->VtxBuffer.Size;
     draw->AddText(font,font_size,start,ink,part.label);
     for (int i=first;i<draw->VtxBuffer.Size;++i) {
@@ -102,15 +102,18 @@ bool draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteracti
         draw->AddText(ImGui::GetFont(),theme.cube.label_size*scale,
             {b.x+d.x*theme.cube.axis_label_gap*scale,b.y+d.y*theme.cube.axis_label_gap*scale},color(colors[i]),labels[i]);
     }
-    for (const auto& part:layout.parts) {
+    for (const auto& part:layout.faces) {
         std::vector<ImVec2> polygon; for (const auto p:part.polygon) polygon.push_back(point(p));
         auto fill=theme.cube_face;
         const float light=float(0.65+part.light*0.35);
         fill.r*=light; fill.g*=light; fill.b*=light;
         draw->AddConvexPolyFilled(polygon.data(),int(polygon.size()),color(fill));
-        if (same(hit,part.hit)) draw->AddConvexPolyFilled(polygon.data(),int(polygon.size()),color(theme.cube.hover));
         draw->AddPolyline(polygon.data(),int(polygon.size()),color(theme.cube_edge),ImDrawFlags_Closed,theme.cube.line_width*scale);
         face_text(draw,part,camera,layout,theme.cube,scale,color(theme.text));
+    }
+    for (const auto& part:layout.parts) if (same(hit,part.hit)) {
+        std::vector<ImVec2> polygon; for (const auto p:part.polygon) polygon.push_back(point(p));
+        draw->AddConvexPolyFilled(polygon.data(),int(polygon.size()),color(theme.cube.hover));
     }
     for (const auto& control:layout.controls) control_icon(draw,control,theme,scale,hit.kind==control.kind);
     if (same(hit,interaction.hover)) interaction.hover_seconds+=io.DeltaTime;

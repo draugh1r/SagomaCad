@@ -20,6 +20,7 @@ struct CubePart {
 };
 struct CubeControl { CubeKind kind; CubePoint center; };
 struct CubeLayout {
+    std::vector<CubePart> faces;
     std::vector<CubePart> parts;
     std::vector<CubeControl> controls;
     CubePoint origin;

@@ -126,3 +126,13 @@ Usate le tre immagini Fusion fornite dall'utente e conservate in `docs/reference
 La camera gestisce anche il roll e l'orbita oltre i poli, mantenendo una base valida in Alto e Basso. Il mouse sul cubo non attiva la navigazione del canvas; il pannello di creazione/modifica è posizionato sotto il cubo. Test numerici su tutte le 26 direzioni e test UI con clic, Home, frecce, spigolo, vertice, trascinamento e controllo delle sovrapposizioni nei due temi. Screenshot `docs/screenshots/viewcube-*` a 1440×900 chiaro e 1280×720 scuro confrontati con i riferimenti dell'utente; ritardato il tooltip che copriva l'evidenziazione e rese leggibili tutte le etichette degli assi.
 
 Build Release e CTest 26/26 verdi, controllo dei livelli verde, fuzz 108 casi diretti e 94 MCP senza crash. Eseguibile aggiornato nella cartella normale `build/agent-review/apps/sagomacad/sagomacad.exe`. Nessuna golden image sostituita e M3 non iniziato.
+
+## 2026-10-14 — Correzione cubo e orbita
+
+Le nuove immagini dell'utente mostrano un cubo normale: le fasce di selezione di spigoli e vertici sono evidenziazioni sulle facce. La prima implementazione le aveva disegnate come smussi permanenti. Ora il disegno ha sei facce quadrate complete e il contorno originale; le 26 zone di selezione sono separate e mostrano sovrapposizioni piatte solo al passaggio del mouse. Aggiunto un test che verifica i quattro angoli della faccia TOP senza arretramenti, oltre ai test delle 26 direzioni già presenti.
+
+L'orbita precedente applicava rotazioni sugli assi locali e conservava il vettore up risultante, accumulando roll. L'orbita del canvas e del cubo usa ora yaw attorno alla verticale Z e pitch limitato ai poli, senza roll; la rotazione laterale di 90° rimane un'azione esplicita del cubo. Test di 100 trascinamenti verificano roll nullo, asse Z verticale sullo schermo e assenza di ribaltamento dell'orizzonte.
+
+Rigenerati e controllati screenshot del cubo normale, spigolo evidenziato, TOP e modifica feature nei due temi e dimensioni, confrontati con i nuovi riferimenti. Build Release, 26/26 test e controllo livelli verdi. App corretta in `build/agent-review/apps/sagomacad-cube-fixed/sagomacad.exe`: la versione precedente in `apps/sagomacad` è ancora aperta e non è stata chiusa. Nessuna golden image sostituita, M3 non iniziato.
+
+Chiusura del 15 ottobre: verificati eseguibile corretto, controllo dei livelli e diff; salvate le correzioni e gli screenshot in un commit dedicato.
