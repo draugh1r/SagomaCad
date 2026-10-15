@@ -3,6 +3,7 @@
 #include <string>
 #include "ui/camera.hpp"
 #include "ui/view_cube.hpp"
+#include "engine/tools/sketch_tool.hpp"
 
 namespace sagomacad::ui {
 struct State {
@@ -15,6 +16,17 @@ struct State {
     bool properties = false;
     bool timeline = true;
     bool sketch_mode = false;
+    bool sketch_plane_picker=false;
+    std::string sketch_view_id,sketch_drag_point,sketch_dimension_id,sketch_dimension_kind="length";
+    std::vector<std::string> sketch_selection;
+    engine::SketchTool sketch_tool;
+    bool sketch_grid=true,sketch_snap=true,sketch_profiles=true,sketch_points=true,sketch_dimensions=true,sketch_constraints=true,sketch_construction=true;
+    bool sketch_dimension_open=false,sketch_constraint_open=false;
+    int sketch_constraint_kind=0;
+    std::array<char,4096> sketch_dimension_expression{};
+    std::string sketch_error;
+    bool sketch_field_focus=false;
+    std::array<std::array<char,4096>,2> sketch_fields{};
     int selected_tab = 0;
     bool previous_sketch_mode = false;
     bool palette_open = false;

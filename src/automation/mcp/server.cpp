@@ -41,6 +41,7 @@ Json tools_catalog() {
         entry("undo","Annulla l'ultima modifica",schema()),
         entry("redo","Ripete l'ultima modifica annullata",schema()),
         entry("document_inspect","Legge documento, parametri, feature e storia",schema()),
+        entry("sketch_inspect","Entità, vincoli, quote, profili e stato del solver",schema({{"sketch",text_schema()}})),
         entry("document_open","Apre un documento in una radice consentita",schema({{"path",text_schema()}},{"path"})),
         entry("document_save","Salva un documento in una radice consentita",schema({{"path",text_schema()},{"overwrite",bool_schema()}})),
         entry("render_view","Renderizza un PNG da vista iso, top, front o right",schema({{"view",{{"type","string"},{"enum",Json::array({"iso","top","front","right"})}}},{"size",text_schema()}},{"view"})),
@@ -163,6 +164,11 @@ Json Server::tool(std::string_view name,const Json& a) {
         const std::string utf8(bytes.begin(),bytes.end());
         return invoke("engine.execute",{{"command",saving?"document.saveAs":"document.open"},{"params",{{"path",utf8}}}});
     }
+    if (name=="sketch_inspect") {
+        if (!valid_keys(a,{"sketch"}) || !string_field(a,"sketch"))
+            return tool_error("mcp.invalid_arguments","sketch deve essere una stringa");
+        return invoke("engine.execute",{{"command","sketch.inspect"},{"params",a}});
+    }
     if (name=="mass_properties") {
         if (!valid_keys(a,{"body"}) || !string_field(a,"body"))
             return tool_error("mcp.invalid_arguments","body deve essere una stringa");
@@ -251,7 +257,7 @@ std::optional<Json> Server::handle(const Json& request) {
                 data=reply.at("result");
             } else if (uri=="sagomacad://docs/modeling-guide") {
                 mime="text/markdown";
-                data="# Guida SagomaCad\nUsa commands_list per scoprire i comandi. Crea parametri con param.set; usa primitive.add per box, cilindro e sfera. Le dimensioni accettano espressioni, per esempio larghezza o 20 mm. Per sottrarre un cilindro usa operation=subtract e indica body. Controlla il volume con mass_properties e salva con document_save. Schizzi e riferimenti stabili non sono ancora disponibili.\n";
+                data="# Guida SagomaCad\nUsa commands_list per scoprire i comandi. Crea parametri con param.set; usa primitive.add per box, cilindro e sfera. Le dimensioni accettano espressioni, per esempio larghezza o 20 mm. Per sottrarre un cilindro usa operation=subtract e indica body. Controlla il volume con mass_properties e salva con document_save. Per gli schizzi usa sketch.create con plane XY, XZ o YZ; sketch.rect con width, height e centered; sketch.circle con diameter. Le quote sono espressioni parametriche. sketch_inspect restituisce gradi di libertà, conflitti e profili; zero gradi di libertà e state=constrained indicano uno schizzo completamente vincolato. Usa sketch.finish per uscire. Estrusioni da profili e riferimenti stabili appartengono ai traguardi successivi.\n";
             } else return rpc_error(id,-32602,"mcp.unknown_resource","Risorsa sconosciuta: "+uri,"Consulta resources/list");
             result={{"contents",Json::array({{{"uri",uri},{"mimeType",mime},{"text",mime=="application/json"?data.dump():data.get<std::string>()}}})}};
         } else return rpc_error(id,-32601,"mcp.unknown_method","Metodo MCP sconosciuto: "+method,"Consulta tools/list e resources/list");

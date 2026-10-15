@@ -1,46 +1,57 @@
-# Parità dei comandi della UI — M2
+# Parità della barra — M3
 
-Il catalogo della barra è definito in `src/ui/toolbar_catalog.cpp`. Ogni voce ha un ID presente in `docs/PLAN.md` e un'icona Lucide distinta. Lo stato di ciascuna voce viene dal registro dei comandi: **9 voci registrate, 27 mancanti**. Le voci mancanti sono disabilitate e mostrano «Non ancora disponibile». Annulla e Ripeti sono registrati ma si abilitano solo quando la storia contiene la rispettiva operazione.
+Generato da `tools/update_parity.py` leggendo il catalogo e interrogando il registro reale.
 
-La palette (S o Ctrl+K) mostra anche i comandi registrati senza voce dedicata nella barra: `document.inspect`, `param.set`, `param.delete`, `primitive.edit`, `feature.edit`, `feature.suppress`, `feature.delete` e `body.visibility`. `param.list` apre il pannello dei parametri. `primitive.add` apre il dialogo per box, cilindro e sfera; `export.stl` chiede il percorso ed è disponibile quando esiste un corpo. Il doppio clic o il menu contestuale su una feature nella timeline apre lo stesso pannello della creazione; il browser offre la modifica tramite il menu contestuale del corpo.
+**20 comandi registrati, 17 mancanti** tra gli ID unici della barra. Le disponibilità contestuali (undo, redo, export) sono valutate a ogni frame; le voci mancanti sono disabilitate con il tooltip «Non ancora disponibile».
 
-La scheda Schizzo è contestuale e compare solo quando `sketch_mode` è attivo. Le schede Superficie, Lamiera e Plastica sono state rimosse. Mesh, Gestisci e Utilità restano predisposte senza gruppi. Ogni gruppo mostra due o tre comandi principali; il menu sotto il gruppo contiene tutte le sue voci. Gli ID nuovi per le sole voci UI sono riservati nel piano, senza implementazione del comando.
+Schizzo è contestuale. I comandi di disegno aprono strumenti, le quote e i vincoli usano la selezione; Fine schizzo chiude la modalità. File, palette, timeline, CLI e MCP passano dallo stesso registro.
 
-| Area | Voce | ID previsto in PLAN.md | Stato M2 |
-| --- | --- | --- | --- |
-| Menu file | Nuovo | `document.new` | Attivo |
-| Menu file | Apri | `document.open` | Attivo |
-| Menu file | Salva | `document.save` | Attivo |
-| Menu file | Salva con nome | `document.saveAs` | Attivo |
-| Barra documento | Annulla | `edit.undo` | Contestuale |
-| Barra documento | Ripeti | `edit.redo` | Contestuale |
-| Solido / Crea | Schizzo | `sketch.create` | Mancante |
-| Solido / Crea | Estrudi | `feature.extrude` | Mancante |
-| Solido / Crea | Rivolvi | `feature.revolve` | Mancante |
-| Solido / Crea | Foro | `feature.hole` | Mancante |
-| Solido / Crea | Primitiva | `primitive.add` | Attivo |
-| Solido / Modifica | Premi/tira | `face.pushPull` | Mancante |
-| Solido / Modifica | Raccordo | `feature.fillet` | Mancante |
-| Solido / Modifica | Smusso | `feature.chamfer` | Mancante |
-| Solido / Modifica | Cambia parametri | `param.list` | Attivo |
-| Solido / Costruisci | Piano | `construction.plane` | Mancante |
-| Solido / Costruisci | Asse | `construction.axis` | Mancante |
-| Solido / Costruisci | Punto | `construction.point` | Mancante |
-| Solido / Ispeziona | Misura | `inspect.measure` | Mancante |
-| Solido / Ispeziona | Sezione | `inspect.section` | Mancante |
-| Solido / Inserisci | Importa mesh | `mesh.import` | Mancante |
-| Solido / Inserisci | Importa STEP | `import.step` | Mancante |
-| Solido / Seleziona | Seleziona | `selection.set` | Mancante |
-| Solido / Seleziona | Scorri | `selection.cycle` | Mancante |
-| Solido / Esporta | STL | `export.stl` | Contestuale |
-| Solido / Esporta | 3MF | `export.3mf` | Mancante |
-| Solido / Esporta | STEP | `export.step` | Mancante |
-| Schizzo / Disegna | Linea | `sketch.line` | Mancante |
-| Schizzo / Disegna | Rettangolo | `sketch.rect` | Mancante |
-| Schizzo / Disegna | Cerchio | `sketch.circle` | Mancante |
-| Schizzo / Vincoli | Vincolo | `sketch.constraint.add` | Mancante |
-| Schizzo / Vincoli | Quota | `sketch.dimension.add` | Mancante |
-| Schizzo / Vincoli | Cambia quota | `sketch.dimension.set` | Mancante |
-| Schizzo / Gestisci | Arco | `sketch.arc` | Mancante |
-| Schizzo / Gestisci | Modifica | `sketch.edit` | Mancante |
-| Schizzo / Gestisci | Termina | `sketch.finish` | Mancante |
+| Area | Voce | ID | Stato |
+|---|---|---|---|
+| Menu file | Nuovo | `document.new` | Registrato |
+| Menu file | Apri | `document.open` | Registrato |
+| Menu file | Salva | `document.save` | Registrato |
+| Menu file | Salva con nome | `document.saveAs` | Registrato |
+| Barra documento | Annulla | `edit.undo` | Registrato |
+| Barra documento | Ripeti | `edit.redo` | Registrato |
+| Solido / Crea | Schizzo | `sketch.create` | Registrato |
+| Solido / Crea | Estrudi | `feature.extrude` | Non ancora disponibile |
+| Solido / Crea | Rivolvi | `feature.revolve` | Non ancora disponibile |
+| Solido / Crea | Foro | `feature.hole` | Non ancora disponibile |
+| Solido / Crea | Primitiva | `primitive.add` | Registrato |
+| Solido / Modifica | Premi/tira | `face.pushPull` | Non ancora disponibile |
+| Solido / Modifica | Raccordo | `feature.fillet` | Non ancora disponibile |
+| Solido / Modifica | Smusso | `feature.chamfer` | Non ancora disponibile |
+| Solido / Modifica | Cambia parametri | `param.list` | Registrato |
+| Solido / Costruisci | Piano | `construction.plane` | Non ancora disponibile |
+| Solido / Costruisci | Asse | `construction.axis` | Non ancora disponibile |
+| Solido / Costruisci | Punto | `construction.point` | Non ancora disponibile |
+| Solido / Ispeziona | Misura | `inspect.measure` | Non ancora disponibile |
+| Solido / Ispeziona | Sezione | `inspect.section` | Non ancora disponibile |
+| Solido / Inserisci | Importa mesh | `mesh.import` | Non ancora disponibile |
+| Solido / Inserisci | Importa STEP | `import.step` | Non ancora disponibile |
+| Solido / Seleziona | Seleziona | `selection.set` | Non ancora disponibile |
+| Solido / Seleziona | Scorri | `selection.cycle` | Non ancora disponibile |
+| Solido / Esporta | STL | `export.stl` | Registrato |
+| Solido / Esporta | 3MF | `export.3mf` | Non ancora disponibile |
+| Solido / Esporta | STEP | `export.step` | Non ancora disponibile |
+| Schizzo / Crea | Linea | `sketch.line` | Registrato |
+| Schizzo / Crea | Rettangolo | `sketch.rect` | Registrato |
+| Schizzo / Crea | Cerchio | `sketch.circle` | Registrato |
+| Schizzo / Crea | Arco | `sketch.arc` | Registrato |
+| Schizzo / Modifica | Sposta punto | `sketch.point.move` | Registrato |
+| Schizzo / Modifica | Cambia quota | `sketch.dimension.set` | Registrato |
+| Schizzo / Vincoli | Vincolo | `sketch.constraint.add` | Registrato |
+| Schizzo / Vincoli | Quota | `sketch.dimension.add` | Registrato |
+| Schizzo / Vincoli | Cambia quota | `sketch.dimension.set` | Registrato |
+| Schizzo / Ispeziona | Quota | `sketch.dimension.add` | Registrato |
+| Schizzo / Ispeziona | Stato solver | `sketch.inspect` | Registrato |
+| Schizzo / Inserisci | Importa mesh | `mesh.import` | Non ancora disponibile |
+| Schizzo / Inserisci | Importa STEP | `import.step` | Non ancora disponibile |
+| Schizzo / Seleziona | Seleziona | `selection.set` | Non ancora disponibile |
+| Schizzo / Seleziona | Scorri | `selection.cycle` | Non ancora disponibile |
+| Schizzo / Fine Schizzo | Fine schizzo | `sketch.finish` | Registrato |
+
+## Altri comandi disponibili da CLI/MCP e palette
+
+`body.visibility`, `document.inspect`, `feature.delete`, `feature.edit`, `feature.suppress`, `model.mass_properties`, `param.delete`, `param.set`, `primitive.edit`, `sketch.edit`

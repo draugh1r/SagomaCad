@@ -72,7 +72,8 @@ Json mcp_visual_tool(std::string_view name,const Json& a,const McpInvoke& comman
         if (width<320 || height<240 || width>1600 || height>1200 || width*height>1800000)
             return failure("mcp.invalid_size","Immagine fuori intervallo (320x240–1600x1200)");
         sagomacad::engine::Engine copied_engine;
-        sagomacad::engine::Engine* render_engine=&local_engine;
+        copied_engine.session().document=local_engine.session().document;
+        sagomacad::engine::Engine* render_engine=&copied_engine;
         if (bridge) {
             const auto reply=commands("engine.execute",{{"command","document.inspect"},{"params",Json::object()}});
             if (!reply.is_object() || reply.contains("error") || !reply.contains("result"))

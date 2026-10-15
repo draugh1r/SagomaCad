@@ -223,6 +223,7 @@ bool Shell::poll() {
     return true;
 }
 void Shell::draw() {
+    sync_sketch();
     const auto& t = ui::theme(state_.theme == "light");
     const float z = static_cast<float>(scale_);
     state_.view_transition.advance(state_.camera,ImGui::GetIO().DeltaTime);
@@ -282,7 +283,7 @@ void Shell::draw() {
             if (hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(t.panel_alt),t.rounding*z);
             const float icon_size=(show_label?21.0f:17.0f)*z;
             icon(dl,icon_texture(command.icon),{a.x+(size.x-icon_size)*0.5f,a.y+2*z},icon_size,
-                 packed(available?t.text:t.muted));
+                 packed(available?(command.id=="sketch.finish"?t.sketch.finish:t.text):t.muted));
             if (show_label) centered_text(dl,{a.x+size.x*0.5f,a.y+26*z},command.label,
                 packed(available?t.text:t.muted),size.x-4*z,12.5f*z);
             ImGui::PopID();
@@ -426,7 +427,16 @@ void Shell::draw() {
             dl->AddText({q.x+87*z,q.y+1*z},packed(t.text),body.name.c_str());
             ImGui::SetCursorScreenPos(q); ImGui::Dummy({1,23*z});
         }
-        row("Schizzi",1,false,false,true,true);
+        bool has_sketches=false;
+        if(engine_)for(const auto& [id,f]:engine_->session().document.features)if(f.type=="sketch")has_sketches=true;
+        row("Schizzi",1,has_sketches,has_sketches,true,true);
+        if(engine_)for(const auto& [id,f]:engine_->session().document.features)if(f.type=="sketch") {
+            ImGui::Indent(45*z);
+            ImGui::Selectable((f.name+"##"+id).c_str(),state_.sketch_view_id==id);
+            if(ImGui::IsItemHovered()&&ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))open_feature_editor(id);
+            if(ImGui::BeginPopupContextItem()) {if(ImGui::MenuItem("Modifica schizzo"))open_feature_editor(id);ImGui::EndPopup();}
+            ImGui::Unindent(45*z);
+        }
     });
     if (state_.properties) panel("Proprietà", ui::labels.properties, t, [&] {
         ImGui::TextDisabled("%s", ui::labels.selection); ImGui::Separator();
@@ -453,7 +463,7 @@ void Shell::draw() {
                 const auto& feature=found->second;
                 const auto error=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;});
                 const bool failed=error!=snapshot.features.end() && !error->error.empty();
-                const char* glyph=feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"circle-dot":"circle";
+                const char* glyph=feature.type=="sketch"?"pen-tool":feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"circle-dot":"circle";
                 const ImVec2 pos=ImGui::GetCursorScreenPos();
                 ImGui::PushID(id.c_str());
                 ImGui::InvisibleButton("feature",{100*z,23*z});
@@ -543,7 +553,7 @@ void Shell::draw() {
         dl->AddRectFilled(a,b,packed(t.viewport));
         dl->PushClipRect(a,b,true);
         const float cx=(a.x+b.x)*0.5f;
-        {
+        if (!state_.sketch_mode) {
             const double extent=std::max(20.0,state_.camera.distance*0.8);
             const double step=std::max(5.0,std::pow(10.0,std::floor(std::log10(extent/5.0))));
             const int count=std::min(100,int(extent/step));
@@ -557,6 +567,7 @@ void Shell::draw() {
             }
             draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
         }
+        draw_sketch_canvas(t,canvas_hovered && !over_navigation && !over_cube);
         if (surfaces_.empty()) {
             const auto origin=state_.camera.project({0,0,0},viewport);
             if (origin.visible) dl->AddCircleFilled({float(origin.x),float(origin.y)},2.5f*z,packed(t.accent));
@@ -593,6 +604,7 @@ void Shell::draw() {
         dl->PopClipRect();
     });
     draw_overlays(t);
+    draw_sketch_panels(t);
 }
 void Shell::fit_camera() {
     if (surfaces_.empty()) return;
@@ -604,12 +616,30 @@ void Shell::fit_camera() {
     state_.camera.fit(lo,hi); camera_fitted_=true;
 }
 bool Shell::open_feature_editor(std::string_view feature_id) {
+    if(engine_) {
+        auto it=engine_->session().document.features.find(std::string(feature_id));
+        if(it!=engine_->session().document.features.end() && it->second.type=="sketch") {
+            auto r=engine_->execute("sketch.edit",{{"sketch",feature_id}});
+            if(!r.ok)state_.status_message=r.error;
+            return r.ok;
+        }
+    }
     return engine_ && ui::begin_feature_edit(state_,engine_->session().document,feature_id);
 }
 void Shell::invoke_command(std::string_view id) {
     if (!engine_) return;
     const auto availability=ui::command_availability(id,engine_);
     if (!availability.enabled) { state_.status_message=availability.reason; return; }
+    if (id=="sketch.create") {
+        state_.sketch_plane_picker=true;state_.sketch_tool.begin("select");
+        auto destination=state_.camera;destination.home();destination.target={};
+        state_.view_transition.begin(state_.camera,destination,ui::theme(state_.theme=="light").cube.transition_duration);
+        return;
+    }
+    if(id=="sketch.line"||id=="sketch.rect"||id=="sketch.circle"||id=="sketch.arc") {state_.sketch_tool.begin(std::string(id.substr(7)));return;}
+    if(id=="sketch.dimension.add"||id=="sketch.dimension.set") {state_.sketch_tool.begin("dimension");return;}
+    if(id=="sketch.constraint.add") {state_.sketch_constraint_open=true;return;}
+    if(id=="sketch.point.move"||id=="sketch.inspect") {state_.sketch_tool.begin("select");return;}
     if (id=="param.list" || id=="param.set" || id=="param.delete") {
         state_.parameters_open=true;
         return;
@@ -884,7 +914,7 @@ bool Shell::screenshot(const std::string& path, std::string& error, bool viewpor
     if (path.empty()) { error="empty screenshot path"; return false; }
     int w=0,h=0; SDL_GetWindowSizeInPixels(window_,&w,&h);
     if (w<=0 || h<=0 || w>8192 || h>8192) { error="invalid framebuffer size"; return false; }
-    const int framebuffer_height=h;
+    const int framebuffer_width=w,framebuffer_height=h;
     int x=0,y=0;
     if (viewport_only) {
         const auto& display=ImGui::GetIO().DisplaySize;
@@ -897,7 +927,14 @@ bool Shell::screenshot(const std::string& path, std::string& error, bool viewpor
         if (w<=0 || h<=0) { error="empty viewport"; return false; }
     }
     std::vector<unsigned char> pixels(static_cast<size_t>(w)*h*4);
-    glReadBuffer(GL_FRONT);
+    // A hidden/occluded native window has no reliable readable front buffer on Windows.
+    // Redraw the completed ImGui frame into the back buffer before reading it.
+    glViewport(0,0,framebuffer_width,framebuffer_height);
+    const auto& background=ui::theme(state_.theme=="light").background;
+    glClearColor(background.r,background.g,background.b,background.a);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glReadBuffer(GL_BACK);
     glPixelStorei(GL_PACK_ALIGNMENT,1);
     glReadPixels(x,viewport_only?framebuffer_height-y-h:0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,pixels.data());
     std::vector<unsigned char> flipped(pixels.size());
@@ -932,6 +969,7 @@ nlohmann::json Shell::inspect() const {
         {"docking",true},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
         {"feature_edit_open",state_.primitive_editor_open},{"feature_edit_id",state_.primitive_feature_id},
+        {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"error",state_.sketch_error}}},
         {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }
 }

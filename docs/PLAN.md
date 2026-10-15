@@ -153,11 +153,14 @@ struct CommandSpec {
 document.new  document.open {path}  document.save {path?}  document.inspect
 edit.undo  edit.redo  edit.delete {ids}
 param.set {name, expression}  param.list  param.delete {name}
-sketch.create {plane: "XY"|"XZ"|"YZ" | face: FaceRef}  sketch.finish  sketch.edit {feature}
-sketch.line {points}  sketch.rect {corner, corner2 | center, size}  sketch.circle {center, diameter}  sketch.arc {...}
-sketch.constraint.add {kind, entities}   // coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, midpoint, fix
-sketch.dimension.add {kind, entities, value}   // distance, length, diameter, radius, angle
-sketch.dimension.set {id, value}
+sketch.create {plane: "XY"|"XZ"|"YZ"}  sketch.finish {sketch?}  sketch.edit {sketch}
+sketch.line {sketch?,x1,y1,x2,y2,length?,angle?,anchor?}
+sketch.rect {sketch?,x?,y?,width,height,centered?,anchor?}  sketch.circle {sketch?,x?,y?,diameter,anchor?}
+sketch.arc {sketch?,x?,y?,radius,start_angle,end_angle,anchor?}
+sketch.constraint.add {sketch?,kind,refs}   // coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, midpoint, fix
+sketch.dimension.add {sketch?,kind,refs,expression}   // distance, length, diameter, radius, angle
+sketch.dimension.set {sketch?,dimension,expression}
+sketch.inspect {sketch?}  sketch.point.move {sketch?,point,x,y}
 feature.extrude {sketch, profiles, distance, direction, operation}
 feature.revolve {sketch, profiles, axis, angle, operation}
 feature.fillet {edges, radius}  feature.chamfer {edges, distance}
@@ -457,6 +460,8 @@ CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto 
 **M3 - Sketcher 2D**
 Piani di schizzo, linea, rettangolo, cerchio, arco, vincoli automatici e manuali, quote, solver, colori per gradi di libertà (blu libero, nero vincolato), **quote digitate durante il disegno** come descritto al punto 6. MCP: `sketch_inspect`.
 *Fatto quando:* un rettangolo 40x20 si disegna digitando "40 Tab 20 Invio" e risulta completamente vincolato.
+
+Protocollo ed esempi: `docs/sketches.md`. Include solver Eigen con diagnostica di conflitti/ridondanze, piani dell'origine, quote parametriche, profili chiusi, trascinamento con coalescenza, modifica dalla timeline e parità CLI/MCP (`sketch_inspect`). Schizzi su faccia in M5, feature da profili in M4.
 
 **M4 - Feature e timeline**
 Estrusione e taglio da profili, rivoluzione, timeline con modifica parametri e rollback, regen incrementale, feature in errore senza crash. MCP: `feature_get`.

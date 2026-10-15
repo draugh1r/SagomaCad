@@ -42,6 +42,7 @@ struct Session {
     doc::Document document;
     std::filesystem::path path;
     History history;
+    std::string active_sketch; // editing state, not document geometry
 };
 
 struct CommandSpec {
@@ -89,6 +90,7 @@ std::vector<CommandSpec> export_specs();
 std::vector<CommandSpec> body_specs();
 std::vector<CommandSpec> feature_specs();
 std::vector<CommandSpec> measure_specs();
+std::vector<CommandSpec> sketch_specs();
 }
 
 } // namespace sagomacad::engine

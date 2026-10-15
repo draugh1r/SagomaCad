@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <array>
+#include <cmath>
 
 int main(int argc,char** argv) {
     if (argc==2 && std::string(argv[1])=="fuzz-commands") return fuzz_commands();
@@ -20,7 +21,8 @@ int main(int argc,char** argv) {
     int width=1440,height=900,scale=1;
     std::string output,theme="light",script="[]";
     bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false,export_dialog=false;
-    nlohmann::json parameter_draft,feature_draft;
+    nlohmann::json parameter_draft,feature_draft,sketch_draft;
+    bool sketch_plane_picker=false;
     std::string feature_edit_id;
     for (int i=2;i<argc;++i) {
         const std::string arg=argv[i];
@@ -54,6 +56,17 @@ int main(int argc,char** argv) {
             const auto result=engine.execute(params["command"].get<std::string>(),params.value("params",nlohmann::json::object()));
             if (!result.ok) { std::cerr<<result.error<<'\n'; return 1; }
         } else if (method=="ui.set") {
+            if(params.contains("sketch_plane_picker")) {if(!params["sketch_plane_picker"].is_boolean())return 2;sketch_plane_picker=params["sketch_plane_picker"].get<bool>();}
+            if(params.contains("sketch_draft")) {
+                const auto& draft=params["sketch_draft"];if(!draft.is_object())return 2;
+                for(auto it=draft.begin();it!=draft.end();++it) {
+                    if(it.key()=="tool"||it.key()=="first"||it.key()=="second") {if(!it->is_string()||it->get<std::string>().size()>=4096)return 2;}
+                    else if(it.key()=="x"||it.key()=="y"||it.key()=="cursor_x"||it.key()=="cursor_y") {if(!it->is_number()||!std::isfinite(it->get<double>())||std::abs(it->get<double>())>1e6)return 2;}
+                    else return 2;
+                }
+                const auto tool=draft.value("tool",std::string("rect"));if(tool!="rect"&&tool!="line"&&tool!="circle"&&tool!="arc")return 2;
+                sketch_draft=draft;
+            }
             if (params.contains("theme")) {
                 if (!params["theme"].is_string()) return 2;
                 theme=params["theme"].get<std::string>();
@@ -81,6 +94,7 @@ int main(int argc,char** argv) {
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
     shell.bind_engine(&engine);
     shell.state().sketch_mode=sketch_mode;
+    shell.state().sketch_plane_picker=sketch_plane_picker;
     shell.state().palette_open=palette_open;
     shell.state().parameters_open=parameters_open;
     if (export_dialog) {
@@ -121,6 +135,14 @@ int main(int argc,char** argv) {
     }
     if (glyph_test && !shell.glyphs_available()) { std::cerr<<"Missing Latin glyphs in Inter font\n"; return 1; }
     shell.set_glyph_sample(glyph_test);
+    shell.poll();shell.render();
+    if(!engine.session().active_sketch.empty())shell.state().view_transition.advance(shell.state().camera,1.0);
+    if(sketch_draft.is_object()) {
+        auto& tool=shell.state().sketch_tool;tool.begin(sketch_draft.value("tool",std::string("rect")));
+        tool.click(sketch_draft.value("x",0.0),sketch_draft.value("y",0.0));tool.move(sketch_draft.value("cursor_x",40.0),sketch_draft.value("cursor_y",20.0));
+        for(int i=0;i<2;++i){auto key=i==0?"first":"second";if(sketch_draft.contains(key)){auto value=sketch_draft[key].get<std::string>();if(value.size()>=shell.state().sketch_fields[i].size())return 2;tool.fields[i]=value;tool.locked[i]=true;std::snprintf(shell.state().sketch_fields[i].data(),shell.state().sketch_fields[i].size(),"%s",value.c_str());}}
+        shell.state().sketch_field_focus=true;
+    }
     for (int frame=0;frame<3;++frame) { shell.poll(); shell.render(); }
     std::string error;
     if (!shell.screenshot(output,error)) { std::cerr<<error<<'\n'; return 1; }

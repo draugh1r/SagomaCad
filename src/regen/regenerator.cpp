@@ -1,5 +1,6 @@
 #include "regen/regenerator.hpp"
 #include "doc/expression.hpp"
+#include "solver/sketch_solver.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -61,6 +62,13 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             continue;
         }
         if (it->second.suppressed) { snapshot_.features.push_back({id,{},false}); continue; }
+        if (it->second.type=="sketch") {
+            try {
+                auto result=solver::solve(document,doc::read_sketch(it->second.data));
+                snapshot_.features.push_back({id,result.error,false});
+            } catch(const std::exception& e) { snapshot_.features.push_back({id,e.what(),false}); }
+            continue;
+        }
         auto [cached,inserted]=cache_.try_emplace(id);
         if (inserted) cached->second=build(document,it->second);
         else ++snapshot_.cache_hits;

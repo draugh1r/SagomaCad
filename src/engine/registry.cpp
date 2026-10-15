@@ -32,7 +32,7 @@ bool History::redo(doc::Document& document) {
 Registry::Registry() {
     for (auto group : {cmds::document_specs(), cmds::parameter_specs(), cmds::edit_specs(),
                        cmds::primitive_specs(), cmds::export_specs(), cmds::body_specs(), cmds::feature_specs(),
-                       cmds::measure_specs()})
+                       cmds::measure_specs(), cmds::sketch_specs()})
         for (auto& spec : group) {
             if (find(spec.id)) throw std::logic_error("ID comando duplicato: " + spec.id);
             specs_.push_back(std::move(spec));
@@ -102,6 +102,7 @@ CommandResult Engine::execute_batch(const nlohmann::json& steps, bool stop_on_er
         }
         const auto before=session_.document;
         session_.document=std::move(staged.session_.document);
+        session_.active_sketch=std::move(staged.session_.active_sketch);
         session_.history.record(before,session_.document,{});
         return {true,{{"results",std::move(results)},{"history_steps",session_.history.size()}},{}};
     } catch (const std::exception& e) { return CommandResult::failure(std::string("Batch non valido: ")+e.what()); }

@@ -49,6 +49,15 @@ void rename_reference(std::string& expression, std::string_view before, std::str
 template<class Visit>
 void feature_expressions(doc::Document& document,Visit visit) {
     for (auto& [id,feature]:document.features) {
+        if (feature.type=="sketch" && feature.data.is_object()) {
+            for (const auto* key:{"constraints","dimensions"}) {
+                auto found=feature.data.find(key);
+                if (found==feature.data.end() || !found->is_array()) continue;
+                for(auto& c:*found) if(c.is_object() && c.contains("expression") && c["expression"].is_string()) {
+                    auto expression=c["expression"].get<std::string>();visit(expression,feature);c["expression"]=expression;
+                }
+            }
+        }
         if (feature.type.rfind("primitive.",0)!=0 || !feature.data.is_object()) continue;
         for (const char* key:{"dimensions","position"}) {
             auto found=feature.data.find(key);

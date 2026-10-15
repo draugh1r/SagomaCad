@@ -57,20 +57,20 @@ constexpr ToolbarCommand sketch_draw[] = {
     {"sketch.line", "Linea", "slash"},
     {"sketch.rect", "Rettangolo", "rectangle-horizontal"},
     {"sketch.circle", "Cerchio", "circle"},
+    {"sketch.arc", "Arco", "radar"},
 };
 constexpr ToolbarCommand sketch_constrain[] = {
     {"sketch.constraint.add", "Vincolo", "link-2"},
     {"sketch.dimension.add", "Quota", "ruler"},
     {"sketch.dimension.set", "Cambia quota", "pencil-ruler"},
 };
-constexpr ToolbarCommand sketch_manage[] = {
-    {"sketch.arc", "Arco", "radar"},
-    {"sketch.edit", "Modifica", "pen-line"},
-    {"sketch.finish", "Termina", "check"},
-};
+constexpr ToolbarCommand sketch_modify[] = {{"sketch.point.move","Sposta punto","move"},{"sketch.dimension.set","Cambia quota","pencil-ruler"}};
+constexpr ToolbarCommand sketch_inspect[] = {{"sketch.dimension.add","Quota","ruler"},{"sketch.inspect","Stato solver","scan-search"}};
+constexpr ToolbarCommand sketch_insert[] = {{"mesh.import","Importa mesh","file-input"},{"import.step","Importa STEP","folder-input"}};
+constexpr ToolbarCommand sketch_finish[] = {{"sketch.finish","Fine schizzo","check"}};
 constexpr ToolbarGroup sketch_groups[] = {
-    {"DISEGNA", sketch_draw, 3}, {"VINCOLI", sketch_constrain, 3},
-    {"GESTISCI", sketch_manage, 3},
+    {"CREA", sketch_draw, 3}, {"MODIFICA", sketch_modify, 2}, {"VINCOLI", sketch_constrain, 2},
+    {"ISPEZIONA", sketch_inspect, 2}, {"INSERISCI", sketch_insert, 2}, {"SELEZIONA", select, 2}, {"FINE SCHIZZO",sketch_finish,1},
 };
 constexpr ToolbarTab tabs[] = {
     {"SOLIDO", false, solid_groups},

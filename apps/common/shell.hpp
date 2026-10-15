@@ -4,6 +4,7 @@
 #include "engine/command.hpp"
 #include "regen/regenerator.hpp"
 #include "mesh/surface.hpp"
+#include "solver/sketch_solver.hpp"
 #include <SDL3/SDL_video.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -38,6 +39,8 @@ private:
     std::string surface_revision_;
     std::vector<mesh::Surface> surfaces_;
     bool camera_fitted_ = false;
+    std::string sketch_revision_;
+    std::map<std::string,solver::SketchResult> sketch_solutions_;
     int scale_ = 1;
     bool imgui_ready_ = false;
     bool dock_initialized_ = false;
@@ -49,5 +52,8 @@ private:
     void draw_overlays(const ui::Theme& theme);
     void invoke_command(std::string_view id);
     void fit_camera();
+    void sync_sketch();
+    void draw_sketch_canvas(const ui::Theme&,bool hovered);
+    void draw_sketch_panels(const ui::Theme&);
 };
 }

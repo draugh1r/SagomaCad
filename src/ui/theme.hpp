@@ -52,6 +52,13 @@ struct Theme {
     float grid_step, grid_slope, viewcube_size, nav_width, nav_height, ribbon_group_width, timeline_glyph_height;
     float palette_width, palette_height, parameter_width, parameter_height, file_dialog_width;
     ViewCubeTokens cube;
+    struct SketchTokens {
+        Color free{0.12f,0.40f,0.90f}, constrained{0.05f,0.05f,0.06f},profile{0.25f,0.70f,0.90f,0.14f},plane{0.65f,0.64f,0.60f,0.20f},plane_hover{0.98f,0.66f,0.12f,0.55f},finish{0.12f,0.65f,0.29f};
+        float palette_width=244,palette_y=180,palette_height=340,field_width=132,field_height=26,field_gap=8,point_radius=3,hit_radius=10,line_width=1.6f,constraint_size=12,dimension_offset=24,plane_extent=18,grid_pixel_step=28;
+        const char* palette="TAVOLOZZA DELLO SCHIZZO";
+        const char* finish_label="Fine schizzo";
+        const char* select_plane="Seleziona un piano";
+    } sketch;
 };
 inline constexpr Theme dark {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},

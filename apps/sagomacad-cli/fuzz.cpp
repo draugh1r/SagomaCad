@@ -68,6 +68,21 @@ int fuzz_commands() {
         }
         for (const auto& malformed : {nlohmann::json{{"command",7}},nlohmann::json{{"params",false}}})
             mcp_call(malformed);
+        // Reach geometry validation with an active sketch, also through MCP.
+        mcp_engine.execute("sketch.create",{{"plane","XY"}});
+        for(const auto& [id,params]:std::vector<std::pair<std::string,nlohmann::json>>{
+            {"sketch.line",{{"x1",0},{"y1",0},{"x2",1e300},{"y2",0}}},
+            {"sketch.line",{{"x1",0},{"y1",0},{"x2",std::numeric_limits<double>::quiet_NaN()},{"y2",0}}},
+            {"sketch.rect",{{"width","1e309 mm"},{"height","20 mm"}}},
+            {"sketch.circle",{{"diameter","-10 mm"}}},
+            {"sketch.arc",{{"radius","10 mm"},{"start_angle","0 deg"},{"end_angle","0 deg"}}},
+            {"sketch.constraint.add",{{"kind","coincident"},{"refs",{"missing","other"}}}},
+            {"sketch.dimension.add",{{"kind","radius"},{"refs",{"missing"}},{"expression","10 mm"}}},
+            {"sketch.point.move",{{"point","missing"},{"x",0},{"y",0}}}}) {
+            auto result=mcp_engine.execute(id,params);++cases;++rejected;
+            if(result.ok||result.error.empty())throw std::runtime_error("Fuzz geometria accettato: "+id);
+            mcp_call({{"command",id},{"params",params}});
+        }
         for (const auto& malformed : {nlohmann::json(nullptr),nlohmann::json::array({1})}) {
             const auto reply=mcp_server.handle({{"jsonrpc","2.0"},{"id",1},{"method","tools/call"},
                 {"params",{{"name","command_run"},{"arguments",malformed}}}});
