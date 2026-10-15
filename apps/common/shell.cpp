@@ -510,7 +510,7 @@ void Shell::draw() {
         const ui::CubePoint cube_origin{b.x-t.cube.widget_size*z-t.padding*z,a.y+t.padding*z};
         const bool over_cube=mouse.x>=cube_origin.x && mouse.x<=cube_origin.x+t.cube.widget_size*z &&
                              mouse.y>=cube_origin.y && mouse.y<=cube_origin.y+t.cube.widget_size*z;
-        const bool canvas_hovered=ImGui::IsItemHovered();
+        const bool canvas_hovered=ImGui::IsItemHovered(state_.sketch_tool.started?ImGuiHoveredFlags_AllowWhenBlockedByActiveItem:ImGuiHoveredFlags_None);
         if (canvas_hovered && !over_navigation && !over_cube && !state_.cube_interaction.pressed) {
             const auto& io=ImGui::GetIO();
             if (io.MouseWheel!=0 || ImGui::IsMouseDragging(ImGuiMouseButton_Middle) ||

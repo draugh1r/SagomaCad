@@ -43,6 +43,12 @@ try:
     assert client.ok("sketch_inspect", {"sketch": other})["plane"] == "XZ"
     command("sketch.edit", sketch=sketch)
     assert abs(client.ok("sketch_inspect")["entities"][-1]["radius"] - 8) < 1e-5
+    loose = command("sketch.create", plane="YZ")["sketch"]
+    command("sketch.rect", width="20 mm", height="15 mm", driving_width=False, driving_height=False)
+    command("sketch.circle", diameter="10 mm", driving_diameter=False)
+    free = client.ok("sketch_inspect", {"sketch": loose})
+    assert free["dimensions"] == [] and free["degrees_of_freedom"] == 3, free
+    command("sketch.edit", sketch=sketch)
     png(client.call("render_view", {"view": "top", "size": "640x480"}), 640, 480)
     assert client.call("command_run", {"command": "sketch.dimension.set", "params": {
         "dimension": "missing", "expression": "20 mm"}})["isError"]

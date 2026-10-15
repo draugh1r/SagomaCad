@@ -39,8 +39,8 @@ std::vector<CommandSpec> sketch_specs(){
     specs.push_back(spec("sketch.finish","Fine schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto id=f.id;s.active_sketch.clear();s.document.rollback=s.document.timeline.size();return CommandResult{true,{{"sketch",id}},{}};},false));
     specs.push_back(spec("sketch.edit","Modifica schizzo","{sketch: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);s.active_sketch=f.id;return CommandResult{true,{{"sketch",f.id}},{}};},false));
     specs.push_back(spec("sketch.inspect","Ispeziona schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto j=solver::inspect(solver::solve(s.document,doc::read_sketch(f.data)));j["sketch"]=f.id;return CommandResult{true,j,{}};},false));
-    specs.push_back(spec("sketch.rect","Rettangolo","{sketch?: id, x?: mm, y?: mm, width: expression, height: expression, centered?: bool, anchor?: bool}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x","y","width","height","centered","anchor","construction","flip_x","flip_y"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
+    specs.push_back(spec("sketch.rect","Rettangolo","{sketch?: id, x?: mm, y?: mm, width: expression, height: expression, centered?: bool, anchor?: bool, driving_width?: true, driving_height?: true}",[](Session& s,const J& p){
+        only_keys(p,{"sketch","x","y","width","height","centered","anchor","construction","flip_x","flip_y","driving_width","driving_height"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
         const auto w=string_arg(p,"width"),h=string_arg(p,"height");double width=expression(s.document,w),height=expression(s.document,h);if(width<=0||height<=0)throw std::runtime_error("Larghezza e altezza devono essere positive");
         bool centered=p.value("centered",false),anchor=p.value("anchor",true);double x=coordinate(p,"x"),y=coordinate(p,"y");
         if(centered&&(x!=0||y!=0))throw std::runtime_error("Il rettangolo centrato usa l'origine: ometti x e y");
@@ -48,14 +48,15 @@ std::vector<CommandSpec> sketch_specs(){
         if(centered){x=-dx/2;y=-dy/2;}std::vector<std::string> ps={point(t,x,y),point(t,x+dx,y),point(t,x+dx,y+dy),point(t,x,y+dy)};std::vector<std::string> es;
         for(int i=0;i<4;++i){es.push_back(entity(t,"line",{ps[i],ps[(i+1)%4]},1,p.value("construction",false)));constraint(t,i%2?"vertical":"horizontal",{es.back()});}
         if(anchor){if(centered)constraint(t,"centered",{ps[0],ps[2]});else constraint(t,"fix",{ps[0]},{x,y});}
-        dimension(t,"length",{es[0]},w);dimension(t,"length",{es[1]},h);return store(s,f,t,{{"entities",es},{"points",ps}});
+        if(p.value("driving_width",true))dimension(t,"length",{es[0]},w);
+        if(p.value("driving_height",true))dimension(t,"length",{es[1]},h);return store(s,f,t,{{"entities",es},{"points",ps}});
     },true,"R"));
     specs.push_back(spec("sketch.line","Linea","{sketch?: id, x1,y1,x2,y2: mm, length?: expression, angle?: expression, anchor?: bool}",[](Session& s,const J& p){
         only_keys(p,{"sketch","x1","y1","x2","y2","length","angle","anchor","construction"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
         for(const char* key:{"x1","y1","x2","y2"})if(!p.contains(key))throw std::runtime_error(std::string("Manca ")+key);
         double x=coordinate(p,"x1"),y=coordinate(p,"y1"),dx=coordinate(p,"x2")-x,dy=coordinate(p,"y2")-y;
-        if(p.contains("length")) {
-            double length=expression(s.document,string_arg(p,"length"));
+        if(p.contains("length")||p.contains("angle")) {
+            double length=p.contains("length")?expression(s.document,string_arg(p,"length")):std::hypot(dx,dy);
             if(length<=0)throw std::runtime_error("La lunghezza deve essere positiva");
             double angle=p.contains("angle")?expression(s.document,string_arg(p,"angle"),true):std::atan2(dy,dx);
             dx=length*std::cos(angle);dy=length*std::sin(angle);
@@ -69,18 +70,20 @@ std::vector<CommandSpec> sketch_specs(){
         if(p.contains("length"))dimension(t,"length",{id},string_arg(p,"length"));
         return store(s,f,t,{{"entity",id},{"points",{a,b}}});
     },true,"L"));
-    specs.push_back(spec("sketch.circle","Cerchio","{sketch?: id, x?: mm, y?: mm, diameter: expression, anchor?: bool}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x","y","diameter","anchor","construction"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
+    specs.push_back(spec("sketch.circle","Cerchio","{sketch?: id, x?: mm, y?: mm, diameter: expression, anchor?: bool, driving_diameter?: true}",[](Session& s,const J& p){
+        only_keys(p,{"sketch","x","y","diameter","anchor","construction","driving_diameter"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
         double x=coordinate(p,"x"),y=coordinate(p,"y");auto expr=string_arg(p,"diameter");double radius=expression(s.document,expr)/2;if(radius<=0)throw std::runtime_error("Il diametro deve essere positivo");
         auto center=point(t,x,y),id=entity(t,"circle",{center},radius,p.value("construction",false));if(p.value("anchor",true))constraint(t,"fix",{center},{x,y});
-        dimension(t,"diameter",{id},expr);return store(s,f,t,{{"entity",id},{"center",center}});
+        if(p.value("driving_diameter",true))dimension(t,"diameter",{id},expr);return store(s,f,t,{{"entity",id},{"center",center}});
     },true,"C"));
-    specs.push_back(spec("sketch.arc","Arco","{sketch?: id, x?: mm, y?: mm, radius: expression, start_angle: expression, end_angle: expression, anchor?: bool}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x","y","radius","start_angle","end_angle","anchor","construction"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);double x=coordinate(p,"x"),y=coordinate(p,"y");
+    specs.push_back(spec("sketch.arc","Arco","{sketch?: id, x?: mm, y?: mm, radius: expression, start_angle: expression, end_angle: expression, anchor?: bool, driving_radius?: true, driving_start_angle?: true, driving_end_angle?: true}",[](Session& s,const J& p){
+        only_keys(p,{"sketch","x","y","radius","start_angle","end_angle","anchor","construction","driving_radius","driving_start_angle","driving_end_angle"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);double x=coordinate(p,"x"),y=coordinate(p,"y");
         auto re=string_arg(p,"radius"),a=string_arg(p,"start_angle"),b=string_arg(p,"end_angle");double r=expression(s.document,re),u=expression(s.document,a,true),v=expression(s.document,b,true);if(r<=0||std::abs(std::remainder(u-v,2*std::numbers::pi))<1e-8)throw std::runtime_error("Arco degenere");
         auto center=point(t,x,y),start=point(t,x+r*std::cos(u),y+r*std::sin(u)),end=point(t,x+r*std::cos(v),y+r*std::sin(v));auto id=entity(t,"arc",{center,start,end},r,p.value("construction",false));
-        if(p.value("anchor",false))constraint(t,"fix",{center},{x,y});dimension(t,"radius",{id},re);
-        dimension(t,"angle",{center,start},a);dimension(t,"angle",{center,end},b);
+        if(p.value("anchor",false))constraint(t,"fix",{center},{x,y});
+        if(p.value("driving_radius",true))dimension(t,"radius",{id},re);
+        if(p.value("driving_start_angle",true))dimension(t,"angle",{center,start},a);
+        if(p.value("driving_end_angle",true))dimension(t,"angle",{center,end},b);
         return store(s,f,t,{{"entity",id},{"points",{center,start,end}}});
     }));
     specs.push_back(spec("sketch.constraint.add","Vincolo","{sketch?: id, kind: coincident|horizontal|vertical|parallel|perpendicular|tangent|equal|midpoint|fix, refs: [id,...]}",[](Session& s,const J& p){

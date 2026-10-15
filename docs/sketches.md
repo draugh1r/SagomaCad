@@ -4,6 +4,8 @@
 
 **Solido > Crea > Schizzo** mostra i tre piani dell'origine. Clic su un piano: la camera si allinea con una transizione e compare la scheda Schizzo. La tavolozza controlla griglia, aggancio, profili, punti, quote, vincoli e geometrie di costruzione. Nelle finestre basse le opzioni scorrono; **Fine schizzo** rimane nel piè di pagina.
 
+Il disegno parte con il primo clic: muovendo il mouse, la geometria in anteprima e le misure nelle caselle si aggiornano continuamente. Il secondo clic conferma direttamente. Non occorre inserire alcuna quota. Digitare sostituisce la misura attiva e la blocca; Tab passa alla successiva, mentre le misure non bloccate continuano a seguire il cursore. Invio conferma anche da tastiera. Solo le quote digitate diventano vincoli dimensionali: le geometrie disegnate esclusivamente con il mouse restano libere nelle dimensioni.
+
 - `R`: rettangolo. Clic sull'origine, `40`, Tab, `20`, Invio crea il rettangolo 40×20 completamente vincolato.
 - `L`: linea; dopo il primo clic inserisci lunghezza e angolo.
 - `C`: cerchio; inserisci il diametro, anche un parametro come `foro`.
@@ -31,6 +33,8 @@ Coordinate numeriche in mm nel piano: XY = (X,Y), XZ = (X,Z), YZ = (Y,Z). Quote 
 | `sketch.point.move` | `point:id`, `x,y`; usare `coalesce` sul canale di controllo per un drag |
 
 Tutti tranne create accettano `sketch?: id`, altrimenti usano lo schizzo attivo. La CLI `call --headless file` carica una nuova sessione: passa l'ID esplicitamente. Con `run` e MCP la sessione resta attiva tra le chiamate. I comandi di disegno accettano anche `construction?: bool`; il rettangolo accetta `flip_x`/`flip_y` per disegnare dal primo angolo nelle direzioni negative.
+
+Per riprodurre il disegno libero da CLI/MCP usa `driving_width:false`/`driving_height:false` sul rettangolo, `driving_diameter:false` sul cerchio e `driving_radius:false`/`driving_start_angle:false`/`driving_end_angle:false` sull'arco. Questi flag valgono `true` per default nelle chiamate dirette, così le espressioni degli esempi restano parametriche; la UI li attiva solo per le misure digitate. I valori con flag `false` definiscono la geometria iniziale senza aggiungere una quota.
 
 Vincoli: `coincident`, `horizontal`, `vertical`, `parallel`, `perpendicular`, `tangent`, `equal`, `midpoint`, `fix`. Passa ID dei punti o delle entità secondo il vincolo. Per `midpoint`, prima il punto e poi la linea. `fix` cattura la posizione attuale. Quote: `distance`, `length`, `diameter`, `radius`, `angle`. Un angolo si riferisce a una linea rispetto all'orizzontale oppure a due linee.
 

@@ -2,6 +2,7 @@
 #include "ui/sketch_view.hpp"
 #include "engine/tools/sketch_overlay.hpp"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -76,7 +77,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     if(!active->error.empty())s.sketch_error=active->error;
     engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,plane,io.MousePos.x,io.MousePos.y,cursor);
     if(cursor_ok&&s.sketch_snap){double threshold=t.sketch.hit_radius*z*s.camera.distance/(v.height*1.2071067811865475);if(std::hypot(cursor.x,cursor.y)<threshold)cursor={};else for(const auto& p:active->sketch.points)if(std::hypot(cursor.x-p.x,cursor.y-p.y)<threshold){cursor={p.x,p.y};break;}}
-    if(hovered&&cursor_ok&&!io.WantTextInput)tool.move(cursor.x,cursor.y);
+    if(hovered&&cursor_ok)tool.move(cursor.x,cursor.y);
     auto new_dimension=[&](){
         s.sketch_dimension_id.clear();s.sketch_dimension_kind="distance";s.sketch_dimension_expression.fill(0);
         bool first_line=false,second_line=false;
@@ -92,7 +93,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     }
     if(ImGui::IsKeyPressed(ImGuiKey_Escape)){tool.escape();s.sketch_dimension_open=false;s.sketch_constraint_open=false;s.sketch_field_focus=false;}
     bool dimension_click=false;
-    if(hovered)for(const auto& hit:dimension_hits)if(io.MousePos.x>=hit.a.x&&io.MousePos.x<=hit.b.x&&io.MousePos.y>=hit.a.y&&io.MousePos.y<=hit.b.y){
+    if(hovered&&!tool.started)for(const auto& hit:dimension_hits)if(io.MousePos.x>=hit.a.x&&io.MousePos.x<=hit.b.x&&io.MousePos.y>=hit.a.y&&io.MousePos.y<=hit.b.y){
         dimension_click=true;if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)){s.sketch_dimension_id=hit.id;s.sketch_dimension_kind=hit.kind;std::snprintf(s.sketch_dimension_expression.data(),s.sketch_dimension_expression.size(),"%s",hit.expression.c_str());s.sketch_dimension_open=true;}
     }
     if(hovered&&cursor_ok&&!dimension_click&&ImGui::IsMouseClicked(ImGuiMouseButton_Left)){
@@ -116,7 +117,8 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     }
     if(tool.started){
         engine::Engine preview;preview.session().document=engine_->session().document;preview.session().active_sketch=s.sketch_view_id;
-        auto result=preview.execute("sketch."+tool.kind,tool.parameters());
+        const auto command=tool.preview_command();
+        auto result=preview.execute(command["command"].get<std::string>(),command["params"]);
         if(result.ok){auto solved=solver::solve(preview.session().document,doc::read_sketch(preview.session().document.features.at(s.sketch_view_id).data));draw(solved,true);}
     }
     if(hovered&&!io.WantTextInput){auto pos=io.MousePos;auto hint=tool.hint();auto size=ImGui::CalcTextSize(hint.c_str());pos.x+=t.sketch.dimension_offset*z;pos.y+=t.sketch.dimension_offset*z;
@@ -141,14 +143,21 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
         float left=std::clamp(float(projection.x)+t.sketch.dimension_offset*z,float(v.x)+t.padding*z,float(v.x+v.width)-t.sketch.palette_width*z-t.sketch.field_width*z-t.padding*z*3);
         float top=std::clamp(float(projection.y)+t.sketch.dimension_offset*z,float(v.y)+t.padding*z,float(v.y+v.height)-t.sketch.field_height*z*5);
         ImGui::SetNextWindowPos({left,top},ImGuiCond_Always);ImGui::SetNextWindowSize({t.sketch.field_width*z+t.padding*z*2,0},ImGuiCond_Always);
-        ImGui::Begin("##sketch_live_dimensions",nullptr,ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove);
+        ImGui::Begin("##sketch_live_dimensions",nullptr,ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoMouseInputs);
         const char* labels[2]={tool.kind=="rect"?"Larghezza":tool.kind=="circle"?"Diametro":tool.kind=="arc"?"Raggio":"Lunghezza",tool.kind=="rect"?"Altezza":"Angolo"};
         int count=tool.kind=="circle"?1:2;bool confirm=false;int focus=s.sketch_field_focus?tool.active_field:-1;s.sketch_field_focus=false;
+        const auto live=tool.live_values();
         for(int i=0;i<count;++i){ImGui::PushID(i);ImGui::TextColored(rgba(i==tool.active_field?t.accent:t.muted),"%s%s",labels[i],tool.locked[i]?"  ·":"");
+            if(!tool.locked[i]) {
+                std::snprintf(s.sketch_fields[i].data(),s.sketch_fields[i].size(),"%s",live[i].c_str());
+                // ImGui retains the active text buffer. Reload live measurements
+                // and select them so the first typed character replaces the value.
+                if(auto* input=ImGui::GetInputTextState(ImGui::GetID("##measure")))input->ReloadUserBufAndSelectAll();
+            }
             if(focus==i)ImGui::SetKeyboardFocusHere();ImGui::SetNextItemWidth(t.sketch.field_width*z);
             auto callback=[](ImGuiInputTextCallbackData* data)->int{auto* state=static_cast<ui::State*>(data->UserData);state->sketch_tool.tab();state->sketch_field_focus=true;return 0;};
-            bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion,callback,&s);
-            tool.fields[i]=s.sketch_fields[i].data();tool.locked[i]=!tool.fields[i].empty();
+            bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_AutoSelectAll,callback,&s);
+            if(ImGui::IsItemEdited()){tool.fields[i]=s.sketch_fields[i].data();tool.locked[i]=!tool.fields[i].empty();}
             if(ImGui::IsItemActive()&&!s.sketch_field_focus)tool.active_field=i;
             if(entered)confirm=true;ImGui::PopID();
         }
