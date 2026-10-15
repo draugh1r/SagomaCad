@@ -225,6 +225,7 @@ bool Shell::poll() {
 void Shell::draw() {
     const auto& t = ui::theme(state_.theme == "light");
     const float z = static_cast<float>(scale_);
+    state_.view_transition.advance(state_.camera,ImGui::GetIO().DeltaTime);
     const ImVec2 screen = ImGui::GetIO().DisplaySize;
     const auto& input=ImGui::GetIO();
     if ((input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_K)) ||
@@ -502,6 +503,8 @@ void Shell::draw() {
         const bool canvas_hovered=ImGui::IsItemHovered();
         if (canvas_hovered && !over_navigation && !over_cube && !state_.cube_interaction.pressed) {
             const auto& io=ImGui::GetIO();
+            if (io.MouseWheel!=0 || ImGui::IsMouseDragging(ImGuiMouseButton_Middle) ||
+                (state_.navigation_mode>=0 && ImGui::IsMouseDragging(ImGuiMouseButton_Left))) state_.view_transition.cancel();
             if (io.MouseWheel!=0) state_.camera.zoom(io.MouseWheel,io.MousePos.x,io.MousePos.y,viewport);
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
                 if (io.KeyShift) state_.camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
@@ -558,9 +561,17 @@ void Shell::draw() {
             const auto origin=state_.camera.project({0,0,0},viewport);
             if (origin.visible) dl->AddCircleFilled({float(origin.x),float(origin.y)},2.5f*z,packed(t.accent));
         }
-        if (draw_view_cube_widget(dl,state_.camera,state_.cube_interaction,cube_origin,t,z,canvas_hovered)) {
-            if (surfaces_.empty()) { state_.camera.target={}; state_.camera.distance=140; }
-            else fit_camera();
+        const auto cube_action=draw_view_cube_widget(dl,state_.camera,state_.cube_interaction,state_.view_transition,cube_origin,t,z,canvas_hovered);
+        if (cube_action.kind!=ui::CubeKind::None) {
+            const auto before=state_.camera;
+            ui::cube_apply(state_.camera,cube_action);
+            if (cube_action.kind==ui::CubeKind::Home) {
+                if (surfaces_.empty()) { state_.camera.target={}; state_.camera.distance=ui::Camera{}.distance; }
+                else fit_camera();
+            }
+            const auto destination=state_.camera;
+            state_.camera=before;
+            state_.view_transition.begin(before,destination,t.cube.transition_duration);
         }
         dl->AddRectFilled(nav_a,nav_b,packed(t.panel),t.rounding*z);
         dl->AddRect(nav_a,nav_b,packed(t.border),t.rounding*z);
@@ -572,7 +583,7 @@ void Shell::draw() {
             const bool clicked=ImGui::InvisibleButton("navigation",{40*z,t.nav_height*z-4*z});
             const bool hovered=ImGui::IsItemHovered();
             if (clicked) {
-                if (i==3) fit_camera();
+                if (i==3) { state_.view_transition.cancel(); fit_camera(); }
                 else state_.navigation_mode=state_.navigation_mode==i?-1:i;
             }
             if (hovered) ImGui::SetTooltip("%s",nav_labels[i]);

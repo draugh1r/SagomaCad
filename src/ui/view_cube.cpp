@@ -18,13 +18,25 @@ bool contains(const std::vector<CubePoint>& polygon,CubePoint p) {
     }
     return !(positive && negative);
 }
+bool near_polygon(const std::vector<CubePoint>& polygon,CubePoint p,double padding) {
+    if (contains(polygon,p)) return true;
+    for (std::size_t i=0;i<polygon.size();++i) {
+        const auto a=polygon[i],b=polygon[(i+1)%polygon.size()];
+        const double dx=b.x-a.x,dy=b.y-a.y,length=dx*dx+dy*dy;
+        const double t=length>0?std::clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/length,0.0,1.0):0;
+        if (std::hypot(p.x-a.x-dx*t,p.y-a.y-dy*t)<=padding) return true;
+    }
+    return false;
+}
 }
 CubePoint cube_project(Vec point,const Camera& camera,const CubeLayout& layout,const ViewCubeTokens& t,double scale) {
     return {layout.origin.x+t.center_x*scale+dot(point,camera.right())*layout.factor,
             layout.origin.y+t.center_y*scale-dot(point,camera.up())*layout.factor};
 }
 CubeLayout cube_layout(const Camera& camera,CubePoint origin,const ViewCubeTokens& t,double scale) {
-    CubeLayout result; result.origin=origin; result.factor=t.cube_size*t.projection_scale*scale; result.control_radius=t.control_size*scale*0.5;
+    CubeLayout result; result.origin=origin; result.factor=t.cube_size*t.projection_scale*scale;
+    result.hit_padding=t.hit_padding*scale;
+    result.control_radius=(t.control_size*0.5+t.hit_padding)*scale;
     const Vec eye=mul(camera.forward(),-1);
     const double inset=1-t.hit_band;
     auto make_part=[&](CubeKind kind,Vec normal,const std::vector<Vec>& vertices,const char* label,Vec u,Vec v,double light) {
@@ -48,7 +60,16 @@ CubeLayout cube_layout(const Camera& camera,CubePoint origin,const ViewCubeToken
             std::vector<Vec> vertices;
             for (const auto [x,y]:std::array<std::array<double,2>,4>{{{x0,y0},{x1,y0},{x1,y1},{x0,y1}}})
                 vertices.push_back(add(n,add(mul(u,x),mul(v,y))));
-            return make_part(kind,direction,vertices,label,u,v,facing);
+            auto item=make_part(kind,direction,vertices,label,u,v,facing);
+            auto visual=[&](double value) {
+                if (kind==CubeKind::Face) return value;
+                if (std::abs(value-inset)<1e-8) return 1-double(t.highlight_band);
+                if (std::abs(value+inset)<1e-8) return double(t.highlight_band)-1;
+                return value;
+            };
+            for (const auto [x,y]:std::array<std::array<double,2>,4>{{{x0,y0},{x1,y0},{x1,y1},{x0,y1}}})
+                item.highlight.push_back(cube_project(add(n,add(mul(u,visual(x)),mul(v,visual(y)))),camera,result,t,scale));
+            return item;
         };
         result.faces.push_back(patch(CubeKind::Face,n,-1,1,-1,1));
         result.parts.push_back(patch(CubeKind::Face,n,-inset,inset,-inset,inset));
@@ -78,7 +99,8 @@ CubeHit cube_hit(const CubeLayout& layout,CubePoint point) {
         if (std::abs(control.center.x-point.x)<=layout.control_radius && std::abs(control.center.y-point.y)<=layout.control_radius)
             return {control.kind,{}};
     for (const auto kind:{CubeKind::Corner,CubeKind::Edge,CubeKind::Face})
-        for (const auto& part:layout.parts) if (part.hit.kind==kind && contains(part.polygon,point)) return part.hit;
+        for (const auto& part:layout.parts)
+            if (part.hit.kind==kind && near_polygon(part.polygon,point,kind==CubeKind::Face?0:layout.hit_padding)) return part.hit;
     return {};
 }
 void cube_apply(Camera& camera,CubeHit hit) {

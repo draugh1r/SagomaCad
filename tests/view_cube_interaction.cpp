@@ -27,7 +27,7 @@ int main(int argc,char** argv) {
             ImGui::GetIO().AddMousePosEvent(float(p.x),float(p.y));
             ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left,down); shell.render();
         };
-        auto select=[&](ui::CubeKind kind,kernel::Vec3 direction={}) {
+        auto select=[&](ui::CubeKind kind,kernel::Vec3 direction={},bool finish=true) {
             const auto cube=layout(); ui::CubePoint target{}; bool found=false;
             for (const auto& control:cube.controls) if (control.kind==kind) { target=control.center; found=true; }
             for (const auto& part:cube.parts)
@@ -36,7 +36,14 @@ int main(int argc,char** argv) {
                     for (const auto p:part.polygon) { target.x+=p.x/part.polygon.size(); target.y+=p.y/part.polygon.size(); }
                     found=true; break;
                 }
-            require(found); mouse(target,false); mouse(target,true); mouse(target,false); shell.render();
+            require(found); mouse(target,false); mouse(target,true);
+            const auto before=shell.state().camera;
+            mouse(target,false);
+            require(shell.state().view_transition.active);
+            require(shell.state().camera.yaw==before.yaw && shell.state().camera.pitch==before.pitch);
+            require(shell.state().camera.target.x==before.target.x && shell.state().camera.distance==before.distance);
+            if (finish) shell.state().view_transition.advance(shell.state().camera,1.0);
+            shell.render();
         };
         auto screenshot=[&](const char* name) {
             if (argc<2) return;
@@ -44,7 +51,12 @@ int main(int argc,char** argv) {
             std::string error; require(shell.screenshot(path.string(),error));
         };
         ImGui::GetIO().AddMousePosEvent(500,500); shell.render(); screenshot("iso");
-        select(ui::CubeKind::Face,{0,0,1});
+        const auto before_transition=shell.state().camera;
+        select(ui::CubeKind::Face,{0,0,1},false);
+        shell.state().view_transition.advance(shell.state().camera,theme.cube.transition_duration*0.5);
+        require(shell.state().view_transition.active && shell.state().camera.pitch>before_transition.pitch && shell.state().camera.pitch<1.5707963267948966);
+        ImGui::GetIO().AddMousePosEvent(500,500); shell.render(); screenshot("transition");
+        shell.state().view_transition.advance(shell.state().camera,1.0); shell.render();
         require(near(shell.state().camera.forward().z,-1));
         ImGui::GetIO().AddMousePosEvent(500,500); shell.render(); screenshot("top");
         select(ui::CubeKind::Clockwise); require(near(shell.state().camera.roll,1.5707963267948966));
@@ -65,7 +77,10 @@ int main(int argc,char** argv) {
         }
         mouse(edge,false); shell.render(); screenshot("edge-hover");
         const auto before=shell.state().camera;
-        mouse(edge,true); mouse({edge.x+25,edge.y+15},true); mouse({edge.x+25,edge.y+15},false);
+        auto destination=before; destination.look_from({0,0,1});
+        shell.state().view_transition.begin(before,destination,theme.cube.transition_duration);
+        mouse(edge,true); require(!shell.state().view_transition.active);
+        mouse({edge.x+25,edge.y+15},true); mouse({edge.x+25,edge.y+15},false);
         require(!near(shell.state().camera.yaw,before.yaw) && !near(shell.state().camera.pitch,before.pitch));
         require(shell.state().camera.target.x==before.target.x && !shell.state().cube_interaction.pressed);
         require(near(shell.state().camera.roll,0) && near(shell.state().camera.right().z,0));

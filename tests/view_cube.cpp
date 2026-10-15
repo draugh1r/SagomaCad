@@ -39,6 +39,18 @@ int main() {
             require(near(std::abs(p.x-t.center_x),square.factor));
             require(near(std::abs(p.y-t.center_y),square.factor));
         }
+        auto area=[](const std::vector<ui::CubePoint>& polygon) {
+            double value=0;
+            for (std::size_t i=0;i<polygon.size();++i) {
+                const auto a=polygon[i],b=polygon[(i+1)%polygon.size()]; value+=a.x*b.y-a.y*b.x;
+            }
+            return std::abs(value)*0.5;
+        };
+        for (const auto& part:square.parts)
+            if (part.hit.kind==ui::CubeKind::Edge || part.hit.kind==ui::CubeKind::Corner)
+                require(area(part.highlight)<area(part.polygon));
+        const auto outside=ui::cube_hit(square,{t.center_x+square.factor+2,t.center_y});
+        require(outside.kind==ui::CubeKind::Edge && outside.direction.x==1 && outside.direction.z==1);
         ui::Camera camera; camera.look_from({0,0,1});
         ui::cube_apply(camera,{ui::CubeKind::Right,{}}); direction(camera,{1,0,0});
         ui::cube_apply(camera,{ui::CubeKind::Left,{}}); direction(camera,{0,0,1});

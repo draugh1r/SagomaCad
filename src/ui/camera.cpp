@@ -59,4 +59,25 @@ void Camera::fit(kernel::Vec3 lo,kernel::Vec3 hi) {
     const double span=std::max({hi.x-lo.x,hi.y-lo.y,hi.z-lo.z,1.0});
     distance=span*3.0;
 }
+void CameraTransition::begin(const Camera& from,const Camera& destination,double duration) {
+    from_=from; destination_=destination; elapsed_=0;
+    duration_=std::isfinite(duration)?std::max(duration,0.001):0.85;
+    active=true;
+}
+void CameraTransition::advance(Camera& camera,double seconds) {
+    if (!active || !std::isfinite(seconds) || seconds<0) return;
+    elapsed_=std::min(duration_,elapsed_+seconds);
+    if (elapsed_==0) { camera=from_; return; }
+    if (elapsed_>=duration_) { camera=destination_; active=false; return; }
+    const double t=elapsed_/duration_;
+    const double eased=t*t*t*(10+t*(-15+6*t));
+    auto blend=[&](double a,double b) { return a+(b-a)*eased; };
+    auto angle=[&](double a,double b) { return a+std::remainder(b-a,6.283185307179586)*eased; };
+    camera=from_;
+    camera.yaw=angle(from_.yaw,destination_.yaw);
+    camera.pitch=blend(from_.pitch,destination_.pitch);
+    camera.roll=angle(from_.roll,destination_.roll);
+    camera.target={blend(from_.target.x,destination_.target.x),blend(from_.target.y,destination_.target.y),blend(from_.target.z,destination_.target.z)};
+    camera.distance=std::exp(blend(std::log(std::max(0.05,from_.distance)),std::log(std::max(0.05,destination_.distance))));
+}
 }

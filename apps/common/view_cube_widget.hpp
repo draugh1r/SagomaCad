@@ -2,6 +2,6 @@
 #include "ui/view_cube.hpp"
 struct ImDrawList;
 namespace sagomacad {
-bool draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteraction& interaction,
+ui::CubeHit draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteraction& interaction,ui::CameraTransition& transition,
                            ui::CubePoint origin,const ui::Theme& theme,float scale,bool interactive);
 }

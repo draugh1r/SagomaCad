@@ -14,6 +14,7 @@ struct CubeHit {
 struct CubePart {
     CubeHit hit;
     std::vector<CubePoint> polygon;
+    std::vector<CubePoint> highlight;
     kernel::Vec3 center{},u{},v{};
     const char* label=nullptr;
     double light=0;
@@ -24,7 +25,7 @@ struct CubeLayout {
     std::vector<CubePart> parts;
     std::vector<CubeControl> controls;
     CubePoint origin;
-    double factor=1, control_radius=10;
+    double factor=1, control_radius=10, hit_padding=0;
     bool face_aligned=false;
 };
 struct CubeInteraction {

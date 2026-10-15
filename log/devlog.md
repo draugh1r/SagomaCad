@@ -136,3 +136,11 @@ L'orbita precedente applicava rotazioni sugli assi locali e conservava il vettor
 Rigenerati e controllati screenshot del cubo normale, spigolo evidenziato, TOP e modifica feature nei due temi e dimensioni, confrontati con i nuovi riferimenti. Build Release, 26/26 test e controllo livelli verdi. App corretta in `build/agent-review/apps/sagomacad-cube-fixed/sagomacad.exe`: la versione precedente in `apps/sagomacad` è ancora aperta e non è stata chiusa. Nessuna golden image sostituita, M3 non iniziato.
 
 Chiusura del 15 ottobre: verificati eseguibile corretto, controllo dei livelli e diff; salvate le correzioni e gli screenshot in un commit dedicato.
+
+## 2026-10-15 — Selezione e transizioni del cubo
+
+Separate le dimensioni delle evidenziazioni dalle hitbox: fascia visibile di spigoli/vertici ridotta da 0,18 a 0,12, fascia interattiva ampliata a 0,26 e margine esterno di 4 pixel. La geometria del cubo e le dimensioni delle etichette restano indipendenti dalle zone interattive.
+
+Ogni clic su faccia, spigolo, vertice, freccia e Home ora anima la camera per 0,85 secondi con una curva quintica che parte e termina con velocità e accelerazione nulle. Yaw e roll seguono il percorso angolare più breve; Home interpola anche il centro e la distanza della camera. Trascinamento o zoom interrompono la transizione; un nuovo clic riparte dalla posizione corrente.
+
+Test numerici su posizione iniziale, metà percorso, completamento, indipendenza dalla frequenza dei frame, cancellazione e attraversamento di ±180°. Test UI verificano l'assenza di salti al rilascio del mouse per tutti i controlli esercitati e l'interruzione durante il trascinamento. Verificata la selezione oltre il bordo visibile e la minore area delle evidenziazioni. Build Release, CTest 26/26 e controllo livelli verdi. Rigenerati screenshot nei due temi, inclusa una vista a metà transizione; nessuna golden image sostituita, M3 non iniziato. Eseguibile aggiornato in `build/agent-review/apps/sagomacad/sagomacad.exe`.

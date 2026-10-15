@@ -20,7 +20,7 @@ void face_text(ImDrawList* draw,const ui::CubePart& part,const ui::Camera& camer
     const auto text_size=font->CalcTextSizeA(font_size,1000,0,part.label);
     const auto center=point(ui::cube_project(part.center,camera,layout,tokens,scale));
     const ImVec2 start={center.x-text_size.x*0.5f,center.y-text_size.y*0.5f};
-    const double units=std::min(1/layout.factor,(2-2*tokens.hit_band)*0.9/std::max(1.0f,text_size.x));
+    const double units=std::min(1/layout.factor,(2-2*tokens.label_inset)*0.9/std::max(1.0f,text_size.x));
     const int first=draw->VtxBuffer.Size;
     draw->AddText(font,font_size,start,ink,part.label);
     for (int i=first;i<draw->VtxBuffer.Size;++i) {
@@ -68,22 +68,23 @@ void control_icon(ImDrawList* draw,const ui::CubeControl& control,const ui::Them
     }
 }
 }
-bool draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteraction& interaction,
+ui::CubeHit draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteraction& interaction,ui::CameraTransition& transition,
                            ui::CubePoint origin,const ui::Theme& theme,float scale,bool interactive) {
     auto layout=ui::cube_layout(camera,origin,theme.cube,scale);
     const auto& io=ImGui::GetIO();
     auto hit=interactive?ui::cube_hit(layout,{io.MousePos.x,io.MousePos.y}):ui::CubeHit{};
     if (interactive && hit.kind!=ui::CubeKind::None && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        transition.cancel();
         interaction.pressed=true; interaction.dragged=false; interaction.press=hit;
     }
     if (interaction.pressed && geometry(interaction.press.kind) && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
         interaction.dragged=true;
         camera.orbit(io.MouseDelta.x,io.MouseDelta.y);
     }
-    bool home=false;
+    ui::CubeHit action;
     if (interaction.pressed && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         if (!interaction.dragged && same(hit,interaction.press)) {
-            ui::cube_apply(camera,hit); home=hit.kind==ui::CubeKind::Home;
+            action=hit;
         }
         interaction={};
     }
@@ -112,7 +113,7 @@ bool draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteracti
         face_text(draw,part,camera,layout,theme.cube,scale,color(theme.text));
     }
     for (const auto& part:layout.parts) if (same(hit,part.hit)) {
-        std::vector<ImVec2> polygon; for (const auto p:part.polygon) polygon.push_back(point(p));
+        std::vector<ImVec2> polygon; for (const auto p:part.highlight) polygon.push_back(point(p));
         draw->AddConvexPolyFilled(polygon.data(),int(polygon.size()),color(theme.cube.hover));
     }
     for (const auto& control:layout.controls) control_icon(draw,control,theme,scale,hit.kind==control.kind);
@@ -125,6 +126,6 @@ bool draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteracti
         if (hit.kind==ui::CubeKind::Up || hit.kind==ui::CubeKind::Down || hit.kind==ui::CubeKind::Left || hit.kind==ui::CubeKind::Right) hint="Passa alla faccia adiacente";
         if (!interaction.pressed) ImGui::SetTooltip("%s",hint);
     }
-    return home;
+    return action;
 }
 }

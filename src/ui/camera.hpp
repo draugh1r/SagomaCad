@@ -22,4 +22,14 @@ public:
     void home();
     void fit(kernel::Vec3 minimum,kernel::Vec3 maximum);
 };
+class CameraTransition {
+public:
+    bool active=false;
+    void begin(const Camera& from,const Camera& destination,double duration);
+    void advance(Camera& camera,double seconds);
+    void cancel() { active=false; }
+private:
+    Camera from_,destination_;
+    double elapsed_=0,duration_=0;
+};
 }

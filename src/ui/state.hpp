@@ -7,6 +7,7 @@
 namespace sagomacad::ui {
 struct State {
     Camera camera;
+    CameraTransition view_transition;
     CubeInteraction cube_interaction;
     int navigation_mode = -1; // -1: pointer, 0: pan, 1: orbit, 2: zoom
     std::string theme = "light";
