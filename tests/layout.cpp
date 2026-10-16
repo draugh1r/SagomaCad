@@ -10,7 +10,8 @@ bool overlap(LayoutRect a,LayoutRect b) {
     return a.visible()&&b.visible()&&a.x<b.x+b.width-0.01f&&b.x<a.x+a.width-0.01f&&a.y<b.y+b.height-0.01f&&b.y<a.y+a.height-0.01f;
 }
 void verify(const ShellLayout& l,float w,float h) {
-    const std::array r{l.topbar,l.ribbon,l.browser,l.viewport,l.properties,l.timeline,l.contextual};
+    const std::array r{l.topbar,l.ribbon,l.browser,l.viewport,l.properties,l.timeline,l.contextual,
+        l.header_separator,l.browser_separator,l.properties_separator,l.timeline_separator};
     for (size_t i=0;i<r.size();++i) {
         const auto a=r[i];
         require(std::isfinite(a.x)&&std::isfinite(a.y)&&std::isfinite(a.width)&&std::isfinite(a.height));
@@ -50,6 +51,7 @@ int main() {
     const auto after_capacity=constrained.compute(800,600,1,s,dark);
     require(!constrained.error().empty());
     require(after_capacity.group_count==before_capacity.group_count&&after_capacity.viewport.width==before_capacity.viewport.width);
+    require(after_capacity.tab_index==before_capacity.tab_index);
     s.selected_tab=2;
     constrained.compute(800,600,1,s,dark); require(constrained.error().empty());
     s.browser_width=333; s.properties_width=301; s.timeline_height=140; s.browser_collapsed=true; s.properties=true;

@@ -145,6 +145,7 @@ const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,
             Impl::on_error({CLAY_ERROR_TYPE_ELEMENTS_CAPACITY_EXCEEDED,{true,text.length,text.chars},&self});
     }
     ShellLayout candidate;
+    candidate.tab_index=std::clamp(s.selected_tab,0,static_cast<int>(tabs.size())-1);
     candidate.topbar=rect("topbar"); candidate.ribbon=rect("ribbon"); candidate.browser=s.browser?rect("browser"):LayoutRect{};
     candidate.viewport=rect("viewport"); candidate.properties=s.properties?rect("properties"):LayoutRect{};
     candidate.timeline=s.timeline?rect("timeline"):LayoutRect{}; candidate.contextual=rect("contextual");

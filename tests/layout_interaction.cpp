@@ -55,6 +55,13 @@ int main(int argc,char** argv) {
         r=box("browser");
         mouse(r.x+11,r.y+t.padding+7,false); mouse(r.x+11,r.y+t.padding+7,true); mouse(r.x+11,r.y+t.padding+7,false); frame();
         require(!shell.state().browser_collapsed); require(shell.state().browser_width==browser);
+        r=box("properties");
+        const float px=r.x+r.width-t.layout.collapse_button+7,py=r.y+t.padding+7;
+        mouse(px,py,false); mouse(px,py,true); mouse(px,py,false); frame();
+        require(shell.state().properties_collapsed); require(box("properties").width==t.layout.collapsed_width);
+        r=box("properties");
+        mouse(r.x+11,r.y+t.padding+7,false); mouse(r.x+11,r.y+t.padding+7,true); mouse(r.x+11,r.y+t.padding+7,false); frame();
+        require(!shell.state().properties_collapsed); require(shell.state().properties_width==properties);
         // Switching to an empty ribbon tab must never use the previous tab's rectangles.
         mouse(110,49,false); mouse(110,49,true); mouse(110,49,false); frame();
         require(shell.state().selected_tab==2);

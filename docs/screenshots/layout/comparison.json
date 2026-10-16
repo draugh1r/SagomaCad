@@ -1,0 +1,23 @@
+{
+  "light-1280x720": {
+    "changed_pixels": 7960,
+    "percentage": 0.8637,
+    "viewport_changed_pixels": 1
+  },
+  "light-1440x900": {
+    "changed_pixels": 8474,
+    "percentage": 0.6539,
+    "viewport_changed_pixels": 1
+  },
+  "dark-1280x720": {
+    "changed_pixels": 3374,
+    "percentage": 0.3661,
+    "viewport_changed_pixels": 1
+  },
+  "dark-1440x900": {
+    "changed_pixels": 2888,
+    "percentage": 0.2228,
+    "viewport_changed_pixels": 1
+  },
+  "restart_identical": true
+}

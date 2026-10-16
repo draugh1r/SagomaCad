@@ -1,0 +1,123 @@
+{
+  "docking": false,
+  "feature_edit_id": "",
+  "feature_edit_open": false,
+  "fixed_layout": true,
+  "height": 600,
+  "layout_engine": "clay",
+  "layout_error": "",
+  "layout_scale": 1,
+  "layout_state": {
+    "browser": true,
+    "browser_collapsed": false,
+    "browser_width": 243.0,
+    "properties": true,
+    "properties_collapsed": false,
+    "properties_width": 253.0,
+    "timeline": true,
+    "timeline_height": 62.0,
+    "version": 1
+  },
+  "palette_open": false,
+  "panels": {
+    "browser": true,
+    "properties": true,
+    "timeline": true
+  },
+  "parameters": [],
+  "parameters_open": false,
+  "shell_rects": [
+    {
+      "height": 66.0,
+      "id": "topbar",
+      "width": 800.0,
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "height": 97.0,
+      "id": "ribbon",
+      "width": 800.0,
+      "x": 0.0,
+      "y": 66.0
+    },
+    {
+      "height": 371.0,
+      "id": "browser",
+      "width": 233.2016143798828,
+      "x": 0.0,
+      "y": 165.0
+    },
+    {
+      "height": 371.0,
+      "id": "viewport",
+      "width": 320.0,
+      "x": 235.2016143798828,
+      "y": 165.0
+    },
+    {
+      "height": 371.0,
+      "id": "properties",
+      "width": 242.7983856201172,
+      "x": 557.2015991210938,
+      "y": 165.0
+    },
+    {
+      "height": 62.0,
+      "id": "timeline",
+      "width": 800.0,
+      "x": 0.0,
+      "y": 538.0
+    },
+    {
+      "height": 371.0,
+      "id": "contextual",
+      "width": 0.0,
+      "x": 800.0,
+      "y": 165.0
+    },
+    {
+      "height": 2.0,
+      "id": "header_separator",
+      "width": 800.0,
+      "x": 0.0,
+      "y": 163.0
+    },
+    {
+      "height": 371.0,
+      "id": "browser_separator",
+      "width": 2.0,
+      "x": 233.2016143798828,
+      "y": 165.0
+    },
+    {
+      "height": 371.0,
+      "id": "properties_separator",
+      "width": 2.0,
+      "x": 555.2015991210938,
+      "y": 165.0
+    },
+    {
+      "height": 2.0,
+      "id": "timeline_separator",
+      "width": 800.0,
+      "x": 0.0,
+      "y": 536.0
+    }
+  ],
+  "sketch": {
+    "error": "",
+    "id": "",
+    "mode": false,
+    "plane_picker": false,
+    "tool": "select"
+  },
+  "tabs_visible": false,
+  "theme": "dark",
+  "viewport": {
+    "axes": true,
+    "grid": true,
+    "title_visible": false
+  },
+  "width": 800
+}

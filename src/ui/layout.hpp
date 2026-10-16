@@ -22,6 +22,7 @@ struct ShellLayout {
     LayoutRect header_separator, browser_separator, properties_separator, timeline_separator;
     std::array<RibbonLayout,8> groups{};
     size_t group_count=0;
+    int tab_index=0;
 };
 // Owns one bounded Clay arena; no Clay types escape ui/.
 class LayoutEngine {

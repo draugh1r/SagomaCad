@@ -56,7 +56,7 @@ void style(const ui::Theme& t, int scale) {
     c[ImGuiCol_TableRowBg] = vec(t.panel);
     c[ImGuiCol_TableRowBgAlt] = vec(t.panel_alt);
 }
-void panel(const char* name, const char* label, const ui::Theme& t, ui::LayoutRect r, auto contents, ImGuiWindowFlags extra = 0, bool* collapsed=nullptr, float z=1) {
+void panel(const char* name, const char* label, const ui::Theme& t, ui::LayoutRect r, auto contents, ImGuiWindowFlags extra = 0, bool* collapsed=nullptr, float z=1, bool collapse_right=false) {
     if (!r.visible()) return;
     ImGui::SetNextWindowPos({r.x,r.y},ImGuiCond_Always);
     ImGui::SetNextWindowSize({r.width,r.height},ImGuiCond_Always);
@@ -68,7 +68,8 @@ void panel(const char* name, const char* label, const ui::Theme& t, ui::LayoutRe
         if (collapsed) {
             const auto cursor=ImGui::GetCursorScreenPos();
             ImGui::SetCursorScreenPos({r.x+r.width-t.layout.collapse_button*z,r.y+t.padding*z});
-            if (ImGui::SmallButton(*collapsed?">##expand":"<##collapse")) *collapsed=!*collapsed;
+            const bool arrow_right=*collapsed!=collapse_right;
+            if (ImGui::SmallButton(arrow_right?">##collapse":"<##collapse")) *collapsed=!*collapsed;
             ImGui::SetCursorScreenPos(cursor);
         }
         if ((!collapsed || !*collapsed) && r.width>2*t.padding*z && r.height>2*t.padding*z) {
@@ -317,7 +318,7 @@ void Shell::draw() {
     panel("Ribbon",nullptr,t,layout.ribbon,[&] {
         auto* dl=ImGui::GetWindowDrawList();
         const auto tabs=ui::toolbar_catalog();
-        const auto& groups=tabs[state_.selected_tab].groups;
+        const auto& groups=tabs[layout.tab_index].groups;
         for (size_t i=0;i<layout.group_count;++i) {
             const auto& g=layout.groups[i];
             for (size_t j=0;j<g.button_count;++j) {
@@ -409,7 +410,7 @@ void Shell::draw() {
     if (state_.properties) panel("Proprietà", ui::labels.properties, t, layout.properties, [&] {
         ImGui::TextDisabled("%s", ui::labels.selection); ImGui::Separator();
         ImGui::TextDisabled("Nessun elemento selezionato");
-    },0,&state_.properties_collapsed,z);
+    },0,&state_.properties_collapsed,z,true);
     if (state_.timeline) panel("Timeline", nullptr, t, layout.timeline, [&] {
         ImDrawList* dl=ImGui::GetWindowDrawList();
         const ImVec2 q=ImGui::GetCursorScreenPos();

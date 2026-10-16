@@ -180,3 +180,12 @@ Rimosso il dockspace: Clay dichiara topbar, ribbon e relativi gruppi/pulsanti, b
 
 Separatori trascinabili, reset al doppio clic, compressione browser/proprietà e preferenze JSON con validazione e sostituzione tramite file temporaneo. Snapshot isolati dalle preferenze personali. ui.inspect espone rettangoli, motore, scala, stato serializzabile e diagnostica. Test su 384 combinazioni di dimensioni, visibilità, compressione e scala; 1280x720, 1920x1080 e 800x600 mantengono viewport minimo 320x200. Verificati trascinamenti reali (browser 243→298, proprietà 253→288, timeline 62→106), riavvio e reset. Gli screenshot prima/dopo il riavvio sono identici. Build Release e CTest 34/34 verdi; fuzz 188 casi diretti e 162 MCP, senza crash. Implementazione Clay e albero del layout compilati anche con GCC 13.3 e Clang 18.1 in WSL.
 
+
+## 2026-10-16 — LAYOUT, tappa 3: verifica visiva e documentazione
+
+Completato LAYOUT nel piano, aggiornati AGENTS, stack/L6, architettura, guida UI e protocollo ui.inspect. Rafforzato il fallback preservando anche la scheda del ribbon, così i widget non accedono al catalogo della scheda nuova con i rettangoli precedenti. Testati entrambi i pannelli comprimibili e anche i separatori fra le aree nei controlli di sovrapposizione.
+
+Quattro confronti prima/dopo affiancati in docs/screenshots/layout, temi chiaro/scuro a 1280x720 e 1440x900. Pixel diversi senza tolleranza: chiaro 7960/8474 (0,8637%/0,6539%), scuro 3374/2888 (0,3661%/0,2228%). Cambiano la freccia di compressione, i bordi senza docking e arrotondamenti di un pixel nei gruppi del ribbon. Nel contenuto del viewport cambia un solo pixel di antialiasing del cubo, di 1–6 livelli RGB; pannelli, camera e geometria restano nella stessa posizione. Confronti guardati nei quattro formati, scala 2 e finestra 800x600, con i riferimenti Fusion locali. Screenshot di trascinamento, compressione e riavvio allegati alla stessa cartella; prima/dopo il riavvio identici pixel per pixel.
+
+Verifica finale Windows Release: CTest 34/34 in 14 secondi, check_layers e UTF-8 verdi, fuzz 188 diretti + 162 MCP. Header/implementazione Clay e layout.cpp compilati C++20 con MSVC 19.44, GCC 13.3 e Clang 18.1; nessuna suite completa Linux/macOS o CI remota avviata. App aggiornata in build/agent-layout/apps/sagomacad/sagomacad.exe. Golden invariate, nessuna funzione CAD aggiunta. M3 già presente preservato, M4 non iniziato.
+

@@ -28,7 +28,7 @@ PhotoCraft ha ricreato l'interfaccia di Photoshop in un solo linguaggio con agen
 1. **Motore prima, UI dopo.** Il documento è fatto di soli dati. Tutto quello che fa la UI deve essere possibile anche da CLI e da canale di controllo, senza finestra.
 2. **Tutto è un comando.** Ogni azione dell'utente ha un id stabile (`feature.extrude`), parametri JSON documentati, una funzione `enabled` e una `run`. Menu, toolbar, scorciatoie, palette dei comandi, CLI e canale di controllo chiamano tutti lo stesso registro.
 3. **Gli strumenti producono dati.** Uno strumento riceve eventi del puntatore e restituisce operazioni da eseguire e "overlay" da disegnare (linee, maniglie, quote, testo) come semplici strutture. La UI li disegna e basta.
-4. **Livelli imposti in build.** Un modulo può dipendere solo da moduli di livello inferiore. Sotto la UI nessuno include ImGui, SDL o OpenGL. Un controllo automatico lo verifica.
+4. **Livelli imposti in build.** Un modulo può dipendere solo da moduli di livello inferiore. Sotto la UI nessuno include ImGui, SDL, OpenGL o Clay. Un controllo automatico lo verifica.
 5. **UI sottile e guidata dallo stato.** Lo stato della UI (strumento attivo, pannelli, vista, dialog aperti) è una struttura serializzabile, così il canale di controllo può leggerlo e modificarlo.
 6. **L'agente vede quello che costruisce.** Renderer offscreen che produce PNG da uno script di comandi, più canale di controllo sull'app in esecuzione con `ui.screenshot`. Nessuna modifica visiva è finita senza screenshot controllato.
 7. **Mai crashare.** Input malformato, file corrotti e operazioni geometriche fallite producono errori leggibili, non crash. Un test "fuzz" lancia ogni comando con parametri ostili.
@@ -45,7 +45,7 @@ PhotoCraft ha ricreato l'interfaccia di Photoshop in un solo linguaggio con agen
 | Kernel geometrico | OpenCascade (OCCT) 7.8 o successivo | B-rep esatto, booleane, raccordi, tassellazione, STEP |
 | Finestra e input | SDL3 | Multipiattaforma, gestisce finestra, tastiera, mouse, DPI |
 | Grafica | OpenGL 3.3 core (4.1 su macOS) | Sufficiente per un viewport CAD, gira su Mac nonostante la deprecazione |
-| Interfaccia | Dear ImGui, ramo `docking` | Immediate mode, l'equivalente di egui usato da PhotoCraft: layout densi senza lottare con un sistema a componenti |
+| Interfaccia | Dear ImGui per i widget, Clay 0.14 per il layout | Shell dichiarativa con rettangoli stabili, widget e comandi esistenti |
 | Icone | Lucide (SVG, licenza ISC) renderizzate con lunasvg | Niente asset proprietari |
 | Font | Inter (UI) e JetBrains Mono (numeri), licenza OFL | Come PhotoCraft |
 | Solver vincoli | Scritto da noi, Newton-Raphson / Levenberg-Marquardt con Eigen | Problema matematico chiuso, ottimo da scrivere in casa |
@@ -69,7 +69,7 @@ src/
   L3  mesh/        tassellazione per la vista, export STL / 3MF / STEP
   L4  engine/      Session, CommandRegistry, undo/redo, eventi, view-model, interfaccia Tool, overlay
   L5  automation/  canale di controllo JSON (TCP loopback con token), runner headless
-  L6  ui/          shell Dear ImGui (sottile): pannelli, toolbar, viewport, disegno overlay
+  L6  ui/          layout Clay, widget Dear ImGui (shell sottile): pannelli, toolbar, viewport, overlay
 apps/
   sagomacad/           app desktop (SDL3 + OpenGL + ImGui), opzione --control
   sagomacad-cli/       CLI headless: run, export, snapshot, commands, info
@@ -84,7 +84,7 @@ log/devlog.md      registro di sviluppo
 Regole:
 
 - Ogni modulo è un target CMake separato. Un modulo dichiara come dipendenze solo moduli di livello inferiore.
-- `tools/check_layers.py` analizza gli `#include` e fallisce se un livello include un livello superiore, se un modulo fuori da `kernel/` include header OCCT, o se un modulo sotto `ui/` include ImGui, SDL o OpenGL.
+- `tools/check_layers.py` analizza gli `#include` e fallisce se un livello include un livello superiore, se un modulo fuori da `kernel/` include header OCCT, o se un modulo sotto `ui/` include ImGui, SDL, OpenGL o Clay.
 - `doc/` non contiene puntatori a oggetti OCCT: solo dati serializzabili. Le forme calcolate vivono in una cache di `regen/`, indicizzata per revisione del documento.
 
 ---
@@ -456,6 +456,9 @@ CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto 
 **M2 - Kernel e vista 3D**
 `kernel/` con OCCT, `primitive.add` (box, cilindro), tassellazione, vista shaded con spigoli, orbita/pan/zoom, view cube, `export.stl`. L'export chiede al motore quale stadio del corpo esportare anziché prendere sempre l'ultimo risultato; in M2 gli stadi esatto e finale coincidono. MCP: `render_view`, `mass_properties`, `export` (inizialmente STL) e modalità bridge verso l'app in esecuzione, inclusi `ui_screenshot` e test del collegamento.
 *Fatto quando:* un box 40x40x20 esportato in STL ha volume corretto entro la tolleranza e si apre in Bambu Studio.
+
+**LAYOUT - Shell dichiarativa con Clay — completato (16 ottobre 2026)**
+Clay 0.14 da vcpkg; albero shell e ribbon in `ui/layout.cpp`, arena limitata, misura testo ImGui, rettangoli `ShellLayout`, renderer decorativo ImDrawList. Dockspace rimosso. Separatori trascinabili con reset al doppio clic, pannelli comprimibili e misure persistenti nello stato UI. `ui.inspect` espone rettangoli, scala, stato e diagnostica. Test di layout, input, riavvio e confronto prima/dopo nei due temi e dimensioni, senza aggiornare golden image. La migrazione conserva M3 già presente nel branch, senza aggiungere funzioni CAD.
 
 **M3 - Sketcher 2D**
 Piani di schizzo, linea, rettangolo, cerchio, arco, vincoli automatici e manuali, quote, solver, colori per gradi di libertà (blu libero, nero vincolato), **quote digitate durante il disegno** come descritto al punto 6. MCP: `sketch_inspect`.

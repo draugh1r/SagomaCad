@@ -1,8 +1,8 @@
 # AGENTS.md - guida per agenti AI e contributori
 
-`SagomaCad` è un CAD parametrico desktop in **C++20**: il flusso di Fusion 360 (schizzi con vincoli, feature, timeline) con l'immediatezza di Tinkercad, file in locale, pensato per la stampa 3D. Kernel geometrico OpenCascade, interfaccia Dear ImGui su SDL3 e OpenGL. Leggi questo file per primo, poi `PLAN.md` nella stessa cartella e il resto di `docs/`.
+`SagomaCad` è un CAD parametrico desktop in **C++20**: il flusso di Fusion 360 (schizzi con vincoli, feature, timeline) con l'immediatezza di Tinkercad, file in locale, pensato per la stampa 3D. Kernel geometrico OpenCascade, interfaccia Dear ImGui per i widget e Clay per il layout, su SDL3 e OpenGL. Leggi questo file per primo, poi `PLAN.md` nella stessa cartella e il resto di `docs/`.
 
-Non aggiungere Tauri, Electron, webview o framework JavaScript. Non aggiungere Qt. Una sola interfaccia: Dear ImGui.
+Non aggiungere Tauri, Electron, webview o framework JavaScript. Non aggiungere Qt. Interfaccia: Dear ImGui per i widget, Clay per il layout. Nessun altro framework UI.
 
 ## 1. Orientamento
 
@@ -23,7 +23,8 @@ apps/sagomacad   apps/sagomacad-cli
 
 - Un modulo dipende solo da livelli inferiori. Lo verifica `python tools/check_layers.py`.
 - Solo `kernel/` include header OpenCascade.
-- Sotto `ui/` nessuno include ImGui, SDL o OpenGL.
+- Sotto `ui/` nessuno include ImGui, SDL, OpenGL o Clay.
+- Nuovi pannelli e aree si dichiarano nell’albero Clay di `src/ui/layout.cpp`, mai con posizioni o dimensioni calcolate a mano.
 - `doc/` contiene solo dati serializzabili, mai puntatori a oggetti OCCT.
 
 ## 3. Regole d'oro
