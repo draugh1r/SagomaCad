@@ -51,6 +51,10 @@ apps/sagomacad   apps/sagomacad-cli
 
 ## 4. Prima di chiudere un task
 
+La verifica è solo locale su Windows: build Release, ctest, controllo dei livelli, fuzz dei comandi se toccati, screenshot se tocchi la UI. Non fare push per far girare la CI, non aspettare né leggere risultati di CI, non correggere errori specifici di macOS o Linux. Il codice deve restare portabile (niente API solo Windows fuori da dove servono), ma non si verifica su altre piattaforme finché non lo chiedo io.
+
+Eventuali riferimenti alla CI nei prompt di lavoro non cambiano questa scelta. Il workflow remoto è conservato con il solo trigger `workflow_dispatch`, per l'avvio manuale da GitHub da parte dell'utente.
+
 ```sh
 cmake --build build --config Release
 ctest --test-dir build --output-on-failure

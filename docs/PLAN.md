@@ -432,22 +432,22 @@ Gli agenti si correggono molto meglio con errori precisi che con un generico "op
 
 - Test di integrazione MCP: uno script avvia `sagomacad-cli mcp` in headless, crea una scatola 40x40x20 con un foro passante da 10 mm usando solo tool MCP, e verifica con `mass_properties` che il volume sia corretto entro la tolleranza.
 - Test di conformità: handshake `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, gestione degli errori JSON-RPC.
-- Test bridge: app avviata in CI con `--control`, MCP collegato, `render_view` e `ui_screenshot` restituiscono PNG validi.
+- Test bridge locale su Windows: app avviata con `--control`, MCP collegato, `render_view` e `ui_screenshot` restituiscono PNG validi.
 - Codex usa l'MCP in headless durante lo sviluppo per verificare le feature che implementa.
 
 ---
 
 ## 12. Traguardi
 
-Ogni traguardo si chiude solo con build verde, test verdi, controllo livelli verde e gli screenshot o i test numerici indicati.
+Ogni traguardo si chiude solo con build Release locale su Windows verde, ctest e controllo livelli verdi, fuzz dei comandi se toccati e screenshot se si tocca la UI, oltre ai test numerici indicati. La CI multipiattaforma è sospesa per scelta dell'utente: nessun avvio, attesa o lettura dei risultati remoti e nessuna verifica su macOS o Linux finché non richiesta. Il codice resta portabile. Il workflow è conservato con il solo trigger `workflow_dispatch` per l'avvio manuale da GitHub da parte dell'utente.
 
 **M0 - Scheletro**
-CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto con griglia e assi, tema con token, `sagomacad-cli snapshot` funzionante, canale di controllo con `auth`, `ui.inspect`, `ui.screenshot`. `tools/check_layers.py`. CI su Windows, macOS e Linux.
+CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto con griglia e assi, tema con token, `sagomacad-cli snapshot` funzionante, canale di controllo con `auth`, `ui.inspect`, `ui.screenshot`. `tools/check_layers.py`. Verifica locale su Windows.
 *Fatto quando:* lo snapshot dell'app vuota esiste ed è approvato come prima golden image.
 
 **M1 - Documento e comandi**
 `doc/` con serializzazione `.sagomacad`, registro comandi, undo/redo, parametri con espressioni, `sagomacad-cli run`, palette dei comandi nella UI, `document.*`, `param.*`, `edit.*`. Client `sagomacad-cli call <metodo> [params]` per il canale di controllo, scoperta di porta e token dal file di sessione, opzioni `--port`, `--token-file` e `--headless <file.sagomacad>`, guida `docs/agent-cli.md`. `Body` prevede `kind: brep | mesh` e la timeline distingue feature `exact | sdf`, anche se in M1 esistono solo quelle esatte; il formato `.sagomacad` accoglie i nuovi tipi senza rompere i file precedenti. Gli id `sdf.lattice`, `sdf.shell`, `sdf.smoothUnion`, `sdf.texture`, `sdf.offset` e `mesh.import` sono riservati, senza implementazione. Test di fuzz dei comandi attivo.
-*Fatto quando:* salva, riapri, undo e redo funzionano da CLI e da UI con gli stessi comandi; in CI il client chiama `engine.execute` e `ui.screenshot` sull'app e verifica risposta JSON e PNG.
+*Fatto quando:* salva, riapri, undo e redo funzionano da CLI e da UI con gli stessi comandi; nei test locali su Windows il client chiama `engine.execute` e `ui.screenshot` sull'app e verifica risposta JSON e PNG.
 
 **M1.5 - MCP base**
 `sagomacad-cli mcp` su stdio con JSON-RPC 2.0 e modalità headless; `commands_list`, `command_run`, `batch_run` come unico passo di undo, `undo`, `redo`, `document_inspect`, `document_open`, `document_save` e risorse MCP. Documentazione in `docs/mcp.md` con la configurazione per Claude Desktop, Claude Code e Codex.
@@ -547,4 +547,4 @@ Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo sl
 
 ## 14. Primo prompt per Codex
 
-> Leggi `AGENTS.md` e `PLAN.md`. Implementa il traguardo M0 del piano: struttura delle cartelle e dei target CMake per tutti i livelli (anche vuoti), vcpkg manifest, app `sagomacad` con finestra SDL3, Dear ImGui docking e viewport OpenGL con griglia e assi, tema con token in `ui/theme.hpp`, `sagomacad-cli snapshot` che renderizza offscreen e salva un PNG, canale di controllo con `auth`, `ui.inspect` e `ui.screenshot`, script `tools/check_layers.py`, workflow CI per Windows, macOS e Linux. Alla fine genera lo snapshot dell'app vuota in `docs/screenshots/m0.png`, guardalo, correggi quello che non va, e aggiorna `log/devlog.md`. Non iniziare M1.
+> Leggi `AGENTS.md` e `PLAN.md`. Implementa il traguardo M0 del piano: struttura delle cartelle e dei target CMake per tutti i livelli (anche vuoti), vcpkg manifest, app `sagomacad` con finestra SDL3, Dear ImGui docking e viewport OpenGL con griglia e assi, tema con token in `ui/theme.hpp`, `sagomacad-cli snapshot` che renderizza offscreen e salva un PNG, canale di controllo con `auth`, `ui.inspect` e `ui.screenshot`, script `tools/check_layers.py`, workflow GitHub Actions opzionale con il solo trigger `workflow_dispatch` per l'avvio manuale da parte dell'utente. La verifica è solo locale su Windows secondo `AGENTS.md`, mantenendo il codice portabile. Alla fine genera lo snapshot dell'app vuota in `docs/screenshots/m0.png`, guardalo, correggi quello che non va, e aggiorna `log/devlog.md`. Non iniziare M1.
