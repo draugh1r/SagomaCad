@@ -42,7 +42,10 @@ with tempfile.TemporaryDirectory() as temporary:
             assert "error" in call(2, "auth", {"token": "wrong"})
             assert call(3, "auth", {"token": "m0-test-token"})["result"]["authenticated"]
             state = call(4, "ui.inspect")["result"]
-            assert state["docking"] and state["viewport"]["grid"]
+            assert not state["docking"] and state["viewport"]["grid"]
+            assert state["layout_engine"] == "clay"
+            assert {r["id"] for r in state["shell_rects"]} >= {"topbar", "ribbon", "browser", "viewport", "properties", "timeline", "contextual"}
+            assert all(r["width"] >= 0 and r["height"] >= 0 for r in state["shell_rects"])
             assert state["fixed_layout"] and not state["tabs_visible"]
             assert not state["viewport"]["title_visible"]
             assert "error" in call(5, "ui.screenshot", {"path": "../escape.png"})

@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/state.hpp"
+#include "ui/layout.hpp"
 #include "ui/theme.hpp"
 #include "engine/command.hpp"
 #include "regen/regenerator.hpp"
@@ -26,6 +27,7 @@ public:
     void set_glyph_sample(bool enabled) { glyph_sample_ = enabled; }
     bool glyphs_available() const;
     nlohmann::json inspect() const;
+    void set_settings_file(const std::string& path);
     ui::State& state() { return state_; }
     void bind_engine(engine::Engine* engine) { engine_ = engine; }
     bool open_feature_editor(std::string_view feature_id);
@@ -43,7 +45,9 @@ private:
     std::map<std::string,solver::SketchResult> sketch_solutions_;
     int scale_ = 1;
     bool imgui_ready_ = false;
-    bool dock_initialized_ = false;
+    ui::LayoutEngine layout_;
+    std::string settings_file_,settings_cache_;
+    void save_settings();
     bool glyph_sample_ = false;
     ui::Viewport current_viewport_{};
     std::unordered_map<std::string, unsigned int> icon_textures_;

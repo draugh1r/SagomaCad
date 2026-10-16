@@ -3,6 +3,8 @@
 #include <string>
 #include "ui/camera.hpp"
 #include "ui/view_cube.hpp"
+#include "ui/theme.hpp"
+#include <nlohmann/json_fwd.hpp>
 #include "engine/tools/sketch_tool.hpp"
 
 namespace sagomacad::ui {
@@ -15,6 +17,10 @@ struct State {
     bool browser = true;
     bool properties = false;
     bool timeline = true;
+    bool browser_collapsed = false, properties_collapsed = false;
+    float browser_width = light.sidebar_width-light.layout.panel_border;
+    float properties_width = light.inspector_width-light.layout.panel_border;
+    float timeline_height = light.timeline_height;
     bool sketch_mode = false;
     bool sketch_plane_picker=false;
     std::string sketch_view_id,sketch_drag_point,sketch_dimension_id,sketch_dimension_kind="length";
@@ -54,4 +60,6 @@ struct State {
     int width = 1440;
     int height = 900;
 };
+nlohmann::json layout_state_json(const State&);
+void restore_layout_state(State&, const nlohmann::json&);
 }

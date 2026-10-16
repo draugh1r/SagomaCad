@@ -4,6 +4,8 @@
 #include "ui/toolbar_catalog.hpp"
 #include "ui/parameter_editor.hpp"
 #include "ui/feature_editor.hpp"
+#include "ui/widgets.hpp"
+#include <fstream>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
 #include <imgui.h>
@@ -54,13 +56,28 @@ void style(const ui::Theme& t, int scale) {
     c[ImGuiCol_TableRowBg] = vec(t.panel);
     c[ImGuiCol_TableRowBgAlt] = vec(t.panel_alt);
 }
-void panel(const char* name, const char* label, const ui::Theme& t, auto contents, ImGuiWindowFlags extra = 0) {
-    constexpr auto fixed = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+void panel(const char* name, const char* label, const ui::Theme& t, ui::LayoutRect r, auto contents, ImGuiWindowFlags extra = 0, bool* collapsed=nullptr, float z=1) {
+    if (!r.visible()) return;
+    ImGui::SetNextWindowPos({r.x,r.y},ImGuiCond_Always);
+    ImGui::SetNextWindowSize({r.width,r.height},ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize,{0,0});
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding,0);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize,0);
+    constexpr auto fixed = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBringToFrontOnFocus;
     if (ImGui::Begin(name, nullptr, fixed | extra)) {
-        if (label) { ImGui::TextColored(vec(t.muted), "%s", label); ImGui::Separator(); }
-        contents();
+        if (collapsed) {
+            const auto cursor=ImGui::GetCursorScreenPos();
+            ImGui::SetCursorScreenPos({r.x+r.width-t.layout.collapse_button*z,r.y+t.padding*z});
+            if (ImGui::SmallButton(*collapsed?">##expand":"<##collapse")) *collapsed=!*collapsed;
+            ImGui::SetCursorScreenPos(cursor);
+        }
+        if ((!collapsed || !*collapsed) && r.width>2*t.padding*z && r.height>2*t.padding*z) {
+            if (label) { ImGui::TextColored(vec(t.muted), "%s", label); ImGui::Separator(); }
+            contents();
+        }
     }
     ImGui::End();
+    ImGui::PopStyleVar(3);
 }
 void icon(ImDrawList* dl, unsigned int texture, ImVec2 a, float size, ImU32 color) {
     if (texture) dl->AddImage(static_cast<ImTextureID>(texture),a,{a.x+size,a.y+size},{0,0},{1,1},color);
@@ -158,7 +175,6 @@ Shell::Shell(int width, int height, int scale, bool hidden, bool light) : scale_
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     auto& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.IniFilename = nullptr;
     ImFontConfig font;
     font.SizePixels = 15.0f * scale;
@@ -240,71 +256,25 @@ void Shell::draw() {
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) invoke_command("document.open");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
         invoke_command(input.KeyShift?"document.saveAs":"document.save");
-    const ImGuiID dock_id=ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-    if (!dock_initialized_) {
-        ImGui::DockBuilderRemoveNode(dock_id);
-        ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderSetNodeSize(dock_id,screen);
-        ImGuiID middle=dock_id, header=0, timeline=0, browser=0, properties=0;
-        ImGui::DockBuilderSplitNode(middle,ImGuiDir_Up,t.toolbar_height*z/screen.y,&header,&middle);
-        const float timeline_height=glyph_sample_?t.timeline_glyph_height:t.timeline_height;
-        ImGui::DockBuilderSplitNode(middle,ImGuiDir_Down,timeline_height*z/(screen.y-t.toolbar_height*z),&timeline,&middle);
-        ImGui::DockBuilderSplitNode(middle,ImGuiDir_Left,t.sidebar_width*z/screen.x,&browser,&middle);
-        if (state_.properties)
-            ImGui::DockBuilderSplitNode(middle,ImGuiDir_Right,t.inspector_width*z/(screen.x-t.sidebar_width*z),&properties,&middle);
-        std::vector<ImGuiID> nodes={header,timeline,browser,middle};
-        if (properties) nodes.push_back(properties);
-        for (ImGuiID node : nodes)
-            ImGui::DockBuilderGetNode(node)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResize;
-        ImGui::DockBuilderDockWindow("SagomaCad  |  Solido",header);
-        ImGui::DockBuilderDockWindow("Browser",browser);
-        if (properties) ImGui::DockBuilderDockWindow("Proprietà",properties);
-        ImGui::DockBuilderDockWindow("Timeline",timeline);
-        ImGui::DockBuilderDockWindow("Viewport",middle);
-        ImGui::DockBuilderFinish(dock_id);
-        dock_initialized_=true;
+    if (state_.sketch_mode!=state_.previous_sketch_mode) {
+        state_.selected_tab=state_.sketch_mode?1:0;
+        state_.previous_sketch_mode=state_.sketch_mode;
     }
-    panel("SagomaCad  |  Solido", nullptr, t, [&] {
+    const int layout_tab=state_.selected_tab;
+    const auto& layout=layout_.compute(screen.x,screen.y,z,state_,t,glyph_sample_);
+    layout_.render(ImGui::GetBackgroundDrawList());
+    auto texture=[&](std::string_view name) { return icon_texture(name); };
+    auto invoke=[&](std::string_view id) { invoke_command(id); };
+    auto command_button=[&](const ui::ToolbarCommand& c,ImVec2 pos,ImVec2 size,bool label) {
+        ui::ribbon_button(c,{pos.x,pos.y,size.x,size.y},label,t,z,engine_,texture,invoke);
+    };
+    auto popup_command=[&](const ui::ToolbarCommand& c,float width) {
+        ui::popup_command(c,width,t,z,engine_,texture,invoke);
+    };
+    panel("SagomaCad  |  Solido", nullptr, t, layout.topbar, [&] {
         ImDrawList* dl=ImGui::GetWindowDrawList();
         const ImVec2 p=ImGui::GetCursorScreenPos();
         const float width=ImGui::GetContentRegionAvail().x;
-        auto command_button=[&](const ui::ToolbarCommand& command,ImVec2 a,ImVec2 size,bool show_label) {
-            const auto status=ui::command_availability(command.id,engine_);
-            const bool available=status.enabled;
-            const std::string id(command.id);
-            ImGui::SetCursorScreenPos(a);
-            ImGui::PushID(id.c_str());
-            ImGui::BeginDisabled(!available);
-            const bool clicked=ImGui::InvisibleButton("command",size);
-            ImGui::EndDisabled();
-            const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
-            if (!available && hovered) ImGui::SetTooltip("%s",status.reason.c_str());
-            if (clicked && available) invoke_command(command.id);
-            if (hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(t.panel_alt),t.rounding*z);
-            const float icon_size=(show_label?21.0f:17.0f)*z;
-            icon(dl,icon_texture(command.icon),{a.x+(size.x-icon_size)*0.5f,a.y+2*z},icon_size,
-                 packed(available?(command.id=="sketch.finish"?t.sketch.finish:t.text):t.muted));
-            if (show_label) centered_text(dl,{a.x+size.x*0.5f,a.y+26*z},command.label,
-                packed(available?t.text:t.muted),size.x-4*z,12.5f*z);
-            ImGui::PopID();
-        };
-        auto popup_command=[&](const ui::ToolbarCommand& command,float item_width) {
-            const auto status=ui::command_availability(command.id,engine_);
-            const bool available=status.enabled;
-            ImDrawList* popup_dl=ImGui::GetWindowDrawList();
-            ImGui::PushID(command.id.data());
-            ImGui::BeginDisabled(!available);
-            const bool clicked=ImGui::InvisibleButton("item",{item_width*z,27*z});
-            ImGui::EndDisabled();
-            const ImVec2 q=ImGui::GetItemRectMin();
-            const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
-            if (hovered) popup_dl->AddRectFilled(q,{q.x+item_width*z,q.y+27*z},packed(t.panel_alt));
-            icon(popup_dl,icon_texture(command.icon),{q.x+4*z,q.y+4*z},18*z,packed(available?t.text:t.muted));
-            popup_dl->AddText({q.x+30*z,q.y+5*z},packed(available?t.text:t.muted),std::string(command.label).c_str());
-            if (!available && hovered) ImGui::SetTooltip("%s",status.reason.c_str());
-            if (clicked && available) { invoke_command(command.id); ImGui::CloseCurrentPopup(); }
-            ImGui::PopID();
-        };
         dl->AddText(p,packed(t.accent),"SagomaCad");
         const std::string document_name=engine_?engine_->session().document.name:"Nuovo documento";
         dl->AddText({p.x+126*z,p.y},packed(t.text),document_name.c_str());
@@ -326,11 +296,6 @@ void Shell::draw() {
         }
         dl->AddLine({p.x,p.y+27*z},{p.x+width,p.y+27*z},packed(t.border));
         auto& selected_tab=state_.selected_tab;
-        auto& previous_sketch_mode=state_.previous_sketch_mode;
-        if (state_.sketch_mode!=previous_sketch_mode) {
-            selected_tab=state_.sketch_mode?1:0;
-            previous_sketch_mode=state_.sketch_mode;
-        }
         float tab_x=p.x+2*z;
         const auto tabs=ui::toolbar_catalog();
         for (int i=0;i<static_cast<int>(tabs.size());++i) {
@@ -346,33 +311,36 @@ void Shell::draw() {
             tab_x+=tab_width;
         }
         dl->AddLine({p.x,p.y+55*z},{p.x+width,p.y+55*z},packed(t.border));
-        const auto& groups=tabs[selected_tab].groups;
-        const float group_width=std::min(t.ribbon_group_width*z,(width-4*z)/std::max<size_t>(1,groups.size()));
-        for (size_t i=0;i<groups.size();++i) {
-            const auto& group=groups[i];
-            const float x=p.x+i*group_width;
-            const size_t primary_count=std::min(group.primary_count,group.commands.size());
-            const float item_width=(group_width-8*z)/static_cast<float>(primary_count);
-            for (size_t j=0;j<primary_count;++j)
-                command_button(group.commands[j],{x+2*z+j*item_width,p.y+60*z},{item_width,43*z},true);
+    }, ImGuiWindowFlags_NoScrollbar);
+    if (state_.selected_tab!=layout_tab) layout_.compute(screen.x,screen.y,z,state_,t,glyph_sample_);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,{t.padding*z,0});
+    panel("Ribbon",nullptr,t,layout.ribbon,[&] {
+        auto* dl=ImGui::GetWindowDrawList();
+        const auto tabs=ui::toolbar_catalog();
+        const auto& groups=tabs[state_.selected_tab].groups;
+        for (size_t i=0;i<layout.group_count;++i) {
+            const auto& g=layout.groups[i];
+            for (size_t j=0;j<g.button_count;++j) {
+                const auto& r=g.buttons[j];
+                ui::ribbon_button(groups[i].commands[j],r,true,t,z,engine_,texture,invoke);
+            }
+            const auto& r=g.menu;
             const std::string popup_id="group_"+std::to_string(i);
-            ImGui::SetCursorScreenPos({x+4*z,p.y+118*z});
+            ImGui::SetCursorScreenPos({r.x,r.y});
             ImGui::PushID(popup_id.c_str());
-            if (ImGui::InvisibleButton("menu",{group_width-10*z,22*z})) ImGui::OpenPopup("commands");
-            if (ImGui::IsItemHovered()) dl->AddRectFilled({x+4*z,p.y+118*z},{x+group_width-6*z,p.y+140*z},packed(t.panel_alt));
-            centered_text(dl,{x+group_width*0.5f-6*z,p.y+122*z},group.label,packed(t.muted));
-            icon(dl,icon_texture("chevron-down"),{x+group_width-25*z,p.y+122*z},13*z,packed(t.muted));
+            if (r.visible() && ImGui::InvisibleButton("menu",{r.width,r.height})) ImGui::OpenPopup("commands");
+            if (ImGui::IsItemHovered()) dl->AddRectFilled({r.x,r.y},{r.x+r.width,r.y+r.height},packed(t.panel_alt));
+            icon(dl,icon_texture("chevron-down"),{r.x+r.width-t.layout.menu_icon_right*z,r.y+t.layout.label_top*z},t.layout.menu_icon_size*z,packed(t.muted));
             if (ImGui::BeginPopup("commands")) {
-                for (const auto& command:group.commands) popup_command(command,190);
+                for (const auto& command:groups[i].commands) popup_command(command,190);
                 ImGui::EndPopup();
             }
             ImGui::PopID();
-            dl->AddLine({x+group_width-1*z,p.y+61*z},{x+group_width-1*z,p.y+140*z},packed(t.border));
         }
-        ImGui::SetCursorScreenPos({p.x,p.y+142*z});
-        ImGui::Dummy({width,1*z});
-    }, ImGuiWindowFlags_NoScrollbar);
-    if (state_.browser) panel("Browser", ui::labels.browser, t, [&] {
+        layout_.render(dl);
+    },ImGuiWindowFlags_NoScrollbar);
+    ImGui::PopStyleVar();
+    if (state_.browser) panel("Browser", ui::labels.browser, t, layout.browser, [&] {
         auto row=[&](const char* text,int depth,bool has_children,bool expanded,bool show_eye,bool visible) {
             ImDrawList* dl=ImGui::GetWindowDrawList();
             const ImVec2 q=ImGui::GetCursorScreenPos();
@@ -437,12 +405,12 @@ void Shell::draw() {
             if(ImGui::BeginPopupContextItem()) {if(ImGui::MenuItem("Modifica schizzo"))open_feature_editor(id);ImGui::EndPopup();}
             ImGui::Unindent(45*z);
         }
-    });
-    if (state_.properties) panel("Proprietà", ui::labels.properties, t, [&] {
+    },0,&state_.browser_collapsed,z);
+    if (state_.properties) panel("Proprietà", ui::labels.properties, t, layout.properties, [&] {
         ImGui::TextDisabled("%s", ui::labels.selection); ImGui::Separator();
         ImGui::TextDisabled("Nessun elemento selezionato");
-    });
-    if (state_.timeline) panel("Timeline", nullptr, t, [&] {
+    },0,&state_.properties_collapsed,z);
+    if (state_.timeline) panel("Timeline", nullptr, t, layout.timeline, [&] {
         ImDrawList* dl=ImGui::GetWindowDrawList();
         const ImVec2 q=ImGui::GetCursorScreenPos();
         dl->AddText({q.x,q.y+2*z},packed(t.muted),ui::labels.timeline);
@@ -494,7 +462,7 @@ void Shell::draw() {
         }
         if (glyph_sample_) ImGui::TextUnformatted("àèéìòù ÀÈÉÌÒÙ");
     }, ImGuiWindowFlags_NoScrollbar);
-    panel("Viewport", nullptr, t, [&] {
+    panel("Viewport", nullptr, t, layout.viewport, [&] {
         const ImVec2 a = ImGui::GetCursorScreenPos();
         const ImVec2 avail = ImGui::GetContentRegionAvail();
         const ImVec2 b = {a.x+avail.x,a.y+avail.y};
@@ -603,6 +571,11 @@ void Shell::draw() {
         }
         dl->PopClipRect();
     });
+    if (!state_.browser_collapsed)
+        ui::splitter("browser_separator",layout.browser_separator,true,state_.browser_width,t.sidebar_width-t.layout.panel_border,t.layout.browser_min,t.layout.browser_max,z,t);
+    if (!state_.properties_collapsed)
+        ui::splitter("properties_separator",layout.properties_separator,true,state_.properties_width,t.inspector_width-t.layout.panel_border,t.layout.properties_min,t.layout.properties_max,z,t);
+    ui::splitter("timeline_separator",layout.timeline_separator,false,state_.timeline_height,t.timeline_height,t.layout.timeline_min,t.layout.timeline_max,z,t);
     draw_overlays(t);
     draw_sketch_panels(t);
 }
@@ -664,9 +637,9 @@ void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);
     const ImVec2 display=ImGui::GetIO().DisplaySize;
     if (!state_.status_message.empty() && !state_.file_dialog_open) {
-        ImGui::SetNextWindowPos({t.sidebar_width*z+t.padding*z,
-                                display.y-t.timeline_height*z-t.padding*z},ImGuiCond_Always,{0,1});
-        ImGui::SetNextWindowSize({std::min(t.file_dialog_width*z,display.x-t.sidebar_width*z-2*t.padding*z),0},ImGuiCond_Always);
+        const auto& viewport=layout_.last().viewport;
+        ImGui::SetNextWindowPos({viewport.x+t.padding*z,viewport.y+viewport.height-t.padding*z},ImGuiCond_Always,{0,1});
+        ImGui::SetNextWindowSize({std::max(t.padding*z,std::min(t.file_dialog_width*z,viewport.width-2*t.padding*z)),0},ImGuiCond_Always);
         bool open=true;
         if (ImGui::Begin("Errore##status",&open,ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings)) {
             ImGui::PushStyleColor(ImGuiCol_Text,vec(t.error));
@@ -902,6 +875,7 @@ void Shell::render() {
     ImGui_ImplOpenGL3_NewFrame(); ImGui_ImplSDL3_NewFrame(); ImGui::NewFrame();
     style(ui::theme(state_.theme == "light"), scale_);
     draw();
+    save_settings();
     ImGui::Render();
     int w=0,h=0; SDL_GetWindowSizeInPixels(window_,&w,&h);
     const auto& bg=ui::theme(state_.theme=="light").background;
@@ -962,11 +936,45 @@ bool Shell::screenshot(const std::string& path, std::string& error, bool viewpor
     if (ec || !stbi_write_png(path.c_str(),w,h,4,flipped.data(),w*4)) { error="cannot write PNG"; return false; }
     return true;
 }
+void Shell::set_settings_file(const std::string& path) {
+    settings_file_=path;
+    std::error_code ec;
+    const auto length=std::filesystem::file_size(path,ec);
+    if (!ec && length<=16384) {
+        std::ifstream input(path,std::ios::binary);
+        const auto json=nlohmann::json::parse(input,nullptr,false);
+        ui::restore_layout_state(state_,json);
+    }
+    settings_cache_=ui::layout_state_json(state_).dump();
+}
+void Shell::save_settings() {
+    if (settings_file_.empty()) return;
+    const auto value=ui::layout_state_json(state_).dump();
+    if (value==settings_cache_) return;
+    std::error_code ec;
+    const auto path=std::filesystem::path(settings_file_);
+    if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path(),ec);
+    const auto temporary=settings_file_+".tmp";
+    std::ofstream output(temporary,std::ios::binary|std::ios::trunc);
+    if (ec || !output) { std::fprintf(stderr,"Cannot save UI layout settings\n"); return; }
+    output<<value<<'\n'; output.close();
+    if (!output || !SDL_RenamePath(temporary.c_str(),settings_file_.c_str())) {
+        std::fprintf(stderr,"Cannot replace UI layout settings\n"); return;
+    }
+    settings_cache_=value;
+}
 nlohmann::json Shell::inspect() const {
+    const auto& l=layout_.last();
+    nlohmann::json rectangles=nlohmann::json::array();
+    for (const auto& [name,r]:std::initializer_list<std::pair<const char*,ui::LayoutRect>>{
+        {"topbar",l.topbar},{"ribbon",l.ribbon},{"browser",l.browser},{"viewport",l.viewport},
+        {"properties",l.properties},{"timeline",l.timeline},{"contextual",l.contextual},
+        {"header_separator",l.header_separator},{"browser_separator",l.browser_separator},{"properties_separator",l.properties_separator},{"timeline_separator",l.timeline_separator}})
+        rectangles.push_back({{"id",name},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
-        {"docking",true},{"fixed_layout",true},{"tabs_visible",false},
+        {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
         {"feature_edit_open",state_.primitive_editor_open},{"feature_edit_id",state_.primitive_feature_id},
         {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"error",state_.sketch_error}}},

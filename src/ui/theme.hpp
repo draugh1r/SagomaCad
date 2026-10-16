@@ -52,6 +52,16 @@ struct Theme {
     float grid_step, grid_slope, viewcube_size, nav_width, nav_height, ribbon_group_width, timeline_glyph_height;
     float palette_width, palette_height, parameter_width, parameter_height, file_dialog_width;
     ViewCubeTokens cube;
+    struct LayoutTokens {
+        float topbar_height=66, divider=2, panel_border=1;
+        float browser_min=160, browser_max=480, properties_min=160, properties_max=480;
+        float timeline_min=62, timeline_max=240, viewport_min_width=320, viewport_min_height=200;
+        float collapsed_width=24, ribbon_top=4, ribbon_bottom=12, ribbon_right=14;
+        float group_button_height=43, group_spacer=15, group_menu_height=22;
+        float group_left=2, group_right=6, menu_left=4, menu_right=6;
+        float label_top=4, label_right=10, label_font_size=15;
+        float menu_icon_size=13, menu_icon_right=19, collapse_button=20;
+    } layout;
     struct SketchTokens {
         Color free{0.12f,0.40f,0.90f}, constrained{0.05f,0.05f,0.06f},profile{0.25f,0.70f,0.90f,0.14f},plane{0.65f,0.64f,0.60f,0.20f},plane_hover{0.98f,0.66f,0.12f,0.55f},finish{0.12f,0.65f,0.29f};
         float palette_width=244,palette_y=180,palette_height=340,field_width=132,field_height=26,field_gap=8,point_radius=3,hit_radius=10,line_width=1.6f,constraint_size=12,dimension_offset=24,plane_extent=18,grid_pixel_step=28;

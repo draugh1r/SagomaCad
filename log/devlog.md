@@ -173,3 +173,10 @@ Build Release separata `build/agent-sketch-mouse`, perché l'utente ha ancora ap
 
 Clay 0.14 disponibile in vcpkg, fissato dal builtin-baseline esistente. Aggiunti manifest, attribuzione zlib e implementazione isolata sotto ui/. Header e implementazione compilano C++20 con MSVC 19.44 e GCC 13.3 (WSL). Regola clay.h verificata per tutti i livelli inferiori, anche con percorso prefissato. Build Release separata build/agent-layout, CTest 32/32 verde, incluse le prove fuzz esistenti. Quattro screenshot prima della migrazione conservati in build/layout-baseline; golden invariate. Il branch contiene già M3: questa migrazione ne conserva le funzioni, senza espanderle.
 
+
+## 2026-10-16 — LAYOUT, tappa 2: shell e interazioni
+
+Rimosso il dockspace: Clay dichiara topbar, ribbon e relativi gruppi/pulsanti, browser, viewport, proprietà, timeline, separatori e area contestuale vuota. Rettangoli ShellLayout, decorazioni su ImDrawList e misura dei font ImGui alla scala del frame; widget e ID dei comandi invariati. Arena per istanza limitata a 512 elementi e 1024 parole. Testato anche un budget di 32 elementi: Clay 0.14 emette un comando diagnostico invece di richiamare il callback per questo esaurimento; il wrapper lo inoltra allo stesso handler, mantiene l'ultimo layout valido e recupera nel frame successivo.
+
+Separatori trascinabili, reset al doppio clic, compressione browser/proprietà e preferenze JSON con validazione e sostituzione tramite file temporaneo. Snapshot isolati dalle preferenze personali. ui.inspect espone rettangoli, motore, scala, stato serializzabile e diagnostica. Test su 384 combinazioni di dimensioni, visibilità, compressione e scala; 1280x720, 1920x1080 e 800x600 mantengono viewport minimo 320x200. Verificati trascinamenti reali (browser 243→298, proprietà 253→288, timeline 62→106), riavvio e reset. Gli screenshot prima/dopo il riavvio sono identici. Build Release e CTest 34/34 verdi; fuzz 188 casi diretti e 162 MCP, senza crash. Implementazione Clay e albero del layout compilati anche con GCC 13.3 e Clang 18.1 in WSL.
+

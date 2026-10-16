@@ -43,6 +43,8 @@ int main(int argc,char** argv) {
     if (control_requested && (port<0 || port>65535)) { std::cerr<<"Invalid port\n"; return 2; }
     sagomacad::Shell shell(1440,900,1,false,true);
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
+    const char* preferences=SDL_GetPrefPath("SagomaCad","SagomaCad");
+    if (preferences) shell.set_settings_file((std::filesystem::path(preferences)/"layout.json").string());
     sagomacad::engine::Engine engine;
     shell.bind_engine(&engine);
     std::unique_ptr<sagomacad::ControlServer> server;
