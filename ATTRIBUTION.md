@@ -1,5 +1,10 @@
 # Asset e dipendenze
 
+Il motore di layout [Clay](https://github.com/nicbarker/clay/tree/v0.14), versione 0.14,
+è installato da vcpkg, fissato dal `builtin-baseline` del manifest. Licenza zlib,
+Copyright (c) 2024 Nic Barker. Il testo completo è distribuito in
+`share/clay/copyright` del pacchetto vcpkg; nessun sorgente Clay è modificato.
+
 M0 usa il font [Inter](https://github.com/google/fonts/tree/main/ofl/inter), licenza SIL Open Font License 1.1. La licenza completa è in `assets/fonts/OFL-Inter.txt`.
 
 Le librerie SDL3, Dear ImGui, nlohmann/json e stb sono installate tramite vcpkg secondo le rispettive licenze.

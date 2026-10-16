@@ -4,11 +4,22 @@
   "builtin-baseline": "4056a718039dc20216cccb960bccce4b9ad69519",
   "dependencies": [
     "sdl3",
-    {"name": "imgui", "features": ["docking-experimental", "opengl3-binding", "sdl3-binding"]},
-    {"name": "opencascade", "default-features": false},
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "opengl3-binding",
+        "sdl3-binding"
+      ]
+    },
+    {
+      "name": "opencascade",
+      "default-features": false
+    },
     "nlohmann-json",
     "lunasvg",
     "stb",
-    "eigen3"
+    "eigen3",
+    "clay"
   ]
 }

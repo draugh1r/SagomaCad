@@ -168,3 +168,8 @@ Le misure ottenute solo dal mouse definiscono la geometria iniziale senza aggiun
 Nuovo test UI di regressione: movimento con input attivo, attraversamento dell'overlay, aggiornamento di entrambe le misure, documento invariato durante l'anteprima, conferma clic-clic senza tastiera, arco con mouse e larghezza 40 bloccata con altezza libera. Verifica punti finali, quote effettivamente create e GDL residui; il test falliva prima della correzione. Restano verdi anche R → clic → 40 Tab 20 Invio e i test precedenti. Screenshot in `docs/screenshots/m3-mouse/` nei due temi e dimensioni, guardati e confrontati con i riferimenti Fusion; nessuna golden sostituita.
 
 Build Release separata `build/agent-sketch-mouse`, perché l'utente ha ancora aperto l'eseguibile in `build/agent-m3`: nessuna app chiusa e nessun documento scartato. **31/31 test verdi**, controllo livelli/UTF-8 verdi, fuzz **188 diretti + 162 MCP** senza crash. App corretta: `build/agent-sketch-mouse/apps/sagomacad/sagomacad.exe`. M4 non iniziato.
+
+## 2026-10-16 — LAYOUT, tappa 1: dipendenza e livelli
+
+Clay 0.14 disponibile in vcpkg, fissato dal builtin-baseline esistente. Aggiunti manifest, attribuzione zlib e implementazione isolata sotto ui/. Header e implementazione compilano C++20 con MSVC 19.44 e GCC 13.3 (WSL). Regola clay.h verificata per tutti i livelli inferiori, anche con percorso prefissato. Build Release separata build/agent-layout, CTest 32/32 verde, incluse le prove fuzz esistenti. Quattro screenshot prima della migrazione conservati in build/layout-baseline; golden invariate. Il branch contiene già M3: questa migrazione ne conserva le funzioni, senza espanderle.
+
