@@ -6,6 +6,7 @@
 #include "regen/regenerator.hpp"
 #include "mesh/surface.hpp"
 #include "solver/sketch_solver.hpp"
+#include "engine/tools/model_preview.hpp"
 #include <SDL3/SDL_video.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -43,6 +44,10 @@ private:
     bool camera_fitted_ = false;
     std::string sketch_revision_;
     std::map<std::string,solver::SketchResult> sketch_solutions_;
+    std::map<std::string,std::vector<engine::ModelProfile>> model_profiles_;
+    std::string model_revision_;
+    engine::ModelPreview model_preview_;
+    std::vector<mesh::Surface> model_surfaces_;
     int scale_ = 1;
     bool imgui_ready_ = false;
     ui::LayoutEngine layout_;
@@ -60,5 +65,7 @@ private:
     void draw_sketch_canvas(const ui::Theme&,bool hovered);
     void draw_sketch_panels(const ui::Theme&);
     void draw_timeline(const ui::Theme&);
+    void draw_model_canvas(const ui::Theme&,bool hovered);
+    void draw_model_panel(const ui::Theme&);
 };
 }

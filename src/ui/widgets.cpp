@@ -31,7 +31,10 @@ void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,co
     icon(dl,texture(command.icon),{a.x+(size.x-icon_size)*0.5f,a.y+2*z},icon_size,packed(available?(command.id=="sketch.finish"?t.sketch.finish:t.text):t.muted));
     if (show_label) {
         const std::string label(command.label);
-        const float font_size=12.5f*z,wrap=std::max(0.0f,size.x-4*z);
+        const float available=std::max(0.0f,size.x-t.spacing*z);
+        const float base=t.layout.ribbon_label_size*z;
+        const auto unwrapped=ImGui::GetFont()->CalcTextSizeA(base,FLT_MAX,0,label.c_str());
+        const float font_size=std::max(t.layout.ribbon_label_min*z,std::min(base,base*available/std::max(1.f,unwrapped.x))),wrap=0;
         const auto text_size=ImGui::GetFont()->CalcTextSizeA(font_size,FLT_MAX,wrap,label.c_str());
         dl->AddText(ImGui::GetFont(),font_size,{a.x+(size.x-text_size.x)*0.5f,a.y+26*z},packed(available?t.text:t.muted),label.c_str(),nullptr,wrap);
     }

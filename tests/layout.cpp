@@ -40,6 +40,16 @@ int main() {
     other.compute(800,600,1,s,light);
     const auto again=layout.compute(1280,720,1,s,dark);
     require(first.viewport.x==again.viewport.x&&first.viewport.width==again.viewport.width);
+    s.model.open=true;
+    for(auto size:{std::pair{1280,720},std::pair{1440,900}})for(float scale:{1.f,2.f})for(bool revolve:{false,true}){
+        s.model.revolve=revolve;const auto& dialog=layout.compute(size.first*scale,size.second*scale,scale,s,light);
+        require(layout.error().empty()&&dialog.contextual.visible());
+        require(dialog.contextual.x>=dialog.viewport.x&&dialog.contextual.x+dialog.contextual.width<=dialog.viewport.x+dialog.viewport.width);
+        require(dialog.contextual.y>=dialog.viewport.y+(light.cube.widget_size+light.padding)*scale);
+        require(dialog.contextual.y+dialog.contextual.height<=dialog.viewport.y+dialog.viewport.height);
+    }
+    s.model.open=false;
+    layout.compute(1280,720,1,s,dark);
     const auto fallback=layout.compute(std::numeric_limits<float>::quiet_NaN(),720,1,s,dark);
     require(!layout.error().empty()); require(fallback.viewport.width==again.viewport.width);
     // A real Clay capacity error invokes our handler and retains the valid empty-tab layout.

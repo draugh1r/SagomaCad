@@ -27,8 +27,9 @@ void Shell::sync_sketch(){
     }
     const auto revision=doc::to_json(session.document).dump();
     if(revision!=sketch_revision_){sketch_revision_=revision;sketch_solutions_.clear();
+        model_profiles_.clear();
         state_.sketch_error.clear();for(const auto& [id,f]:session.document.features)if(f.type=="sketch"&&!f.suppressed){
-        try{sketch_solutions_[id]=solver::solve(session.document,doc::read_sketch(f.data));}catch(const std::exception& e){solver::SketchResult r;r.state="error";r.error=e.what();sketch_solutions_[id]=r;}
+        try{sketch_solutions_[id]=solver::solve(session.document,doc::read_sketch(f.data));model_profiles_[id]=engine::model_profiles(sketch_solutions_[id]);}catch(const std::exception& e){solver::SketchResult r;r.state="error";r.error=e.what();sketch_solutions_[id]=r;}
     }}
 }
 void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
@@ -60,7 +61,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     struct DimensionHit {std::string id,expression,kind;ImVec2 a,b;};std::vector<DimensionHit> dimension_hits;
     auto draw=[&](const solver::SketchResult& result,bool preview){
         const auto overlay=engine::sketch_overlay(result);const auto& pl=result.sketch.plane;
-        if(s.sketch_profiles)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
+        if(s.sketch_profiles&&s.sketch_mode)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
         for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
             if(preview||std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end())c=t.accent;
             for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),t.sketch.line_width*z);}
@@ -74,7 +75,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     };
     const auto& evaluated=regenerator_.evaluate(engine_->session().document);
     for(const auto& [id,result]:sketch_solutions_)if((!s.sketch_mode||id==s.sketch_view_id)&&
-        (id==s.sketch_view_id||std::find(evaluated.hidden_sketches.begin(),evaluated.hidden_sketches.end(),id)==evaluated.hidden_sketches.end())&&
+        (id==s.sketch_view_id||(s.model.open&&id==s.model.sketch)||std::find(evaluated.hidden_sketches.begin(),evaluated.hidden_sketches.end(),id)==evaluated.hidden_sketches.end())&&
         std::any_of(evaluated.features.begin(),evaluated.features.end(),[&](const auto& f){return f.id==id;}))draw(result,false);
     if(!active||!s.sketch_mode)return;
     if(!active->error.empty())s.sketch_error=active->error;

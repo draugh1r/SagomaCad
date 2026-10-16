@@ -61,6 +61,7 @@ struct Theme {
         float group_left=2, group_right=6, menu_left=4, menu_right=6;
         float label_top=4, label_right=10, label_font_size=15;
         float menu_icon_size=13, menu_icon_right=19, collapse_button=20;
+        float ribbon_label_size=12.5f,ribbon_label_min=10;
     } layout;
     struct SketchTokens {
         Color free{0.12f,0.40f,0.90f}, constrained{0.05f,0.05f,0.06f},profile{0.25f,0.70f,0.90f,0.14f},plane{0.65f,0.64f,0.60f,0.20f},plane_hover{0.98f,0.66f,0.12f,0.55f},finish{0.12f,0.65f,0.29f};
@@ -72,6 +73,11 @@ struct Theme {
     struct TimelineTokens {
         float icon=20,item=30,gap=4,control=22,marker_width=3,marker_hit=9,marker_height=32,row_top=3,play_interval=.6f;
     } timeline;
+    struct ModelTokens {
+        float width=292,height=326,revolve_height=270,top=184,row=24,label_width=94,footer=38,field_width=126,field_height=26;
+        float handle_hit=12,arrow_width=8,arrow_length=12,axis_extent=60,arc_radius=5,value_gap=12;
+        Color selected{.12f,.45f,1.f,.40f},preview{.12f,.45f,1.f,.26f},cut{.95f,.18f,.16f,.32f},axis{1.f,.58f,.08f,1.f};
+    } model;
 };
 inline constexpr Theme dark {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},

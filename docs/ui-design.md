@@ -1,5 +1,35 @@
 # UI M0
 
+## Modellazione e timeline (M4)
+
+`E` apre Estrudi; Rivoluzione è nel gruppo Crea. Prima o dopo l'apertura si
+selezionano le regioni nel viewport: corona e disco dello stesso schizzo sono
+selezioni distinte. Il pannello destro è il nodo flottante `contextual` dell'albero
+Clay, ancorato al viewport sotto il cubo. Le righe seguono i riferimenti Fusion
+07–09; OK e Annulla rimangono nel piè di pagina mentre i campi possono scorrere.
+Tipo solido, piano iniziale e sformo nullo sono costanti dell'estrusione disponibile.
+
+Le regioni e le mesh di anteprima sono view-model prodotti dal motore. La UI
+proietta le maniglie, inoltra selezioni e aggiorna l'espressione durante il drag;
+non modifica il documento fino a OK. La distanza è modificabile anche nella
+casella accanto alla freccia. L'anteprima è blu per Nuovo corpo e Unisci, rossa per
+Taglia. Operazione elenca Unisci, Taglia, Interseca, Nuovo corpo con icone Lucide.
+Il campo Corpi permette di scegliere più destinazioni. Rivoluzione attiva la
+selezione dell'asse facendo clic sul campo Asse, poi su un asse dell'origine o
+una linea dello schizzo; asse e maniglia angolare sono evidenziati nel viewport.
+
+La timeline usa icone Lucide da 20 px per i diversi tipi e un marker verticale
+trascinabile fra le feature. I passi dopo il marker sono attenuati e non applicati;
+i controlli a sinistra spostano o riproducono il marker. Un drag è un passo di undo.
+Doppio clic riapre schizzo, primitiva, estrusione o rivoluzione. La modifica mostra
+il modello al passo interessato; la conferma ricalcola i successivi. Gli errori
+sono rossi con messaggio nel tooltip. Gli schizzi consumati si nascondono e tornano
+visibili durante la modifica o prima della feature che li usa.
+
+`ui.inspect` espone `model` (parametri, selettore asse, errore, maniglia, casella e
+rettangoli dei campi), `timeline_items` e `timeline_marker`, oltre ai rettangoli
+Clay. Evidenze e confronti: `docs/screenshots/m4-confronto/`.
+
 I token di colore, spaziatura, dimensione e delle etichette di sezione sono in `src/ui/theme.hpp`, per i temi `light` (predefinito) e `dark`. La shell SagomaCad mostra un ribbon con schede e gruppi, browser, viewport e timeline; il pannello Proprietà compare solo quando serve. Il catalogo in `src/ui/toolbar_catalog.cpp` associa ogni voce a un ID di comando del piano e a un'icona Lucide. Il menu File accanto al documento contiene Nuovo, Apri, Salva e Salva con nome; annulla e ripeti restano accanto. Ciascun gruppo del ribbon mostra due o tre comandi e la tendina elenca tutti quelli del gruppo. In M0 nessun comando è registrato: tutte le voci sono disabilitate con tooltip «Non ancora disponibile». La scheda Schizzo compare solo in modalità schizzo; Superficie, Lamiera e Plastica non compaiono. La parità è documentata in `docs/parity.md`.
 
 Nel viewport la griglia isometrica, gli assi, l'indicatore di vista e la barra di navigazione sono disegnati con Dear ImGui e OpenGL. Le icone della barra di navigazione e i controlli della timeline sono statici in M0. I pannelli occupano rettangoli Clay in finestre ImGui fisse senza decorazioni; i titoli delle sezioni sono etichette interne. Il viewport non ha titolo. Inter usa l'intervallo U+0020–U+024F, che comprende Latin-1 e Latin Extended A/B.

@@ -10,6 +10,8 @@ void Shell::draw_timeline(const ui::Theme& t){
     if(!engine_)return;
     auto& s=state_;const float z=float(scale_);auto& io=ImGui::GetIO();auto* dl=ImGui::GetWindowDrawList();const auto q=ImGui::GetCursorScreenPos();const auto& tokens=t.timeline;
     const auto& document=engine_->session().document;const auto count=document.timeline.size();
+    size_t visible_marker=document.rollback;std::string editing=s.model.open?s.model.feature_id:s.primitive_editor_open?s.primitive_feature_id:s.sketch_mode?s.sketch_view_id:"";
+    if(!editing.empty()){auto at=std::find(document.timeline.begin(),document.timeline.end(),editing);if(at!=document.timeline.end())visible_marker=std::size_t(at-document.timeline.begin())+(s.sketch_mode?1:0);}
     auto rollback=[&](size_t index){auto r=engine_->execute("timeline.rollback",{{"index",index}},"marker");if(!r.ok)s.status_message=r.error;};
     if(s.timeline_playing){s.timeline_elapsed+=io.DeltaTime;if(s.timeline_elapsed>=tokens.play_interval){s.timeline_elapsed=0;if(document.rollback<count)rollback(document.rollback+1);else s.timeline_playing=false;}}
     const char* controls[]={"skip-back","step-back",s.timeline_playing?"pause":"play","step-forward","skip-forward"};
@@ -29,7 +31,7 @@ void Shell::draw_timeline(const ui::Theme& t){
     std::string action,pending;
     for(size_t i=0;i<count;++i){const auto& id=document.timeline[i];auto f=document.features.find(id);if(f==document.features.end())continue;
         const auto& feature=f->second;const auto row=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& r){return r.id==id;});
-        const bool failed=row!=snapshot.features.end()&&!row->error.empty(),inactive=i>=document.rollback||feature.suppressed;
+        const bool failed=row!=snapshot.features.end()&&!row->error.empty(),inactive=i>=visible_marker||feature.suppressed;
         const ImVec2 p{start+i*step,top};s.timeline_items.push_back({id,p.x,p.y,tokens.item*z,tokens.item*z});
         ImGui::SetCursorScreenPos(p);ImGui::PushID(id.c_str());ImGui::InvisibleButton("feature",{tokens.item*z,tokens.item*z});
         const bool hovered=ImGui::IsItemHovered();
@@ -49,7 +51,7 @@ void Shell::draw_timeline(const ui::Theme& t){
         if(feature.suppressed)dl->AddLine(p,{p.x+tokens.item*z,p.y+tokens.item*z},color(t.muted),z);
         ImGui::PopID();
     }
-    const float marker=start+document.rollback*step-tokens.gap*z/2;
+    const float marker=start+visible_marker*step-tokens.gap*z/2;
     s.timeline_marker_x=marker;s.timeline_marker_y=top;
     ImGui::SetCursorScreenPos({marker-tokens.marker_hit*z/2,top});ImGui::InvisibleButton("rollback_marker",{tokens.marker_hit*z,tokens.marker_height*z});
     if(ImGui::IsItemActivated())s.timeline_dragging=true;

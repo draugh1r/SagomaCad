@@ -4,6 +4,7 @@
 #include "ui/toolbar_catalog.hpp"
 #include "ui/parameter_editor.hpp"
 #include "ui/feature_editor.hpp"
+#include "ui/model_editor.hpp"
 #include "ui/widgets.hpp"
 #include <fstream>
 #include <SDL3/SDL.h>
@@ -253,6 +254,7 @@ void Shell::draw() {
     }
     if (input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Z)) invoke_command("edit.undo");
     if (input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Y)) invoke_command("edit.redo");
+    if(!input.WantTextInput&&!input.KeyCtrl&&!state_.palette_open&&ImGui::IsKeyPressed(ImGuiKey_E))invoke_command("feature.extrude");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_N)) invoke_command("document.new");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) invoke_command("document.open");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
@@ -431,7 +433,7 @@ void Shell::draw() {
         const ui::CubePoint cube_origin{b.x-t.cube.widget_size*z-t.padding*z,a.y+t.padding*z};
         const bool over_cube=mouse.x>=cube_origin.x && mouse.x<=cube_origin.x+t.cube.widget_size*z &&
                              mouse.y>=cube_origin.y && mouse.y<=cube_origin.y+t.cube.widget_size*z;
-        const bool canvas_hovered=ImGui::IsItemHovered(state_.sketch_tool.started?ImGuiHoveredFlags_AllowWhenBlockedByActiveItem:ImGuiHoveredFlags_None);
+        const bool canvas_hovered=ImGui::IsItemHovered(state_.sketch_tool.started||state_.model.open?ImGuiHoveredFlags_AllowWhenBlockedByActiveItem:ImGuiHoveredFlags_None);
         if (canvas_hovered && !over_navigation && !over_cube && !state_.cube_interaction.pressed) {
             const auto& io=ImGui::GetIO();
             if (io.MouseWheel!=0 || ImGui::IsMouseDragging(ImGuiMouseButton_Middle) ||
@@ -448,7 +450,15 @@ void Shell::draw() {
             }
         }
         if (engine_) {
-            const auto preview=ui::feature_preview(state_,engine_->session().document);
+            auto preview=ui::feature_preview(state_,engine_->session().document);
+            if(state_.model.open){
+                preview=engine::model_context(engine_->session().document,state_.model.feature_id);
+                const auto params=ui::model_params(state_);const auto revision=doc::to_json(engine_->session().document).dump()+params.dump()+state_.model.feature_id;
+                if(revision!=model_revision_){model_revision_=revision;model_preview_=engine::model_preview(engine_->session().document,state_.model.feature_id,state_.model.revolve?"feature.revolve":"feature.extrude",params);model_surfaces_.clear();if(model_preview_.surface)model_surfaces_.push_back(*model_preview_.surface);}
+                state_.model.preview_error=model_preview_.error;
+            }else if(state_.sketch_mode){
+                auto at=std::find(preview.timeline.begin(),preview.timeline.end(),state_.sketch_view_id);if(at!=preview.timeline.end())preview.rollback=std::size_t(at-preview.timeline.begin())+1;
+            }
             const auto& doc=preview;
             const std::string revision=doc::to_json(doc).dump();
             if (revision!=surface_revision_) {
@@ -487,8 +497,13 @@ void Shell::draw() {
                 line({-extent,i*step,0},{extent,i*step,0},i==0?t.axis_x:(i%5==0?t.grid_major:t.grid_minor));
             }
             draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
+            if(state_.model.open&&!model_surfaces_.empty()){
+                auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.model.preview;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
+                draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);
+            }
         }
         draw_sketch_canvas(t,canvas_hovered && !over_navigation && !over_cube);
+        draw_model_canvas(t,canvas_hovered&&!over_navigation&&!over_cube);
         if (surfaces_.empty()) {
             const auto origin=state_.camera.project({0,0,0},viewport);
             if (origin.visible) dl->AddCircleFilled({float(origin.x),float(origin.y)},2.5f*z,packed(t.accent));
@@ -544,6 +559,9 @@ void Shell::fit_camera() {
 bool Shell::open_feature_editor(std::string_view feature_id) {
     if(engine_) {
         auto it=engine_->session().document.features.find(std::string(feature_id));
+        if(it!=engine_->session().document.features.end()&&(it->second.type=="feature.extrude"||it->second.type=="feature.revolve")){
+            ui::begin_model(state_,*engine_,it->second.type=="feature.revolve",std::string(feature_id));return true;
+        }
         if(it!=engine_->session().document.features.end() && it->second.type=="sketch") {
             auto r=engine_->execute("sketch.edit",{{"sketch",feature_id}});
             if(!r.ok)state_.status_message=r.error;
@@ -556,6 +574,7 @@ void Shell::invoke_command(std::string_view id) {
     if (!engine_) return;
     const auto availability=ui::command_availability(id,engine_);
     if (!availability.enabled) { state_.status_message=availability.reason; return; }
+    if(id=="feature.extrude"||id=="feature.revolve"){ui::begin_model(state_,*engine_,id=="feature.revolve");return;}
     if (id=="sketch.create") {
         state_.sketch_plane_picker=true;state_.sketch_tool.begin("select");
         auto destination=state_.camera;destination.home();destination.target={};
@@ -588,6 +607,7 @@ void Shell::invoke_command(std::string_view id) {
 }
 void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);
+    draw_model_panel(t);
     const ImVec2 display=ImGui::GetIO().DisplaySize;
     if (!state_.status_message.empty() && !state_.file_dialog_open) {
         const auto& viewport=layout_.last().viewport;
@@ -931,7 +951,7 @@ nlohmann::json Shell::inspect() const {
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
         {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
-        {"feature_edit_open",state_.primitive_editor_open},{"feature_edit_id",state_.primitive_feature_id},
+        {"feature_edit_open",state_.primitive_editor_open||(!state_.model.feature_id.empty()&&state_.model.open)},{"feature_edit_id",state_.model.open?state_.model.feature_id:state_.primitive_feature_id},{"model",ui::model_state_json(state_)},
         {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"error",state_.sketch_error}}},
         {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }

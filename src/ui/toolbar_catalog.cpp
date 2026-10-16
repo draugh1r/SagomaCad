@@ -15,7 +15,7 @@ constexpr ToolbarCommand edit_actions[] = {
 constexpr ToolbarCommand create[] = {
     {"sketch.create", "Schizzo", "pen-tool"},
     {"feature.extrude", "Estrudi", "move-3d"},
-    {"feature.revolve", "Rivolvi", "rotate-3d"},
+    {"feature.revolve", "Rivoluzione", "rotate-3d"},
     {"feature.hole", "Foro", "circle-dot"},
     {"primitive.add", "Primitiva", "box"},
 };
