@@ -59,24 +59,26 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
         }
     }
     struct DimensionHit {std::string id,expression,kind;ImVec2 a,b;};std::vector<DimensionHit> dimension_hits;
-    auto draw=[&](const solver::SketchResult& result,bool preview){
+    auto draw=[&](const solver::SketchResult& result,bool preview,bool editing){
         const auto overlay=engine::sketch_overlay(result);const auto& pl=result.sketch.plane;
-        if(s.sketch_profiles&&s.sketch_mode)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
+        if(s.sketch_profiles&&editing)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
         for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
-            if(preview||std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end())c=t.accent;
+            if(preview||(editing&&std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end()))c=t.accent;
             for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),t.sketch.line_width*z);}
         }
         if(s.sketch_points)for(const auto& p:result.sketch.points){bool fixed=result.fixed_points.contains(p.id)&&result.fixed_points.at(p.id);auto c=result.state=="conflict"?t.error:fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;dl->AddCircleFilled(project(pl,{p.x,p.y}),t.sketch.point_radius*z,color(c));}
-        if(!preview&&s.sketch_mode&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto q=project(pl,label.position);auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=t.sketch.dimension_offset*z;
+        if(!preview&&editing&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto q=project(pl,label.position);auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=t.sketch.dimension_offset*z;
             if(label.vertical){q.x+=t.sketch.dimension_offset*z+size.x/2;q.y+=t.sketch.dimension_offset*z;}
             ImVec2 end{q.x+size.x+t.spacing*z,q.y+size.y+t.spacing*z};dl->AddRectFilled({q.x-t.spacing*z/2,q.y-t.spacing*z/2},end,color(t.panel));dl->AddText(q,color(result.state=="conflict"?t.error:t.text),text.c_str());dimension_hits.push_back({label.id,label.text,label.kind,{q.x-t.spacing*z/2,q.y-t.spacing*z/2},end});
         }
-        if(!preview&&s.sketch_mode&&s.sketch_constraints)for(const auto& label:overlay.constraints){auto q=project(pl,label.position);dl->AddText(ImGui::GetFont(),t.sketch.constraint_size*z,{q.x+t.spacing*z,q.y+t.spacing*z},color(t.muted),label.text.c_str());}
+        if(!preview&&editing&&s.sketch_constraints)for(const auto& label:overlay.constraints){auto q=project(pl,label.position);dl->AddText(ImGui::GetFont(),t.sketch.constraint_size*z,{q.x+t.spacing*z,q.y+t.spacing*z},color(t.muted),label.text.c_str());}
     };
-    const auto& evaluated=regenerator_.evaluate(engine_->session().document);
-    for(const auto& [id,result]:sketch_solutions_)if((!s.sketch_mode||id==s.sketch_view_id)&&
+    auto context=engine_->session().document;
+    if(s.sketch_mode){auto at=std::find(context.timeline.begin(),context.timeline.end(),s.sketch_view_id);if(at!=context.timeline.end())context.rollback=std::min(context.rollback,std::size_t(at-context.timeline.begin())+1);}
+    const auto& evaluated=regenerator_.evaluate(context);
+    for(const auto& [id,result]:sketch_solutions_)if(
         (id==s.sketch_view_id||(s.model.open&&id==s.model.sketch)||std::find(evaluated.hidden_sketches.begin(),evaluated.hidden_sketches.end(),id)==evaluated.hidden_sketches.end())&&
-        std::any_of(evaluated.features.begin(),evaluated.features.end(),[&](const auto& f){return f.id==id;}))draw(result,false);
+        std::any_of(evaluated.features.begin(),evaluated.features.end(),[&](const auto& f){return f.id==id;}))draw(result,false,s.sketch_mode&&id==s.sketch_view_id);
     if(!active||!s.sketch_mode)return;
     if(!active->error.empty())s.sketch_error=active->error;
     engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,plane,io.MousePos.x,io.MousePos.y,cursor);
@@ -123,7 +125,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
         engine::Engine preview;preview.session().document=engine_->session().document;preview.session().active_sketch=s.sketch_view_id;
         const auto command=tool.preview_command();
         auto result=preview.execute(command["command"].get<std::string>(),command["params"]);
-        if(result.ok){auto solved=solver::solve(preview.session().document,doc::read_sketch(preview.session().document.features.at(s.sketch_view_id).data));draw(solved,true);}
+        if(result.ok){auto solved=solver::solve(preview.session().document,doc::read_sketch(preview.session().document.features.at(s.sketch_view_id).data));draw(solved,true,true);}
     }
     if(hovered&&!io.WantTextInput){auto pos=io.MousePos;auto hint=tool.hint();auto size=ImGui::CalcTextSize(hint.c_str());pos.x+=t.sketch.dimension_offset*z;pos.y+=t.sketch.dimension_offset*z;
         if(pos.x+size.x>palette_left-t.padding*z)pos.x=std::max(float(v.x)+t.padding*z,io.MousePos.x-size.x-t.sketch.dimension_offset*z);
