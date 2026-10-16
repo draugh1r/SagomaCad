@@ -1,4 +1,5 @@
 #include "solver/sketch_solver.hpp"
+#include "solver/profile_regions.hpp"
 #include "doc/expression.hpp"
 #include <Eigen/Dense>
 #include <algorithm>
@@ -128,7 +129,7 @@ SketchResult solve(const doc::Document& document,const doc::Sketch& sketch){
     }catch(const std::exception& e){out.state="error";out.error=e.what();}
     return out;
 }
-nlohmann::json inspect(const SketchResult& r){auto j=doc::sketch_json(r.sketch);j["state"]=r.state;j["degrees_of_freedom"]=r.degrees_of_freedom;j["residual"]=r.residual;j["error"]=r.error;j["redundant"]=r.redundant;j["conflicting"]=r.conflicting;j["fixed_points"]=r.fixed_points;j["profiles"]=r.profiles;return j;}
+nlohmann::json inspect(const SketchResult& r){auto j=doc::sketch_json(r.sketch);j["state"]=r.state;j["degrees_of_freedom"]=r.degrees_of_freedom;j["residual"]=r.residual;j["error"]=r.error;j["redundant"]=r.redundant;j["conflicting"]=r.conflicting;j["fixed_points"]=r.fixed_points;j["profiles"]=r.profiles;j["regions"]=regions_json(profile_regions(r.sketch,r.profiles));return j;}
 SketchResult drag(const doc::Document& d,const doc::Sketch& s,const std::string& point,double x,double y){
     try {
         if(!std::isfinite(x)||!std::isfinite(y)||std::abs(x)>1e6||std::abs(y)>1e6)throw std::runtime_error("sketch.range: destinazione del drag non valida");

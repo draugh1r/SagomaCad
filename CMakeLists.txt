@@ -28,7 +28,7 @@ add_library(sagomacad_ui STATIC src/ui/clay.cpp src/ui/layout.cpp src/ui/widgets
 target_include_directories(sagomacad_ui PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_include_directories(sagomacad_ui PRIVATE ${CLAY_INCLUDE_DIRS})
 target_link_libraries(sagomacad_ui PRIVATE imgui::imgui)
-add_library(sagomacad_solver STATIC src/solver/sketch_solver.cpp)
+add_library(sagomacad_solver STATIC src/solver/sketch_solver.cpp src/solver/profile_regions.cpp)
 target_link_libraries(sagomacad_solver PUBLIC sagomacad_core sagomacad_doc PRIVATE Eigen3::Eigen)
 add_library(sagomacad_kernel STATIC src/kernel/box_volume.cpp src/kernel/shape.cpp)
 target_include_directories(sagomacad_kernel PUBLIC ${PROJECT_SOURCE_DIR}/src ${OpenCASCADE_INCLUDE_DIR})
@@ -156,3 +156,7 @@ add_test(NAME mcp_integration COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR
   headless $<TARGET_FILE:sagomacad> $<TARGET_FILE:sagomacad-cli> ${PROJECT_SOURCE_DIR})
 add_test(NAME mcp_bridge COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_mcp_integration.py
   bridge $<TARGET_FILE:sagomacad> $<TARGET_FILE:sagomacad-cli> ${PROJECT_SOURCE_DIR})
+
+add_executable(profile_regions_test tests/profile_regions.cpp)
+target_link_libraries(profile_regions_test PRIVATE sagomacad_solver)
+add_test(NAME profile_regions COMMAND profile_regions_test)

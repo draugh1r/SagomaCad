@@ -189,3 +189,7 @@ Quattro confronti prima/dopo affiancati in docs/screenshots/layout, temi chiaro/
 
 Verifica finale Windows Release: CTest 34/34 in 14 secondi, check_layers e UTF-8 verdi, fuzz 188 diretti + 162 MCP. Header/implementazione Clay e layout.cpp compilati C++20 con MSVC 19.44, GCC 13.3 e Clang 18.1; nessuna suite completa Linux/macOS o CI remota avviata. App aggiornata in build/agent-layout/apps/sagomacad/sagomacad.exe. Golden invariate, nessuna funzione CAD aggiunta. M3 già presente preservato, M4 non iniziato.
 
+## 2026-10-16 — M4, tappa 1: regioni dei profili
+
+Aggiunte regioni selezionabili con contorno esterno e fori immediatamente annidati. Rettangolo con cerchio produce corona e disco; tre contorni annidati producono tre regioni distinte. Gli ID canonici contengono gli ID delle entità, senza coordinate o indici del solver. `sketch.inspect` espone `regions` accanto ai contorni M3. Test dedicato su annidamento, picking, modifiche dimensionali, costruzioni e contorni aperti. Esaminati tutti i riferimenti Fusion 07–10 prima del lavoro UI. Build separata `build/agent-m4`; nessuna app dell'utente chiusa.
+Verifica tappa 1: build Windows Release verde, CTest 35/35 (inclusi CLI, MCP, fuzz), controllo livelli e UTF-8 verdi. Restano le tappe 2–6 di M4; M5 non iniziato.
