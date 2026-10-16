@@ -40,6 +40,7 @@ private:
     friend Result<Tessellation> tessellate(const Shape&,double) noexcept;
     friend Result<Shape> profile_face(const doc::Sketch&,const std::vector<std::string>&,const std::vector<std::vector<std::string>>&) noexcept;
     friend Result<Shape> extrude(const Shape&,Vec3) noexcept;
+    friend Result<Shape> revolve(const Shape&,Vec3,Vec3,double) noexcept;
     friend Result<Shape> boolean_operation(const Shape&,const Shape&,const std::string&) noexcept;
 };
 
@@ -52,6 +53,7 @@ Result<Shape> subtract(const Shape& target,const Shape& cutter) noexcept;
 Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept;
 Result<Shape> profile_face(const doc::Sketch&,const std::vector<std::string>& boundary,const std::vector<std::vector<std::string>>& holes) noexcept;
 Result<Shape> extrude(const Shape& face,Vec3 vector) noexcept;
+Result<Shape> revolve(const Shape& face,Vec3 origin,Vec3 direction,double radians) noexcept;
 Result<Shape> boolean_operation(const Shape&,const Shape&,const std::string& operation) noexcept;
 
 } // namespace sagomacad::kernel

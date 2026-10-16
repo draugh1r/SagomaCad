@@ -31,6 +31,7 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <GC_MakeArcOfCircle.hxx>
 #include <gp_Circ.hxx>
 #include <gp_Ax2.hxx>
@@ -86,6 +87,17 @@ Result<Shape> extrude(const Shape& face,Vec3 v) noexcept {
     if(!face.impl_||!std::isfinite(v.x)||!std::isfinite(v.y)||!std::isfinite(v.z)||!positive(std::hypot(v.x,v.y,v.z)))return Result<Shape>::failure("Vettore estrusione non valido");
     try{BRepPrimAPI_MakePrism builder(face.impl_->shape,gp_Vec(v.x,v.y,v.z));builder.Build();if(!builder.IsDone())throw std::runtime_error("Estrusione fallita");auto shape=Shape(std::make_shared<Shape::Impl>(builder.Shape()));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);}
     catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Estrusione fallita");}
+}
+Result<Shape> revolve(const Shape& face,Vec3 origin,Vec3 direction,double radians) noexcept {
+    if(!face.impl_||!std::isfinite(radians)||radians<=1e-8||radians>2*std::numbers::pi+1e-8||
+       !std::isfinite(origin.x)||!std::isfinite(origin.y)||!std::isfinite(origin.z)||
+       !std::isfinite(direction.x)||!std::isfinite(direction.y)||!std::isfinite(direction.z)||std::hypot(direction.x,direction.y,direction.z)<1e-8)
+        return Result<Shape>::failure("Asse o angolo della rivoluzione non valido");
+    try{
+        BRepPrimAPI_MakeRevol builder(face.impl_->shape,gp_Ax1(gp_Pnt(origin.x,origin.y,origin.z),gp_Dir(direction.x,direction.y,direction.z)),radians,true);
+        builder.Build();if(!builder.IsDone())throw std::runtime_error("Rivoluzione fallita");
+        auto shape=Shape(std::make_shared<Shape::Impl>(builder.Shape()));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);
+    }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Rivoluzione fallita");}
 }
 Result<Shape> boolean_operation(const Shape& a,const Shape& b,const std::string& op) noexcept {
     if(op=="cut"||op=="subtract")return subtract(a,b);

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <numbers>
 namespace sagomacad::regen {
 namespace {
 double value(const doc::Document& d,const nlohmann::json& j,const char* key){doc::Quantity q;std::string error;auto expression=j.at(key).get<std::string>();if(!doc::evaluate_expression(d,expression,q,error))throw std::runtime_error(std::string(key)+": "+error);if((q.dimension!=doc::Dimension::Length&&q.dimension!=doc::Dimension::Scalar)||!std::isfinite(q.value)||std::abs(q.value)>1e7)throw std::runtime_error(std::string(key)+": lunghezza non valida");return q.value;}
@@ -27,6 +28,23 @@ Regenerator::Cached build_model_feature(const doc::Document& d,const doc::Featur
             if(region==regions.end())throw std::runtime_error("Profilo non più disponibile: "+ref.dump());
             if(std::find(used.begin(),used.end(),region->id)!=used.end())throw std::runtime_error("Profilo duplicato");used.push_back(region->id);
             auto face=checked(kernel::profile_face(solved.sketch,region->boundary,region->holes));
+            if(f.type=="feature.revolve"){
+                auto axis=data.at("axis").get<std::string>();kernel::Vec3 origin{},direction{};
+                if(axis=="X")direction={1,0,0};else if(axis=="Y")direction={0,1,0};else if(axis=="Z")direction={0,0,1};
+                else {
+                    auto line=std::find_if(solved.sketch.entities.begin(),solved.sketch.entities.end(),[&](const auto& e){return e.id==axis&&e.kind=="line";});
+                    if(line==solved.sketch.entities.end())throw std::runtime_error("Asse non disponibile: "+axis);
+                    auto point=[&](const std::string& pid){for(const auto& p:solved.sketch.points)if(p.id==pid)return solved.sketch.plane=="XY"?kernel::Vec3{p.x,p.y,0}:solved.sketch.plane=="XZ"?kernel::Vec3{p.x,0,p.y}:kernel::Vec3{0,p.x,p.y};throw std::runtime_error("Punto dell'asse mancante");};
+                    origin=point(line->points[0]);auto end=point(line->points[1]);direction={end.x-origin.x,end.y-origin.y,end.z-origin.z};
+                }
+                auto type=data.value("type",std::string("angle"));double angle=2*std::numbers::pi;
+                if(type=="angle"){
+                    doc::Quantity q;std::string error;if(!doc::evaluate_expression(d,data.at("angle").get<std::string>(),q,error))throw std::runtime_error("Angolo: "+error);
+                    if(q.dimension!=doc::Dimension::Scalar&&q.dimension!=doc::Dimension::Angle)throw std::runtime_error("È richiesto un angolo");
+                    angle=q.dimension==doc::Dimension::Scalar?q.value*std::numbers::pi/180:q.value;
+                }else if(type!="full")throw std::runtime_error("Tipo rivoluzione non valido: angle o full");
+                auto swept=checked(kernel::revolve(face,origin,direction,angle));shape=shape?checked(kernel::boolean_operation(*shape,swept,"join")):swept;continue;
+            }
             double distance=value(d,data,"distance"),start=0;
             auto direction=data.value("direction",std::string("one_side"));auto extent=data.value("extent",std::string("distance"));
             if(direction!="one_side"&&direction!="symmetric"&&direction!="two_sides")throw std::runtime_error("Direzione non valida");

@@ -71,7 +71,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             continue;
         }
         auto [cached,inserted]=cache_.try_emplace(id);
-        if (inserted) cached->second=it->second.type=="feature.extrude"?build_model_feature(document,it->second,snapshot_):build(document,it->second);
+        if (inserted) cached->second=it->second.type=="feature.extrude"||it->second.type=="feature.revolve"?build_model_feature(document,it->second,snapshot_):build(document,it->second);
         else ++snapshot_.cache_hits;
         const auto& result=cached->second;
         snapshot_.features.push_back({id,result.error,!inserted});
@@ -84,7 +84,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                 continue;
             }
             const auto operation=it->second.data.value("operation",std::string("new"));
-            if(it->second.type=="feature.extrude" && operation!="new") {
+            if((it->second.type=="feature.extrude"||it->second.type=="feature.revolve") && operation!="new") {
                 if(!result.shape) {snapshot_.features.back().error=result.error;continue;}
                 std::vector<std::pair<BodyState*,kernel::Shape>> pending;
                 for(const auto& target:it->second.data.at("target_bodies")) {

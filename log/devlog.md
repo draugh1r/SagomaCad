@@ -199,3 +199,9 @@ Verifica tappa 1: build Windows Release verde, CTest 35/35 (inclusi CLI, MCP, fu
 Kernel con facce esatte da linee, cerchi e archi, fori annidati, prisma e booleane Unisci/Taglia/Interseca; tutte le eccezioni OCCT rimangono nel kernel. `feature.extrude` è nel registro unico CLI/MCP, conserva profili per ID, espressioni, direzioni un lato/simmetrica/due lati, distanza del secondo lato, Attraverso tutto e lista dei corpi di destinazione. Inserimento al marker, validazione su copia transazionale, rinomina e protezione dei parametri delle feature.
 
 Test GProp: corona 60×40 meno Ø10, altezza 10 = 23214,601837 mm³; dopo larghezza 80 e Ø20 = 28858,407346 mm³. Operazioni su box con utensile parzialmente sovrapposto: nuovo 1500, unione 4500, taglio 3000, intersezione 1000 mm³. Verificati limiti dei tre versi, Attraverso tutto su corpo alto 50 mm, taglio di due corpi, piano XZ, undo/redo e atomicità degli errori. Build Windows Release e CTest 36/36 verdi; livelli, UTF-8 e fuzz verdi. UI e tappe 3–6 ancora aperte, M5 non iniziato.
+
+## 2026-10-16 — M4, tappa 3: rivoluzione
+
+`feature.revolve` usa le regioni stabili e le quattro operazioni della tappa 2. Asse X/Y/Z dell'origine oppure ID di una linea dello schizzo, anche di costruzione; tipo angolo/completo, espressione angolare e parametri a monte. BRepPrimAPI_MakeRevol isolato nel kernel, input finiti e intervallo (0,360°], errori atomici.
+
+Test GProp: rettangolo XZ fra raggi 5 e 15 mm, alto 10 mm, attorno a Z → 6283,185307 mm³; quarti e metà del volume a 90° e 180°. Asse da linea produce lo stesso risultato. Raddoppiare altezza raddoppia il volume. Unione/taglio/intersezione con cilindro: 2250π, 250π e 750π mm³. Build Release e CTest 37/37 verdi, livelli e fuzz verdi. Tappe 4–6 aperte; M5 non iniziato.
