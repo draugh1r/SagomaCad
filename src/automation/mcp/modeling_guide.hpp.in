@@ -1,0 +1,5 @@
+#pragma once
+#include <string_view>
+namespace sagomacad::automation::mcp {
+inline constexpr std::string_view modeling_guide=R"SAGOMACAD(@SAGOMACAD_MODELING_GUIDE@)SAGOMACAD";
+}

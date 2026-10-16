@@ -1,12 +1,12 @@
-# Architettura — M3
+# Architettura — M4
 
 | Livello | Target | Contenuto |
 |---|---|---|
 | L0 | `sagomacad_core` (INTERFACE) | Infrastruttura comune |
 | L1 | `sagomacad_doc` | Documento JSON, espressioni con unità, dati degli schizzi |
 | L2 | `sagomacad_solver` | Equazioni 2D, Levenberg–Marquardt con Eigen, rango SVD, diagnostica e profili chiusi |
-| L2 | `sagomacad_kernel` | Adattatore OpenCascade con risultati ed errori |
-| L3 | `sagomacad_regen` | Timeline delle primitive B-rep e stato degli schizzi |
+| L2 | `sagomacad_kernel` | Primitive, facce esatte con fori, prismi, rivoluzioni e booleane OpenCascade con risultati ed errori |
+| L3 | `sagomacad_regen` | Timeline incrementale di schizzi, primitive, estrusioni e rivoluzioni; rollback ed errori isolati |
 | L3 | `sagomacad_mesh` | Tassellazione e STL |
 | L4 | `sagomacad_engine` | Registro, storia, comandi, strumenti e overlay indipendenti da ImGui |
 | L5 | `sagomacad_automation` | Canale di controllo e server MCP |
@@ -15,7 +15,11 @@
 
 Tutti i target, tranne `core`, sono librerie statiche. `sagomacad` e `sagomacad-cli` condividono la shell; i test del solver non la collegano. `solver` dipende solo da `core`, `doc` ed Eigen. Solo `kernel` include OpenCascade. `tools/check_layers.py` verifica gli include tra livelli.
 
-Una feature `sketch` conserva piano, punti, entità, vincoli e quote in `Feature.data`. Le espressioni originali restano nel documento; gradi di libertà, conflitti e profili sono risultati derivati. UI e `sketch_inspect` usano lo stesso solver. `SketchTool` traduce eventi in parametri dei comandi; anche l'anteprima li esegue su una copia del documento. Le feature da profili restano in M4.
+Una feature `sketch` conserva piano, punti, entità, vincoli e quote in `Feature.data`. Le espressioni originali restano nel documento; gradi di libertà, conflitti e profili sono risultati derivati. UI e `sketch_inspect` usano lo stesso solver. Le regioni hanno contorno e fori immediatamente annidati, con ID canonico basato sugli ID delle entità. Estrusioni e rivoluzioni conservano questi riferimenti, espressioni, operazione e destinazioni; il kernel riceve lo schizzo risolto e costruisce curve esatte.
+
+La cache della regen conserva per ogni passo chiave di input, stato ed esiti dei soli corpi modificati. La chiave comprende i dati della feature e i valori delle espressioni: un parametro estraneo non invalida il prefisso. La prima differenza invalida il suffisso; rollback conserva risultati successivi riutilizzabili. Soppressione, riferimenti mancanti e errori delle booleane non impediscono di valutare i passi successivi. Gli schizzi consumati sono una proprietà derivata dello snapshot.
+
+`SketchTool` e `engine/tools/model_preview` producono dati per la vista. Le anteprime di modellazione usano il contesto prima della feature modificata, generano utensile e mesh e verificano le destinazioni senza scrivere nel documento. La UI conserva solo selezioni, espressioni temporanee e stato dei gesti; il commit passa da `feature.extrude`, `feature.revolve` o `feature.edit`. La guida MCP è incorporata a build dalla stessa `docs/modeling-guide.md` eseguita dai test.
 
 ## Motore di layout della shell
 

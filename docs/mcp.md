@@ -1,11 +1,11 @@
-# MCP di SagomaCad (M1.5 + strumenti M2/M3)
+# MCP di SagomaCad (M1.5–M4)
 
 Il server locale è `sagomacad-cli mcp`. Usa JSON-RPC 2.0 su stdio, una richiesta JSON per riga; stdout contiene solo risposte MCP. Cerca automaticamente il canale di controllo dell'app aperta e si autentica con il token del file di sessione. Se l'app non è raggiungibile, avvia una sessione headless in memoria. `--headless` forza la sessione senza finestra; `--headless file.sagomacad` carica quel documento. Le modifiche headless restano in memoria finché non si usa `document_save`.
 
 Binario Windows di questa build:
 
 ```text
-C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m3\apps\sagomacad-cli\sagomacad-cli.exe
+C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe
 ```
 
 Per forzare il bridge, avvia l'app e passa `--bridge PORT --token-file PERCORSO`. L'app scrive porta e percorso del token nel suo `.sagomacad/session.json`; si può usare anche `--session-file PERCORSO`. La ricerca automatica controlla la directory corrente e la directory dell'app accanto alla CLI. I file MCP sono limitati alla radice del progetto; `--allow-root CARTELLA` sostituisce la radice predefinita. Gli input dei tool file sono relativi alla prima radice consentita: percorsi assoluti, `..` e symlink che escono dalla radice sono rifiutati. `export` scrive solo in `export/` del progetto se tale cartella appartiene a una radice consentita, e richiede `overwrite: true` per sostituire un file. `document_open` e `document_save` accettano solo `.sagomacad` e richiedono `overwrite: true` se il file esiste. I comandi file invocati tramite `command_run` sono bloccati: usare i tool dedicati.
@@ -30,7 +30,7 @@ Apri `%APPDATA%\Claude\claude_desktop_config.json` e aggiungi la voce a `mcpServ
 Da PowerShell, esegui:
 
 ```powershell
-claude mcp add --transport stdio --scope user sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m3\apps\sagomacad-cli\sagomacad-cli.exe" mcp
+claude mcp add --transport stdio --scope user sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe" mcp
 claude mcp list
 ```
 
@@ -42,12 +42,12 @@ Aggiungi in `%USERPROFILE%\.codex\config.toml`:
 
 ```toml
 [mcp_servers.sagomacad]
-command = 'C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m3\apps\sagomacad-cli\sagomacad-cli.exe'
+command = 'C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe'
 args = ['mcp']
 cwd = 'C:\Users\User\Desktop\sviluppo\SagomaCad'
 ```
 
-Oppure usa `codex mcp add sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m3\apps\sagomacad-cli\sagomacad-cli.exe" mcp`, poi `codex mcp list`. La sintassi e la configurazione condivisa tra CLI ed estensione sono nella [documentazione ufficiale Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+Oppure usa `codex mcp add sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe" mcp`, poi `codex mcp list`. La sintassi e la configurazione condivisa tra CLI ed estensione sono nella [documentazione ufficiale Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
 ## Tool e risorse
 
@@ -71,3 +71,19 @@ I risultati strutturati MCP sono sempre oggetti: `commands_list` usa `{commands:
 ## Schizzi M3
 
 Il tool `sketch_inspect` accetta `{"sketch":"id"}` oppure `{}` per lo schizzo attivo. Espone entità, vincoli, quote, profili, gradi di libertà e diagnostica del solver. Tutti i comandi `sketch.*` sono disponibili da `command_run` e CLI. Esempi e protocollo: [Schizzi 2D](sketches.md).
+
+## Modellazione M4
+
+`sketch_inspect.regions` espone regioni con ID stabile, `boundary` e `holes`.
+`feature.extrude`, `feature.revolve`, `feature.edit`, `feature.suppress`,
+`feature.delete` e `timeline.rollback` sono disponibili tramite `command_run`.
+Il tool `feature_get {feature_id}` restituisce parametri, soppressione, applicazione
+al marker corrente ed errore. Le feature fallite non fermano la rigenerazione.
+
+La risorsa `sagomacad://docs/modeling-guide` contiene gli stessi esempi completi
+di [Modellazione parametrica](modeling-guide.md), incorporati dal file a build:
+corona parametrica, taglio, rivoluzione, modifica a monte, rollback e staffa a L
+con due fori. Il test `modeling_agents` esegue tutti i blocchi MCP e CLI, verifica
+che la risorsa coincida con il file e misura la staffa: **21997,345175 mm³**.
+Il test del bridge verifica anche estrusione, rivoluzione, modifica, rollback,
+soppressione e `feature_get` nell'app in esecuzione.

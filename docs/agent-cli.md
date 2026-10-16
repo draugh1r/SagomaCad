@@ -1,4 +1,4 @@
-# SagomaCad da terminale — M2
+# SagomaCad da terminale — M4
 
 Avviare `sagomacad` dalla cartella di lavoro. L'app apre il canale di controllo su `127.0.0.1`, scrive `.sagomacad/session.json` con porta e percorso del token, e protegge il token in un file separato. `sagomacad-cli call` legge automaticamente questi dati. `--port N --token-file PATH` li sostituiscono quando serve; `--session-file PATH` sceglie un file di sessione diverso.
 
@@ -43,3 +43,16 @@ Esempio di `passi.json`:
 ```
 
 `run --script '[...]'` accetta anche lo script JSON in linea. `engine.commands` indica quali comandi sono realmente disponibili.
+
+## Profili e timeline
+
+`sketch.inspect` restituisce `regions`: l'ID di una regione o la lista degli ID
+del suo contorno esterno si passa a `feature.extrude.profiles` o
+`feature.revolve.profiles`. Le modifiche passano da
+`feature.edit {feature_id, params: {...}}`; `timeline.rollback {index}` applica
+solo il prefisso richiesto e `feature.suppress {feature_id, suppressed}` cambia
+la soppressione. `feature.get {feature_id}` espone anche gli errori.
+
+Script CLI completo, flussi MCP equivalenti e volumi attesi sono in
+[Modellazione parametrica](modeling-guide.md). Il test esegue direttamente lo
+script pubblicato, oltre a creare e modificare una rivoluzione da CLI.

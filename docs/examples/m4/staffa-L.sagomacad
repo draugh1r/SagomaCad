@@ -1,0 +1,534 @@
+{
+  "bodies": [
+    {
+      "color": "#8B9BA6",
+      "id": "body-2",
+      "kind": "brep",
+      "name": "Base staffa",
+      "visible": true
+    }
+  ],
+  "features": {
+    "feature-2": {
+      "data": {
+        "body_id": "body-2",
+        "direction": "one_side",
+        "distance": "spessore",
+        "extent": "distance",
+        "operation": "new",
+        "profiles": [
+          "region:[\"e1\",\"e2\",\"e3\",\"e4\"]"
+        ],
+        "second_distance": "10 mm",
+        "sketch": "sketch-1",
+        "target_bodies": []
+      },
+      "error": null,
+      "id": "feature-2",
+      "kind": "exact",
+      "name": "Base staffa",
+      "suppressed": false,
+      "type": "feature.extrude"
+    },
+    "feature-4": {
+      "data": {
+        "body_id": "body-2",
+        "direction": "one_side",
+        "distance": "-spessore",
+        "extent": "distance",
+        "operation": "join",
+        "profiles": [
+          "region:[\"e1\",\"e2\",\"e3\",\"e4\"]"
+        ],
+        "second_distance": "10 mm",
+        "sketch": "sketch-3",
+        "target_bodies": [
+          "body-2"
+        ]
+      },
+      "error": null,
+      "id": "feature-4",
+      "kind": "exact",
+      "name": "Estrusione 4",
+      "suppressed": false,
+      "type": "feature.extrude"
+    },
+    "feature-6": {
+      "data": {
+        "body_id": "body-2",
+        "direction": "one_side",
+        "distance": "spessore",
+        "extent": "through_all",
+        "operation": "cut",
+        "profiles": [
+          "region:[\"e1\"]"
+        ],
+        "second_distance": "10 mm",
+        "sketch": "sketch-5",
+        "target_bodies": [
+          "body-2"
+        ]
+      },
+      "error": null,
+      "id": "feature-6",
+      "kind": "exact",
+      "name": "Estrusione 6",
+      "suppressed": false,
+      "type": "feature.extrude"
+    },
+    "feature-8": {
+      "data": {
+        "body_id": "body-2",
+        "direction": "one_side",
+        "distance": "-spessore",
+        "extent": "through_all",
+        "operation": "cut",
+        "profiles": [
+          "region:[\"e1\"]"
+        ],
+        "second_distance": "10 mm",
+        "sketch": "sketch-7",
+        "target_bodies": [
+          "body-2"
+        ]
+      },
+      "error": null,
+      "id": "feature-8",
+      "kind": "exact",
+      "name": "Estrusione 8",
+      "suppressed": false,
+      "type": "feature.extrude"
+    },
+    "sketch-1": {
+      "data": {
+        "constraints": [
+          {
+            "expression": "",
+            "id": "c1",
+            "kind": "horizontal",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c2",
+            "kind": "vertical",
+            "refs": [
+              "e2"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c3",
+            "kind": "horizontal",
+            "refs": [
+              "e3"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c4",
+            "kind": "vertical",
+            "refs": [
+              "e4"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c5",
+            "kind": "fix",
+            "refs": [
+              "p1"
+            ],
+            "values": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "dimensions": [
+          {
+            "expression": "larghezza",
+            "id": "d1",
+            "kind": "length",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          },
+          {
+            "expression": "40 mm",
+            "id": "d2",
+            "kind": "length",
+            "refs": [
+              "e2"
+            ],
+            "values": []
+          }
+        ],
+        "entities": [
+          {
+            "construction": false,
+            "id": "e1",
+            "kind": "line",
+            "points": [
+              "p1",
+              "p2"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e2",
+            "kind": "line",
+            "points": [
+              "p2",
+              "p3"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e3",
+            "kind": "line",
+            "points": [
+              "p3",
+              "p4"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e4",
+            "kind": "line",
+            "points": [
+              "p4",
+              "p1"
+            ],
+            "radius": 1.0
+          }
+        ],
+        "plane": "XY",
+        "points": [
+          {
+            "id": "p1",
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "id": "p2",
+            "x": 60.0,
+            "y": 0.0
+          },
+          {
+            "id": "p3",
+            "x": 60.0,
+            "y": 40.0
+          },
+          {
+            "id": "p4",
+            "x": 0.0,
+            "y": 40.0
+          }
+        ]
+      },
+      "error": null,
+      "id": "sketch-1",
+      "kind": "exact",
+      "name": "Schizzo 1",
+      "suppressed": false,
+      "type": "sketch"
+    },
+    "sketch-3": {
+      "data": {
+        "constraints": [
+          {
+            "expression": "",
+            "id": "c1",
+            "kind": "horizontal",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c2",
+            "kind": "vertical",
+            "refs": [
+              "e2"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c3",
+            "kind": "horizontal",
+            "refs": [
+              "e3"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c4",
+            "kind": "vertical",
+            "refs": [
+              "e4"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c5",
+            "kind": "fix",
+            "refs": [
+              "p1"
+            ],
+            "values": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "dimensions": [
+          {
+            "expression": "larghezza",
+            "id": "d1",
+            "kind": "length",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          },
+          {
+            "expression": "40 mm",
+            "id": "d2",
+            "kind": "length",
+            "refs": [
+              "e2"
+            ],
+            "values": []
+          }
+        ],
+        "entities": [
+          {
+            "construction": false,
+            "id": "e1",
+            "kind": "line",
+            "points": [
+              "p1",
+              "p2"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e2",
+            "kind": "line",
+            "points": [
+              "p2",
+              "p3"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e3",
+            "kind": "line",
+            "points": [
+              "p3",
+              "p4"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e4",
+            "kind": "line",
+            "points": [
+              "p4",
+              "p1"
+            ],
+            "radius": 1.0
+          }
+        ],
+        "plane": "XZ",
+        "points": [
+          {
+            "id": "p1",
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "id": "p2",
+            "x": 60.0,
+            "y": 0.0
+          },
+          {
+            "id": "p3",
+            "x": 60.0,
+            "y": 40.0
+          },
+          {
+            "id": "p4",
+            "x": 0.0,
+            "y": 40.0
+          }
+        ]
+      },
+      "error": null,
+      "id": "sketch-3",
+      "kind": "exact",
+      "name": "Schizzo 3",
+      "suppressed": false,
+      "type": "sketch"
+    },
+    "sketch-5": {
+      "data": {
+        "constraints": [
+          {
+            "expression": "",
+            "id": "c1",
+            "kind": "fix",
+            "refs": [
+              "p1"
+            ],
+            "values": [
+              30.0,
+              25.0
+            ]
+          }
+        ],
+        "dimensions": [
+          {
+            "expression": "foro",
+            "id": "d1",
+            "kind": "diameter",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          }
+        ],
+        "entities": [
+          {
+            "construction": false,
+            "id": "e1",
+            "kind": "circle",
+            "points": [
+              "p1"
+            ],
+            "radius": 4.0
+          }
+        ],
+        "plane": "XY",
+        "points": [
+          {
+            "id": "p1",
+            "x": 30.0,
+            "y": 25.0
+          }
+        ]
+      },
+      "error": null,
+      "id": "sketch-5",
+      "kind": "exact",
+      "name": "Schizzo 5",
+      "suppressed": false,
+      "type": "sketch"
+    },
+    "sketch-7": {
+      "data": {
+        "constraints": [
+          {
+            "expression": "",
+            "id": "c1",
+            "kind": "fix",
+            "refs": [
+              "p1"
+            ],
+            "values": [
+              30.0,
+              25.0
+            ]
+          }
+        ],
+        "dimensions": [
+          {
+            "expression": "foro",
+            "id": "d1",
+            "kind": "diameter",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          }
+        ],
+        "entities": [
+          {
+            "construction": false,
+            "id": "e1",
+            "kind": "circle",
+            "points": [
+              "p1"
+            ],
+            "radius": 4.0
+          }
+        ],
+        "plane": "XZ",
+        "points": [
+          {
+            "id": "p1",
+            "x": 30.0,
+            "y": 25.0
+          }
+        ]
+      },
+      "error": null,
+      "id": "sketch-7",
+      "kind": "exact",
+      "name": "Schizzo 7",
+      "suppressed": false,
+      "type": "sketch"
+    }
+  },
+  "format_version": 1,
+  "name": "Nuovo documento",
+  "parameters": [
+    {
+      "comment": "",
+      "expression": "60 mm",
+      "name": "larghezza",
+      "unit": ""
+    },
+    {
+      "comment": "",
+      "expression": "5 mm",
+      "name": "spessore",
+      "unit": ""
+    },
+    {
+      "comment": "",
+      "expression": "8 mm",
+      "name": "foro",
+      "unit": ""
+    }
+  ],
+  "rollback": 8,
+  "timeline": [
+    "sketch-1",
+    "feature-2",
+    "sketch-3",
+    "feature-4",
+    "sketch-5",
+    "feature-6",
+    "sketch-7",
+    "feature-8"
+  ]
+}

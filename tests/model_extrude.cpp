@@ -39,6 +39,13 @@ int main(){try{
     auto source=run(multi,"sketch.create",{{"plane","XY"}})["sketch"];auto wide=run(multi,"sketch.rect",{{"width","50 mm"},{"height","5 mm"}});
     run(multi,"feature.extrude",{{"sketch",source},{"profiles",J::array({wide["entities"]})},{"extent","through_all"},{"operation","cut"},{"target_bodies",bodies}});
     for(const auto& b:bodies)close(volume(multi,b),3000);
+    engine::Engine joined;
+    std::vector<std::string> joined_bodies;
+    for(auto x:{0,20})joined_bodies.push_back(run(joined,"primitive.add",{{"kind","box"},{"position",{{"x",std::to_string(x)+" mm"}}},{"dimensions",{{"width","10 mm"},{"depth","10 mm"},{"height","10 mm"}}}})["body_id"]);
+    auto join_source=run(joined,"sketch.create",{{"plane","XY"}})["sketch"];auto bridge=run(joined,"sketch.rect",{{"x",5},{"width","20 mm"},{"height","10 mm"}});
+    run(joined,"feature.extrude",{{"sketch",join_source},{"profiles",J::array({bridge["entities"]})},{"distance","10 mm"},{"operation","join"},{"target_bodies",joined_bodies}});
+    close(volume(joined,joined_bodies[0]),3000);auto merged=regen::Regenerator{}.evaluate(joined.session().document);check(!merged.bodies[1].exact,"unione multipla produce un solo corpo senza materiale duplicato");
+    engine::Engine negative;auto negative_refs=rectangle(negative);run(negative,"feature.extrude",{{"sketch",negative.session().active_sketch},{"profiles",negative_refs},{"distance","-5 mm"}});auto nm=run(negative,"model.mass_properties");close(nm["volume_mm3"],500);close(nm["bbox_mm"]["min"]["z"],-5);
     engine::Engine plane;auto vertical=run(plane,"sketch.create",{{"plane","XZ"}})["sketch"];auto side=run(plane,"sketch.rect",{{"width","10 mm"},{"height","10 mm"}});
     run(plane,"feature.extrude",{{"sketch",vertical},{"profiles",J::array({side["entities"]})},{"distance","5 mm"}});auto pm=run(plane,"model.mass_properties");close(pm["volume_mm3"],500);close(pm["bbox_mm"]["min"]["y"],-5);
     std::cout<<"Estrusione: corona parametrica, quattro operazioni, direzioni, attraverso tutto, più corpi e piano XZ OK\n";

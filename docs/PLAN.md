@@ -466,9 +466,17 @@ Piani di schizzo, linea, rettangolo, cerchio, arco, vincoli automatici e manuali
 
 Protocollo ed esempi: `docs/sketches.md`. Include solver Eigen con diagnostica di conflitti/ridondanze, piani dell'origine, quote parametriche, profili chiusi, trascinamento con coalescenza, modifica dalla timeline e parità CLI/MCP (`sketch_inspect`). Schizzi su faccia in M5, feature da profili in M4.
 
-**M4 - Feature e timeline**
+**M4 - Feature e timeline — completato il 17 ottobre 2026**
 Estrusione e taglio da profili, rivoluzione, timeline con modifica parametri e rollback, regen incrementale, feature in errore senza crash. MCP: `feature_get`.
 *Fatto quando:* cambiare la quota dello schizzo a monte aggiorna il solido e i test di volume restano corretti.
+
+Completate le sei tappe: regioni annidate con riferimenti alle entità, estrusione
+e rivoluzione con operazioni e destinazioni, cache incrementale del prefisso,
+rollback/soppressione/errori isolati, dialoghi e maniglie, CLI/MCP e `feature_get`.
+Accettazione numerica e istruzioni: `docs/modeling-guide.md`; staffa a L con due
+fori creata via MCP e misurata in `docs/examples/m4/`. Confronti 07–10 nei due
+temi e due dimensioni in `docs/screenshots/m4-confronto/`. Build Windows Release,
+41 test e controlli di livelli/UTF-8 verdi. **M5 non iniziato.**
 
 **M5 - Selezione e feature su facce**
 Picking con ID buffer, hover, clic ripetuto, schizzi su faccia, raccordi e smussi su spigoli selezionati, riferimenti topologici del punto 4. MCP: `geometry_query`, `measure`, `selection_get` e `render_view` con etichette dei riferimenti stabili. Test di integrazione headless: scatola 40×40×20 con foro passante da 10 mm creata usando solo tool MCP, volume verificato tramite `mass_properties`.

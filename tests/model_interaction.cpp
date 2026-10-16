@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <iostream>
 #include <stdexcept>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 using namespace sagomacad;using J=nlohmann::json;
 void check(bool b,const std::string& m){if(!b)throw std::runtime_error(m);}
 J run(engine::Engine& e,const char* id,J p=J::object()){auto r=e.execute(id,p);check(r.ok,std::string(id)+": "+r.error);return r.value;}
@@ -34,7 +36,15 @@ int main(int argc,char** argv){try{
         auto feature=e.session().document.timeline[1];const auto item=shell.state().timeline_items.at(1);click(item.x+item.width/2,item.y+item.height/2);click(item.x+item.width/2,item.y+item.height/2);check(m.open&&m.feature_id==feature,"doppio clic riapre il dialogo");field("cancel");
         // A second sketch provides a real red cut preview and target body field.
         run(e,"primitive.add",{{"kind","box"},{"position",{{"x","-60 mm"},{"y","-10 mm"}}},{"dimensions",{{"width","20 mm"},{"depth","20 mm"},{"height","10 mm"}}}});
-        run(e,"sketch.create",{{"plane","XY"}});run(e,"sketch.circle",{{"x",20},{"diameter","5 mm"}});run(e,"sketch.finish");shell.render();key(ImGuiKey_E);world_click({20,0,0});field("operation");field("op1");shell.render();check(m.operation==1&&m.targets.size()==2,"Taglia e due corpi di destinazione");check(m.preview_error.empty(),m.preview_error);capture("08-taglia-");field("ok");
+        run(e,"sketch.create",{{"plane","XY"}});run(e,"sketch.circle",{{"x",20},{"diameter","5 mm"}});run(e,"sketch.finish");shell.render();key(ImGuiKey_E);world_click({20,0,0});field("operation");field("op1");shell.render();check(m.operation==1&&m.targets.size()==2,"Taglia e due corpi di destinazione");check(m.preview_error.empty(),m.preview_error);capture("08-taglia-");
+        // The opaque planar cap must stay uniformly shaded around the hole:
+        // rear triangles used to paint dark wedges across these visible points.
+        int image_width=0,image_height=0,channels=0;auto path=(root/("08-taglia-"+suffix)).string();
+        auto* pixels=stbi_load(path.c_str(),&image_width,&image_height,&channels,4);check(pixels!=nullptr,"lettura screenshot");
+        std::array<int,3> reference{};bool first=true;
+        for(double x:{-25.,-15.,15.,25.})for(double y:{-15.,15.}){auto projected=shell.state().camera.project({x,y,10},viewport());int px=int(projected.x),py=int(projected.y);check(px>=0&&py>=0&&px<image_width&&py<image_height,"punto nella cattura");auto pixel=pixels+(py*image_width+px)*4;
+            for(int channel=0;channel<3;++channel){if(first)reference[channel]=pixel[channel];else check(std::abs(int(pixel[channel])-reference[channel])<=2,"faccia piana senza triangoli posteriori sovrapposti");}first=false;}
+        stbi_image_free(pixels);field("ok");
         check(std::abs(run(e,"model.mass_properties")["volume_mm3"].get<double>()-(expected-62.5*std::numbers::pi))<1e-4,"taglio UI");
         // Start Revolve through the third command in the Create ribbon group.
         run(e,"document.new");sk=run(e,"sketch.create",{{"plane","XZ"}})["sketch"];run(e,"sketch.rect",{{"x",5},{"width","30 mm"},{"height","20 mm"}});run(e,"sketch.finish");shell.render();shell.state().camera.home();shell.state().camera.target={0,0,10};shell.state().camera.distance=180;shell.render();

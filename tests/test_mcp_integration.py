@@ -167,6 +167,29 @@ def bridge(app, cli, root):
             assert len(client.ok("document_inspect")["document"]["bodies"]) == 1
             png(client.call("render_view", {"view": "iso", "size": "640x480"}), 640, 480)
             png(client.call("ui_screenshot"))
+            def command(name, **params):
+                return client.ok("command_run", {"command": name, "params": params})
+            command("document.new")
+            source = command("sketch.create", plane="XY")["sketch"]
+            rectangle = command("sketch.rect", sketch=source, width="20 mm", height="10 mm")
+            command("sketch.finish", sketch=source)
+            feature = command("feature.extrude", sketch=source, profiles=[rectangle["entities"]], distance="10 mm")
+            body = feature["body_id"]
+            assert abs(client.ok("mass_properties", {"body": body})["volume_mm3"] - 2000) < 1e-5
+            assert client.ok("feature_get", {"feature_id": feature["feature_id"]})["applied"]
+            command("feature.edit", feature_id=feature["feature_id"], params={"distance": "15 mm"})
+            assert abs(client.ok("mass_properties", {"body": body})["volume_mm3"] - 3000) < 1e-5
+            command("timeline.rollback", index=1)
+            assert not client.ok("feature_get", {"feature_id": feature["feature_id"]})["applied"]
+            command("timeline.rollback", index=2)
+            command("feature.suppress", feature_id=feature["feature_id"], suppressed=True)
+            assert client.ok("feature_get", {"feature_id": feature["feature_id"]})["suppressed"]
+            command("feature.suppress", feature_id=feature["feature_id"], suppressed=False)
+            source = command("sketch.create", plane="XZ")["sketch"]
+            rectangle = command("sketch.rect", sketch=source, x=5, width="10 mm", height="10 mm")
+            command("sketch.finish", sketch=source)
+            ring = command("feature.revolve", sketch=source, profiles=[rectangle["entities"]], axis="Z", type="full")
+            assert abs(client.ok("mass_properties", {"body": ring["body_id"]})["volume_mm3"] - 2000*math.pi) < 1e-4
         finally:
             if client:
                 client.close()

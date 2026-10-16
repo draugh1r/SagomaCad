@@ -18,7 +18,7 @@ for scene, reference in scenes.items():
         pair.paste(expected, (0, header))
         pair.paste(actual, (expected.width, header))
         draw = ImageDraw.Draw(pair)
-        font = ImageFont.truetype("C:/Windows/Fonts/segoeui.ttf", 20)
+        font = ImageFont.truetype(str(root / "assets/fonts/Inter.ttf"), 20)
         draw.text((12, 6), "Fusion — riferimento " + reference, font=font, fill="black")
         draw.text((expected.width + 12, 6), "SagomaCad — " + source.stem, font=font, fill="black")
         target = source.with_stem(source.stem + "-confronto")

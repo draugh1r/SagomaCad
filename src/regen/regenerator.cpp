@@ -111,15 +111,21 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             if((it->second.type=="feature.extrude"||it->second.type=="feature.revolve") && operation!="new") {
                 if(!result.shape) {snapshot_.features.back().error=result.error;return;}
                 std::vector<std::pair<BodyState*,kernel::Shape>> pending;
+                std::optional<kernel::Shape> joined=operation=="join"?result.shape:std::nullopt;
                 for(const auto& target:it->second.data.at("target_bodies")) {
                     auto dest=std::find_if(snapshot_.bodies.begin(),snapshot_.bodies.end(),[&](const auto& b){return b.id==target.get<std::string>();});
                     if(dest==snapshot_.bodies.end()||!dest->exact)throw std::runtime_error("Corpo di destinazione assente: "+target.get<std::string>());
-                    auto combined=kernel::boolean_operation(*dest->exact,*result.shape,operation);
+                    auto combined=kernel::boolean_operation(*dest->exact,joined?*joined:*result.shape,operation);
                     if(!combined)throw std::runtime_error(combined.error);
+                    if(joined)joined=*combined.value;
                     pending.emplace_back(&*dest,*combined.value);
                 }
                 if(pending.empty())throw std::runtime_error("Corpi di destinazione mancanti");
-                for(auto& [dest,shape]:pending){dest->exact=shape;dest->final=shape;dest->error.clear();}
+                for(size_t index=0;index<pending.size();++index){auto& [dest,shape]=pending[index];
+                    if(joined&&index>0){dest->exact.reset();dest->final.reset();}
+                    else {dest->exact=joined?*joined:shape;dest->final=dest->exact;}
+                    dest->error.clear();
+                }
                 return;
             }
             if (operation=="subtract") {

@@ -1,8 +1,8 @@
-# Parità della barra — M3
+# Parità della barra — M4
 
 Generato da `tools/update_parity.py` leggendo il catalogo e interrogando il registro reale.
 
-**20 comandi registrati, 17 mancanti** tra gli ID unici della barra. Le disponibilità contestuali (undo, redo, export) sono valutate a ogni frame; le voci mancanti sono disabilitate con il tooltip «Non ancora disponibile».
+**22 comandi registrati, 15 mancanti** tra gli ID unici della barra. Le disponibilità contestuali (undo, redo, export) sono valutate a ogni frame; le voci mancanti sono disabilitate con il tooltip «Non ancora disponibile».
 
 Schizzo è contestuale. I comandi di disegno aprono strumenti, le quote e i vincoli usano la selezione; Fine schizzo chiude la modalità. File, palette, timeline, CLI e MCP passano dallo stesso registro.
 
@@ -15,8 +15,8 @@ Schizzo è contestuale. I comandi di disegno aprono strumenti, le quote e i vinc
 | Barra documento | Annulla | `edit.undo` | Registrato |
 | Barra documento | Ripeti | `edit.redo` | Registrato |
 | Solido / Crea | Schizzo | `sketch.create` | Registrato |
-| Solido / Crea | Estrudi | `feature.extrude` | Non ancora disponibile |
-| Solido / Crea | Rivolvi | `feature.revolve` | Non ancora disponibile |
+| Solido / Crea | Estrudi | `feature.extrude` | Registrato |
+| Solido / Crea | Rivoluzione | `feature.revolve` | Registrato |
 | Solido / Crea | Foro | `feature.hole` | Non ancora disponibile |
 | Solido / Crea | Primitiva | `primitive.add` | Registrato |
 | Solido / Modifica | Premi/tira | `face.pushPull` | Non ancora disponibile |
@@ -54,4 +54,4 @@ Schizzo è contestuale. I comandi di disegno aprono strumenti, le quote e i vinc
 
 ## Altri comandi disponibili da CLI/MCP e palette
 
-`body.visibility`, `document.inspect`, `feature.delete`, `feature.edit`, `feature.suppress`, `model.mass_properties`, `param.delete`, `param.set`, `primitive.edit`, `sketch.edit`
+`body.visibility`, `document.inspect`, `feature.delete`, `feature.edit`, `feature.get`, `feature.suppress`, `model.mass_properties`, `param.delete`, `param.set`, `primitive.edit`, `sketch.edit`, `timeline.rollback`

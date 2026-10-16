@@ -30,7 +30,7 @@ for tab, contextual, group in re.findall(r'\{"([^"]+)",\s*(true|false),\s*(\w+)\
         add(tab.title() + " / " + name.title(), commands[entries])
 ids = {r[2] for r in rows}
 active = len(ids & registry.keys())
-output = ["# Parità della barra — M3", "",
+output = ["# Parità della barra — M4", "",
           "Generato da `tools/update_parity.py` leggendo il catalogo e interrogando il registro reale.", "",
           f"**{active} comandi registrati, {len(ids)-active} mancanti** tra gli ID unici della barra. Le disponibilità contestuali (undo, redo, export) sono valutate a ogni frame; le voci mancanti sono disabilitate con il tooltip «Non ancora disponibile».", "",
           "Schizzo è contestuale. I comandi di disegno aprono strumenti, le quote e i vincoli usano la selezione; Fine schizzo chiude la modalità. File, palette, timeline, CLI e MCP passano dallo stesso registro.", "",

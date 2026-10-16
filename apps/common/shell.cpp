@@ -114,10 +114,12 @@ void draw_surfaces(ImDrawList* dl,const std::vector<mesh::Surface>& surfaces,con
                std::array{b->minimum.x,b->minimum.y,b->minimum.z,b->maximum.x,b->maximum.y,b->maximum.z};
     });
     std::vector<DrawTriangle> triangles;
+    const auto eye=camera.eye();
     for (const auto* surface:ordered) for (const auto& tri:surface->geometry.triangles) {
         const auto a=camera.project(tri.vertices[0],viewport),b=camera.project(tri.vertices[1],viewport),c=camera.project(tri.vertices[2],viewport);
         if (!a.visible || !b.visible || !c.visible) continue;
         const auto& n=tri.normal;
+        if(theme.solid.a>=1.f&&n.x*(eye.x-tri.vertices[0].x)+n.y*(eye.y-tri.vertices[0].y)+n.z*(eye.z-tri.vertices[0].z)<=0)continue;
         const double light=std::max(0.0,n.x*0.42+n.y*(-0.35)+n.z*0.84);
         triangles.push_back({{float(a.x),float(a.y)},{float(b.x),float(b.y)},{float(c.x),float(c.y)},a.depth,b.depth,c.depth,(a.depth+b.depth+c.depth)/3.0,shaded(theme.solid,light)});
     }
