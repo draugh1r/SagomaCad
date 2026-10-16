@@ -17,6 +17,13 @@ Geometria libera blu, vincolata nera nel tema chiaro e chiara nel tema scuro, co
 
 ## Comandi
 
+Gli schizzi precedenti e i solidi già creati restano visibili mentre si disegna.
+Una feature nasconde automaticamente solo il suo schizzo sorgente: l'occhio
+nel browser lo rende nuovamente visibile e selezionabile. Seleziona lo schizzo
+e premi E per riutilizzarne i profili; doppio clic continua ad aprirne la modifica.
+Il comando `sketch.visibility {sketch, visible: true|false|null}` salva la scelta
+manuale o ripristina quella automatica (`null`).
+
 Coordinate numeriche in mm nel piano: XY = (X,Y), XZ = (X,Z), YZ = (Y,Z). Quote come stringhe con espressioni e unità; numeri senza unità in mm, oppure gradi per un angolo. Riutilizza gli ID restituiti dai comandi.
 
 | Comando | Parametri |

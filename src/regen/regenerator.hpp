@@ -25,6 +25,7 @@ struct Snapshot {
     std::size_t cache_hits=0;
     std::vector<std::string> hidden_sketches;
 };
+bool sketch_visible(const doc::Document&,const Snapshot&,const std::string& id,const std::string& editing={});
 class Regenerator {
 public:
     struct Cached { std::optional<kernel::Shape> shape; std::string error; };

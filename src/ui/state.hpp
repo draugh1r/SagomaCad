@@ -22,6 +22,8 @@ struct State {
     } model;
     std::string selected_profile_sketch;
     std::vector<std::string> selected_profiles;
+    struct SketchBrowserItem {std::array<float,4> row{},eye{};bool visible=false;};
+    std::map<std::string,SketchBrowserItem> sketch_browser;
     Camera camera;
     CameraTransition view_transition;
     CubeInteraction cube_interaction;

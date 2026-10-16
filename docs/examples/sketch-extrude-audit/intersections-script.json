@@ -1,0 +1,7 @@
+[
+ ["engine.execute",{"command":"document.new"}],
+ ["engine.execute",{"command":"sketch.create","params":{"plane":"XY"}}],
+ ["engine.execute",{"command":"sketch.circle","params":{"diameter":"20 mm"}}],
+ ["engine.execute",{"command":"sketch.circle","params":{"x":10,"diameter":"20 mm"}}],
+ ["engine.execute",{"command":"sketch.inspect"}]
+]

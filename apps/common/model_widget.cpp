@@ -18,13 +18,13 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
     const auto panel=layout_.last().contextual;
     if(m.open&&(inside(panel.x,panel.y,panel.width,panel.height)||inside(m.value_x,m.value_y,token.field_width*z,token.field_height*z)))hovered=false;
     const auto context=engine::model_context(engine_->session().document,m.open?m.feature_id:"");const auto snapshot=regenerator_.evaluate(context);
-    std::string hit_sketch,hit_region;double best=1e100;
+    std::string hit_sketch,hit_region;double best=1e100;const auto preferred=m.open?m.sketch:s.selected_profile_sketch;
     struct Candidate {std::string sketch;const engine::ModelProfile* profile;};std::vector<Candidate> candidates;
     for(const auto& [id,views]:model_profiles_){auto solved=sketch_solutions_.find(id);if(solved==sketch_solutions_.end())continue;
         if(std::none_of(snapshot.features.begin(),snapshot.features.end(),[&](const auto& f){return f.id==id&&f.error.empty();}))continue;
-        if(!(m.open&&m.sketch==id)&&std::find(snapshot.hidden_sketches.begin(),snapshot.hidden_sketches.end(),id)!=snapshot.hidden_sketches.end())continue;
+        if(!regen::sketch_visible(context,snapshot,id,m.open?m.sketch:""))continue;
         engine::SketchXY cursor;const bool cursor_ok=hovered&&ui::sketch_cursor(s.camera,current_viewport_,solved->second.sketch.plane,io.MousePos.x,io.MousePos.y,cursor);
-        for(const auto& view:views){candidates.push_back({id,&view});if(cursor_ok&&solver::contains(view.region,cursor.x,cursor.y)){auto p=s.camera.project(ui::sketch_world(solved->second.sketch.plane,cursor),current_viewport_);if(p.depth<best){best=p.depth;hit_sketch=id;hit_region=view.region.id;}}}
+        for(const auto& view:views){candidates.push_back({id,&view});if(cursor_ok&&solver::contains(view.region,cursor.x,cursor.y)){auto p=s.camera.project(ui::sketch_world(solved->second.sketch.plane,cursor),current_viewport_);if(p.depth<best-1e-6||(std::abs(p.depth-best)<=1e-6&&id==preferred&&hit_sketch!=preferred)){best=p.depth;hit_sketch=id;hit_region=view.region.id;}}}
     }
     bool handle_hover=false;
     if(m.open&&!m.profiles.empty()&&model_preview_.surface&&(!m.revolve?m.extent==0:!model_preview_.angle_arc.empty())){
@@ -70,7 +70,7 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
         if(ImGui::InputText("##model_value",field.data(),field.size(),ImGuiInputTextFlags_AutoSelectAll))m.error.clear();
         if(ImGui::IsItemActivated()&&m.revolve)m.type=0;
     }
-    if(m.open&&ImGui::IsKeyPressed(ImGuiKey_Escape)){if(m.dragging)m.dragging=false;else if(m.pick_axis)m.pick_axis=false;else m.open=false;}
+    if(m.open&&ImGui::IsKeyPressed(ImGuiKey_Escape)){if(m.dragging)m.dragging=false;else if(m.pick_axis)m.pick_axis=false;else ui::cancel_model(s);}
 }
 void Shell::draw_model_panel(const ui::Theme& t){
     auto& m=state_.model;if(!m.open||!engine_)return;const float z=float(scale_);const auto r=layout_.last().contextual;if(!r.visible())return;
@@ -124,7 +124,7 @@ void Shell::draw_model_panel(const ui::Theme& t){
         const bool disabled=!m.preview_error.empty()||m.profiles.empty()||(m.revolve&&m.axis.empty());
         ImGui::SetCursorPosX(std::max(t.padding*z,ImGui::GetWindowWidth()-ImGui::GetStyle().WindowPadding.x-t.model.row*z*4.5f-ImGui::GetStyle().ItemSpacing.x));
         ImGui::BeginDisabled(disabled);if(ImGui::Button("OK",{t.model.row*z*2,0}))ui::submit_model(state_,*engine_);record("ok");ImGui::EndDisabled();ImGui::SameLine();
-        if(ImGui::Button("Annulla",{t.model.row*z*2.5f,0}))m.open=false;record("cancel");
+        if(ImGui::Button("Annulla",{t.model.row*z*2.5f,0}))ui::cancel_model(state_);record("cancel");
     }
     ImGui::End();ImGui::PopStyleVar();
 }

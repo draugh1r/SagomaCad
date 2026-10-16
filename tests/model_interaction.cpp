@@ -34,6 +34,15 @@ int main(int argc,char** argv){try{
         check(std::abs(std::stod(m.distance.data())-10)>.1,"freccia aggiorna la distanza");check(e.session().document==original,"drag è solo anteprima");click(m.value_x+30,m.value_y+10);ImGui::GetIO().AddInputCharactersUTF8("10 mm");shell.render();key(ImGuiKey_Enter);check(std::string(m.distance.data())=="10 mm","casella nel viewport modificabile");field("ok");check(!m.open,"OK chiude Estrudi");
         double expected=(2400-100*std::numbers::pi)*10;check(std::abs(run(e,"model.mass_properties")["volume_mm3"].get<double>()-expected)<1e-4,"volume della corona UI");
         auto feature=e.session().document.timeline[1];const auto item=shell.state().timeline_items.at(1);click(item.x+item.width/2,item.y+item.height/2);click(item.x+item.width/2,item.y+item.height/2);check(m.open&&m.feature_id==feature,"doppio clic riapre il dialogo");field("cancel");
+        const auto source=sk.get<std::string>();check(!shell.state().sketch_browser.at(source).visible,"occhio indica sorgente nascosta dopo estrusione");
+        auto eye=shell.state().sketch_browser.at(source).eye;click(eye[0]+eye[2]/2,eye[1]+eye[3]/2);shell.render();check(shell.state().sketch_browser.at(source).visible,"occhio mostra di nuovo lo schizzo");
+        world_click({-20,0,0});key(ImGuiKey_E);check(m.sketch==source&&m.profiles.size()==1&&m.preview_error.empty(),"profilo consumato di nuovo selezionabile");capture("audit-riuso-profilo-");
+        const auto before_reuse=e.session().document;field("operation");field("op0");std::snprintf(m.distance.data(),m.distance.size(),"15 mm");shell.render();field("ok");
+        check(!m.open,"seconda estrusione dello stesso profilo confermata");check(std::abs(run(e,"model.mass_properties")["volume_mm3"].get<double>()-expected*1.5)<1e-4,"seconda estrusione Unisci sullo stesso solido");
+        run(e,"edit.undo");check(e.session().document==before_reuse,"undo seconda estrusione ripristina modello");run(e,"sketch.visibility",{{"sketch",source},{"visible",nullptr}});shell.render();
+        const auto row=shell.state().sketch_browser.at(source).row;click(row[0]+row[2]/2,row[1]+row[3]/2);key(ImGuiKey_E);
+        check(m.sketch==source&&m.profiles.empty(),"browser permette riuso schizzo nascosto con più regioni");world_click({-20,0,0});check(m.profiles.size()==1&&m.preview_error.empty(),"selezione regione da schizzo nascosto nel dialogo");
+        field("cancel");check(!shell.state().sketch_browser.at(source).visible&&shell.state().selected_profile_sketch.empty(),"annulla ripristina nascondimento senza selezioni fantasma");
         // A second sketch provides a real red cut preview and target body field.
         run(e,"primitive.add",{{"kind","box"},{"position",{{"x","-60 mm"},{"y","-10 mm"}}},{"dimensions",{{"width","20 mm"},{"depth","20 mm"},{"height","10 mm"}}}});
         run(e,"sketch.create",{{"plane","XY"}});run(e,"sketch.circle",{{"x",20},{"diameter","5 mm"}});run(e,"sketch.finish");shell.render();key(ImGuiKey_E);world_click({20,0,0});field("operation");field("op1");shell.render();check(m.operation==1&&m.targets.size()==2,"Taglia e due corpi di destinazione");check(m.preview_error.empty(),m.preview_error);capture("08-taglia-");
@@ -52,6 +61,12 @@ int main(int argc,char** argv){try{
         check(m.open&&m.revolve,"Rivoluzione dal gruppo Crea");world_click({20,0,10});field("axis");check(m.pick_axis,"campo Asse attiva selezione");world_click({0,0,50});shell.render();check(m.axis=="Z","selezione asse Z nel viewport");check(m.preview_error.empty(),m.preview_error);capture("09-rivoluzione-");
         hx=m.handle_x;hy=m.handle_y;mouse(hx,hy,false);mouse(hx,hy,true);check(m.dragging,"maniglia angolo attiva");mouse(hx-m.drag_px*90,hy-m.drag_py*90,true);mouse(hx-m.drag_px*90,hy-m.drag_py*90,false);shell.render();
         double angle=std::stod(m.angle.data());check(std::abs(angle-270)<1,"maniglia aggiorna l'angolo");field("ok");check(!m.open,"OK rivoluzione");double measured=run(e,"model.mass_properties")["volume_mm3"].get<double>();check(std::abs(measured-24000*std::numbers::pi*angle/360)<1e-3,"volume rivoluzione UI: "+std::to_string(measured)+", angolo "+std::to_string(angle));
+        run(e,"document.new");auto older=run(e,"sketch.create",{{"plane","XY"}})["sketch"].get<std::string>();run(e,"sketch.rect",{{"width","30 mm"},{"height","20 mm"}});
+        auto newer=run(e,"sketch.create",{{"plane","XY"}})["sketch"].get<std::string>();run(e,"sketch.rect",{{"width","40 mm"},{"height","20 mm"}});run(e,"sketch.finish");shell.render();
+        key(ImGuiKey_E);auto choose=shell.state().sketch_browser.at(newer).row;click(choose[0]+choose[2]/2,choose[1]+choose[3]/2);world_click({5,5,0});
+        check(m.sketch==newer&&m.profiles.size()==1,"browser disambigua profili sovrapposti nello stesso piano");capture("audit-profili-sovrapposti-");key(ImGuiKey_Escape);check(!m.open&&shell.state().selected_profiles.empty()&&shell.state().selected_profile_sketch.empty(),"Esc pulisce dialogo e preselezione");
+        run(e,"sketch.edit",{{"sketch",older}});shell.render();key(ImGuiKey_E);check(m.open&&m.sketch==older&&m.profiles.size()==1,"E dal solo profilo attivo senza selezione precedente");
+        run(e,"sketch.edit",{{"sketch",newer}});shell.render();check(shell.state().sketch_mode&&!m.open,"entrare in uno schizzo chiude il precedente dialogo Estrudi");
     }
     std::cout<<"UI M4: selezione corona, E, drag distanza, menu, taglio, Crea/Rivoluzione, asse, drag angolo e doppio clic OK\n";
 }catch(const std::exception& e){std::cerr<<e.what();return 1;}}

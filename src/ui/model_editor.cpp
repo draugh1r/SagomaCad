@@ -7,7 +7,17 @@ namespace {void copy(auto& buffer,const std::string& value){std::snprintf(buffer
 void begin_model(State& s,engine::Engine& e,bool revolve,const std::string& editing){
     s.model={};auto& m=s.model;m.open=true;m.revolve=revolve;m.feature_id=editing;
     copy(m.distance,"10 mm");copy(m.second_distance,"10 mm");copy(m.angle,"360 deg");
-    m.sketch=e.session().active_sketch.empty()?s.selected_profile_sketch:e.session().active_sketch;m.profiles=s.selected_profiles;
+    m.sketch=e.session().active_sketch.empty()?s.selected_profile_sketch:e.session().active_sketch;
+    if(m.sketch==s.selected_profile_sketch)m.profiles=s.selected_profiles;
+    const auto source=e.session().document.features.find(m.sketch);
+    if(source==e.session().document.features.end()||source->second.type!="sketch"||source->second.suppressed){m.sketch.clear();m.profiles.clear();}
+    else {
+        const auto inspected=e.execute("sketch.inspect",{{"sketch",m.sketch}});
+        if(inspected.ok){const auto& regions=inspected.value["regions"];
+            std::erase_if(m.profiles,[&](const auto& id){return std::none_of(regions.begin(),regions.end(),[&](const auto& r){return r["id"]==id;});});
+            if(m.profiles.empty()&&regions.size()==1)m.profiles.push_back(regions[0]["id"].get<std::string>());
+        }else m.profiles.clear();
+    }
     if(!e.session().active_sketch.empty())e.execute("sketch.finish");
     s.sketch_mode=false;s.sketch_plane_picker=false;s.primitive_editor_open=false;s.primitive_create_open=false;s.navigation_mode=-1;
     const auto forward=s.camera.forward();
@@ -33,5 +43,6 @@ nlohmann::json model_params(const State& s){
     return p;
 }
 bool submit_model(State& s,engine::Engine& e){auto& m=s.model;auto params=model_params(s);auto r=m.feature_id.empty()?e.execute(m.revolve?"feature.revolve":"feature.extrude",params):e.execute("feature.edit",{{"feature_id",m.feature_id},{"params",params}});m.error=r.error;if(r.ok){m.open=false;s.selected_profiles.clear();s.selected_profile_sketch.clear();}return r.ok;}
+void cancel_model(State& s){s.model.open=false;s.model.dragging=false;s.model.pick_axis=false;s.selected_profile_sketch.clear();s.selected_profiles.clear();}
 nlohmann::json model_state_json(const State& s){const auto& m=s.model;return {{"open",m.open},{"revolve",m.revolve},{"feature_id",m.feature_id},{"params",model_params(s)},{"pick_axis",m.pick_axis},{"fields",m.fields},{"preview_error",m.preview_error},{"handle",{{"x",m.handle_x},{"y",m.handle_y}}},{"value",{{"x",m.value_x},{"y",m.value_y}}}};}
 }

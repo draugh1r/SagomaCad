@@ -28,6 +28,11 @@ try:
     client.ok("redo")
     assert abs(client.ok("sketch_inspect")["entities"][-1]["radius"] - 8) < 1e-5
     command("sketch.finish")
+    command("sketch.visibility", sketch=sketch, visible=False)
+    assert client.ok("sketch_inspect", {"sketch": sketch})["visible"] is False
+    client.ok("undo")
+    assert client.ok("sketch_inspect", {"sketch": sketch})["visibility"] is None
+    command("sketch.visibility", sketch=sketch, visible=True)
     command("sketch.edit", sketch=sketch)
     dimension = result["dimensions"][0]["id"]
     command("sketch.dimension.set", dimension=dimension, expression="70 mm")
@@ -66,6 +71,11 @@ try:
         assert reply.returncode == 0, reply.stderr + reply.stdout
         inspected = json.loads(reply.stdout)
         assert inspected["result"]["state"] == "constrained", inspected
+        assert inspected["result"]["visibility"] is True, inspected
+        hidden = subprocess.run([cli, "call", "engine.execute", json.dumps({
+            "command": "sketch.visibility", "params": {"sketch": sketch, "visible": False}}),
+            "--headless", str(path)], capture_output=True, text=True, encoding="utf-8")
+        assert hidden.returncode == 0 and json.loads(hidden.stdout)["result"]["visible"] is False, hidden.stdout + hidden.stderr
         guide = (Path(__file__).resolve().parents[1] / "docs/sketches.md").read_text(encoding="utf-8")
         script = re.search(r"```json\n(\[\n.*?\n\])\n```", guide, re.S).group(1)
         script_path = Path(tmp) / "session.json"

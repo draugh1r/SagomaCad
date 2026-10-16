@@ -2,6 +2,7 @@
 #include "engine/cmds/validation.hpp"
 #include "solver/sketch_solver.hpp"
 #include "doc/expression.hpp"
+#include "regen/regenerator.hpp"
 #include <algorithm>
 #include <cmath>
 #include <numbers>
@@ -34,11 +35,11 @@ std::vector<CommandSpec> sketch_specs(){
         only_keys(p,{"plane","name"});doc::Sketch sketch;sketch.plane=string_arg(p,"plane",true,2);sketch=doc::read_sketch(doc::sketch_json(sketch));
         size_t n=s.document.timeline.size()+1;std::string id;do{id="sketch-"+std::to_string(n++);}while(s.document.features.contains(id));
         doc::Feature f;f.id=id;f.name=p.contains("name")?string_arg(p,"name",true,128):"Schizzo "+std::to_string(n-1);f.type="sketch";f.data=doc::sketch_json(sketch);
-        s.document.features[id]=f;s.document.timeline.push_back(id);s.document.rollback=s.document.timeline.size();s.active_sketch=id;return CommandResult{true,{{"sketch",id}},{}};
+        s.document.features[id]=f;s.document.timeline.insert(s.document.timeline.begin()+s.document.rollback,id);++s.document.rollback;s.active_sketch=id;return CommandResult{true,{{"sketch",id}},{}};
     }));
     specs.push_back(spec("sketch.finish","Fine schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto id=f.id;s.active_sketch.clear();s.document.rollback=s.document.timeline.size();return CommandResult{true,{{"sketch",id}},{}};},false));
     specs.push_back(spec("sketch.edit","Modifica schizzo","{sketch: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);s.active_sketch=f.id;return CommandResult{true,{{"sketch",f.id}},{}};},false));
-    specs.push_back(spec("sketch.inspect","Ispeziona schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto j=solver::inspect(solver::solve(s.document,doc::read_sketch(f.data)));j["sketch"]=f.id;return CommandResult{true,j,{}};},false));
+    specs.push_back(spec("sketch.inspect","Ispeziona schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto j=solver::inspect(solver::solve(s.document,doc::read_sketch(f.data)));j["sketch"]=f.id;regen::Regenerator regen;const auto& snapshot=regen.evaluate(s.document);j["visible"]=regen::sketch_visible(s.document,snapshot,f.id);j["visibility"]=f.data.value("visible",J());return CommandResult{true,j,{}};},false));
     specs.push_back(spec("sketch.rect","Rettangolo","{sketch?: id, x?: mm, y?: mm, width: expression, height: expression, centered?: bool, anchor?: bool, driving_width?: true, driving_height?: true}",[](Session& s,const J& p){
         only_keys(p,{"sketch","x","y","width","height","centered","anchor","construction","flip_x","flip_y","driving_width","driving_height"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
         const auto w=string_arg(p,"width"),h=string_arg(p,"height");double width=expression(s.document,w),height=expression(s.document,h);if(width<=0||height<=0)throw std::runtime_error("Larghezza e altezza devono essere positive");

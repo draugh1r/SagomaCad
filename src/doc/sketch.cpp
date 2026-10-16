@@ -10,11 +10,12 @@ nlohmann::json sketch_json(const Sketch& s) {
     for(const auto& p:s.points) j["points"].push_back({{"id",p.id},{"x",p.x},{"y",p.y}});
     for(const auto& e:s.entities) j["entities"].push_back({{"id",e.id},{"kind",e.kind},{"points",e.points},{"radius",e.radius},{"construction",e.construction}});
     auto put=[&](const auto& cs,const char* key){for(const auto& c:cs)j[key].push_back({{"id",c.id},{"kind",c.kind},{"refs",c.refs},{"expression",c.expression},{"values",c.values}});};
-    put(s.constraints,"constraints");put(s.dimensions,"dimensions");return j;
+    put(s.constraints,"constraints");put(s.dimensions,"dimensions");if(s.visible)j["visible"]=*s.visible;return j;
 }
 Sketch read_sketch(const nlohmann::json& j) {
     if(!j.is_object())throw std::runtime_error("sketch.invalid: dati dello schizzo non validi");
     Sketch s;s.plane=j.value("plane",std::string("XY"));
+    if(j.contains("visible")&&!j["visible"].is_null())s.visible=j["visible"].get<bool>();
     if(s.plane!="XY"&&s.plane!="XZ"&&s.plane!="YZ")throw std::runtime_error("sketch.plane: piano non valido");
     for(const auto* key:{"points","entities","constraints","dimensions"})
         if(j.contains(key)&&(!j[key].is_array()||j[key].size()>256))throw std::runtime_error("sketch.limit: massimo 256 elementi per categoria");

@@ -17,6 +17,7 @@ struct SketchConstraint {
 };
 struct Sketch {
     std::string plane="XY";
+    std::optional<bool> visible; // unset: automatic visibility after a consuming feature
     std::vector<SketchPoint> points;
     std::vector<SketchEntity> entities;
     std::vector<SketchConstraint> constraints,dimensions;

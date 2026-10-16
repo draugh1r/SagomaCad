@@ -403,12 +403,32 @@ void Shell::draw() {
         bool has_sketches=false;
         if(engine_)for(const auto& [id,f]:engine_->session().document.features)if(f.type=="sketch")has_sketches=true;
         row("Schizzi",1,has_sketches,has_sketches,true,true);
-        if(engine_)for(const auto& [id,f]:engine_->session().document.features)if(f.type=="sketch") {
-            ImGui::Indent(45*z);
-            ImGui::Selectable((f.name+"##"+id).c_str(),state_.sketch_view_id==id);
-            if(ImGui::IsItemHovered()&&ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))open_feature_editor(id);
-            if(ImGui::BeginPopupContextItem()) {if(ImGui::MenuItem("Modifica schizzo"))open_feature_editor(id);ImGui::EndPopup();}
-            ImGui::Unindent(45*z);
+        state_.sketch_browser.clear();
+        if(engine_){
+            auto context=engine::model_context(engine_->session().document,state_.model.open?state_.model.feature_id:"");
+            if(state_.sketch_mode){auto at=std::find(context.timeline.begin(),context.timeline.end(),state_.sketch_view_id);if(at!=context.timeline.end())context.rollback=std::min(context.rollback,std::size_t(at-context.timeline.begin())+1);}
+            const auto snapshot=regenerator_.evaluate(context);
+            for(const auto& id:context.timeline){auto found=context.features.find(id);if(found==context.features.end())continue;const auto& f=found->second;if(f.type!="sketch")continue;
+                const auto q=ImGui::GetCursorScreenPos();const bool shown=regen::sketch_visible(context,snapshot,id,state_.sketch_mode?state_.sketch_view_id:state_.model.open?state_.model.sketch:"");
+                auto& item=state_.sketch_browser[id];item.visible=shown;item.eye={q.x+47*z,q.y,18*z,18*z};
+                ImGui::PushID(id.c_str());ImGui::SetCursorScreenPos({item.eye[0],item.eye[1]});
+                if(ImGui::InvisibleButton("sketch_eye",{18*z,18*z})){auto r=engine_->execute("sketch.visibility",{{"sketch",id},{"visible",!shown}});if(!r.ok)state_.status_message=r.error;}
+                if(ImGui::IsItemHovered())ImGui::SetTooltip("%s",shown?"Nascondi schizzo":"Mostra schizzo per riutilizzare i profili. Lo schizzo usato viene nascosto automaticamente.");
+                icon(ImGui::GetWindowDrawList(),icon_texture(shown?"eye":"eye-off"),{item.eye[0],item.eye[1]+z},15*z,packed(t.muted));
+                ImGui::SetCursorScreenPos({q.x+67*z,q.y});
+                if(ImGui::Selectable(f.name.c_str(),state_.sketch_view_id==id||state_.selected_profile_sketch==id)) {state_.selected_profile_sketch=id;state_.selected_profiles.clear();if(state_.model.open){state_.model.sketch=id;state_.model.profiles.clear();}}
+                auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();item.row={a.x,a.y,b.x-a.x,b.y-a.y};
+                if(ImGui::IsItemHovered()&&ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))open_feature_editor(id);
+                if(ImGui::IsItemHovered())ImGui::SetTooltip("%s",shown?"Seleziona e premi E per Estrudi. Doppio clic per modificare lo schizzo.":"Schizzo nascosto, non eliminato. Usa l'occhio per mostrarlo o scegli Estrudi.");
+                if(ImGui::BeginPopupContextItem()) {
+                    if(ImGui::MenuItem("Estrudi")){state_.selected_profile_sketch=id;state_.selected_profiles.clear();ui::begin_model(state_,*engine_,false);}
+                    if(ImGui::MenuItem("Modifica schizzo"))open_feature_editor(id);
+                    if(ImGui::MenuItem(shown?"Nascondi schizzo":"Mostra schizzo"))engine_->execute("sketch.visibility",{{"sketch",id},{"visible",!shown}});
+                    if(ImGui::MenuItem("Visibilità automatica"))engine_->execute("sketch.visibility",{{"sketch",id},{"visible",nullptr}});
+                    ImGui::EndPopup();
+                }
+                ImGui::PopID();ImGui::SetCursorScreenPos(q);ImGui::Dummy({1,23*z});
+            }
         }
     },0,&state_.browser_collapsed,z);
     if (state_.properties) panel("Proprietà", ui::labels.properties, t, layout.properties, [&] {

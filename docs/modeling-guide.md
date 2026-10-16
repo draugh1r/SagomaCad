@@ -9,6 +9,27 @@ di parametri. Un angolo senza unità è in gradi.
 
 ## Profili e comandi
 
+In M4 Estrudi usa profili chiusi di schizzo. La selezione di facce del solido,
+gli schizzi su faccia e i relativi riferimenti topologici appartengono a M5;
+il push/pull diretto appartiene a M6. Per cambiare una distanza già confermata,
+fare doppio clic sull'estrusione nella timeline e modificarne il valore.
+
+Dopo una feature riuscita il suo schizzo viene nascosto automaticamente, non
+eliminato. Nel browser ogni schizzo ha un occhio: cliccarlo per mostrare di nuovo
+i profili. Selezionare lo schizzo e premere E, oppure usare il menu contestuale
+Estrudi, permette di riutilizzarlo anche quando è nascosto. Un profilo unico è
+preselezionato; con più regioni selezionare quelle desiderate nel viewport.
+Una seconda estrusione Unisci parte ancora dal piano del profilo: una distanza
+di 15 mm su una piastra estrusa di 10 mm porta lo spessore totale a 15 mm.
+Nuovo corpo crea invece un corpo distinto, anche se si sovrappone al precedente.
+
+CLI e MCP espongono `sketch.visibility {sketch, visible}` con `true` per mostrare,
+`false` per nascondere e `null` per tornare alla gestione automatica. La scelta
+si salva nel documento, sopravvive alle modifiche delle quote e supporta undo/redo.
+`sketch.inspect` restituisce `visible` effettivo e `visibility` (`true`, `false`
+o `null`). La visibilità non cambia il volume né la disponibilità geometrica
+della sorgente per le feature dipendenti. Rollback e soppressione restano prioritari.
+
 Ogni regione ha `id`, `boundary` (ID delle entità del contorno esterno) e `holes`
 (contorni interni immediati). Un rettangolo con un cerchio dentro dà una corona
 e un disco: estrudere la corona preserva il foro. Gli ID dipendono dalle entità,

@@ -20,13 +20,15 @@ void Shell::sync_sketch(){
     if(!session.active_sketch.empty()&&!session.document.features.contains(session.active_sketch))session.active_sketch.clear();
     if(state_.sketch_view_id!=session.active_sketch){
         state_.sketch_mode=!session.active_sketch.empty();state_.sketch_view_id=session.active_sketch;state_.sketch_selection.clear();state_.sketch_tool.begin("select");state_.sketch_error.clear();
-        if(state_.sketch_mode){state_.sketch_plane_picker=false;state_.navigation_mode=-1;state_.primitive_create_open=false;state_.primitive_editor_open=false;
+        if(state_.sketch_mode){state_.model.open=false;state_.selected_profile_sketch.clear();state_.selected_profiles.clear();state_.sketch_plane_picker=false;state_.navigation_mode=-1;state_.primitive_create_open=false;state_.primitive_editor_open=false;
             const auto& f=session.document.features.at(session.active_sketch);const auto plane=f.data.value("plane",std::string("XY"));auto destination=ui::sketch_camera(state_.camera,plane);
             state_.view_transition.begin(state_.camera,destination,ui::theme(state_.theme=="light").cube.transition_duration);
         }
     }
     const auto revision=doc::to_json(session.document).dump();
     if(revision!=sketch_revision_){sketch_revision_=revision;sketch_solutions_.clear();
+        if(!session.document.features.contains(state_.selected_profile_sketch)){state_.selected_profile_sketch.clear();state_.selected_profiles.clear();}
+        if(!state_.model.feature_id.empty()&&!session.document.features.contains(state_.model.feature_id))state_.model.open=false;
         model_profiles_.clear();
         state_.sketch_error.clear();for(const auto& [id,f]:session.document.features)if(f.type=="sketch"&&!f.suppressed){
         try{sketch_solutions_[id]=solver::solve(session.document,doc::read_sketch(f.data));model_profiles_[id]=engine::model_profiles(sketch_solutions_[id]);}catch(const std::exception& e){solver::SketchResult r;r.state="error";r.error=e.what();sketch_solutions_[id]=r;}
@@ -73,12 +75,10 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
         }
         if(!preview&&editing&&s.sketch_constraints)for(const auto& label:overlay.constraints){auto q=project(pl,label.position);dl->AddText(ImGui::GetFont(),t.sketch.constraint_size*z,{q.x+t.spacing*z,q.y+t.spacing*z},color(t.muted),label.text.c_str());}
     };
-    auto context=engine_->session().document;
+    auto context=engine::model_context(engine_->session().document,s.model.open?s.model.feature_id:"");
     if(s.sketch_mode){auto at=std::find(context.timeline.begin(),context.timeline.end(),s.sketch_view_id);if(at!=context.timeline.end())context.rollback=std::min(context.rollback,std::size_t(at-context.timeline.begin())+1);}
     const auto& evaluated=regenerator_.evaluate(context);
-    for(const auto& [id,result]:sketch_solutions_)if(
-        (id==s.sketch_view_id||(s.model.open&&id==s.model.sketch)||std::find(evaluated.hidden_sketches.begin(),evaluated.hidden_sketches.end(),id)==evaluated.hidden_sketches.end())&&
-        std::any_of(evaluated.features.begin(),evaluated.features.end(),[&](const auto& f){return f.id==id;}))draw(result,false,s.sketch_mode&&id==s.sketch_view_id);
+    for(const auto& [id,result]:sketch_solutions_)if(regen::sketch_visible(context,evaluated,id,s.sketch_mode?s.sketch_view_id:s.model.open?s.model.sketch:""))draw(result,false,s.sketch_mode&&id==s.sketch_view_id);
     if(!active||!s.sketch_mode)return;
     if(!active->error.empty())s.sketch_error=active->error;
     engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,plane,io.MousePos.x,io.MousePos.y,cursor);

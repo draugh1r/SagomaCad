@@ -478,7 +478,14 @@ fori creata via MCP e misurata in `docs/examples/m4/`. Confronti 07–10 nei due
 temi e due dimensioni in `docs/screenshots/m4-confronto/`. Build Windows Release,
 41 test e controlli di livelli/UTF-8 verdi. **M5 non iniziato.**
 
+Audit successivo di M4: `docs/sketch-extrude-audit.md`. Corretti recupero e riuso
+degli schizzi nascosti, selezioni obsolete, disambiguazione fra schizzi e
+inserimento al marker. Rimane aperta la suddivisione di contorni intersecanti
+all'interno dello stesso schizzo (riproduzione con due cerchi sovrapposti).
+È un limite del riconoscitore di profili, distinto dal picking facce di M5.
+
 **M5 - Selezione e feature su facce**
+
 Picking con ID buffer, hover, clic ripetuto, schizzi su faccia, raccordi e smussi su spigoli selezionati, riferimenti topologici del punto 4. MCP: `geometry_query`, `measure`, `selection_get` e `render_view` con etichette dei riferimenti stabili. Test di integrazione headless: scatola 40×40×20 con foro passante da 10 mm creata usando solo tool MCP, volume verificato tramite `mass_properties`.
 *Fatto quando:* un raccordo su uno spigolo sopravvive alla modifica della quota a monte (test dedicato).
 

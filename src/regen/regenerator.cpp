@@ -49,6 +49,15 @@ Regenerator::Cached build(const doc::Document& document,const doc::Feature& feat
       catch (...) { return {{},"Errore imprevisto nella rigenerazione"}; }
 }
 }
+bool sketch_visible(const doc::Document& document,const Snapshot& snapshot,const std::string& id,const std::string& editing) {
+    const auto f=document.features.find(id);
+    if(f==document.features.end()||f->second.type!="sketch"||f->second.suppressed)return false;
+    if(std::none_of(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;}))return false;
+    if(id==editing)return true;
+    const auto& data=f->second.data;
+    if(data.contains("visible")&&data["visible"].is_boolean())return data["visible"].get<bool>();
+    return std::find(snapshot.hidden_sketches.begin(),snapshot.hidden_sketches.end(),id)==snapshot.hidden_sketches.end();
+}
 const Snapshot& Regenerator::evaluate(const doc::Document& document) {
     snapshot_={};
     for (const auto& body:document.bodies) snapshot_.bodies.push_back({body.id,{},{},{}});
