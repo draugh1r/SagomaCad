@@ -91,6 +91,7 @@ std::vector<CommandSpec> body_specs();
 std::vector<CommandSpec> feature_specs();
 std::vector<CommandSpec> measure_specs();
 std::vector<CommandSpec> sketch_specs();
+std::vector<CommandSpec> model_specs();
 }
 
 } // namespace sagomacad::engine

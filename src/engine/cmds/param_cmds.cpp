@@ -49,6 +49,9 @@ void rename_reference(std::string& expression, std::string_view before, std::str
 template<class Visit>
 void feature_expressions(doc::Document& document,Visit visit) {
     for (auto& [id,feature]:document.features) {
+        if(feature.type=="feature.extrude"||feature.type=="feature.revolve")for(const char* key:{"distance","second_distance","angle"}) {
+            auto found=feature.data.find(key);if(found!=feature.data.end()&&found->is_string()){auto expression=found->get<std::string>();visit(expression,feature);*found=expression;}
+        }
         if (feature.type=="sketch" && feature.data.is_object()) {
             for (const auto* key:{"constraints","dimensions"}) {
                 auto found=feature.data.find(key);

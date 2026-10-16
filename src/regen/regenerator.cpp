@@ -1,6 +1,7 @@
 #include "regen/regenerator.hpp"
 #include "doc/expression.hpp"
 #include "solver/sketch_solver.hpp"
+#include "regen/model_features.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -70,7 +71,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             continue;
         }
         auto [cached,inserted]=cache_.try_emplace(id);
-        if (inserted) cached->second=build(document,it->second);
+        if (inserted) cached->second=it->second.type=="feature.extrude"?build_model_feature(document,it->second,snapshot_):build(document,it->second);
         else ++snapshot_.cache_hits;
         const auto& result=cached->second;
         snapshot_.features.push_back({id,result.error,!inserted});
@@ -83,6 +84,20 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                 continue;
             }
             const auto operation=it->second.data.value("operation",std::string("new"));
+            if(it->second.type=="feature.extrude" && operation!="new") {
+                if(!result.shape) {snapshot_.features.back().error=result.error;continue;}
+                std::vector<std::pair<BodyState*,kernel::Shape>> pending;
+                for(const auto& target:it->second.data.at("target_bodies")) {
+                    auto dest=std::find_if(snapshot_.bodies.begin(),snapshot_.bodies.end(),[&](const auto& b){return b.id==target.get<std::string>();});
+                    if(dest==snapshot_.bodies.end()||!dest->exact)throw std::runtime_error("Corpo di destinazione assente: "+target.get<std::string>());
+                    auto combined=kernel::boolean_operation(*dest->exact,*result.shape,operation);
+                    if(!combined)throw std::runtime_error(combined.error);
+                    pending.emplace_back(&*dest,*combined.value);
+                }
+                if(pending.empty())throw std::runtime_error("Corpi di destinazione mancanti");
+                for(auto& [dest,shape]:pending){dest->exact=shape;dest->final=shape;dest->error.clear();}
+                continue;
+            }
             if (operation=="subtract") {
                 if (!body->exact || !result.shape) {
                     snapshot_.features.back().error=result.error.empty()?"Corpo sorgente o utensile del taglio assente":result.error;

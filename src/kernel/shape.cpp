@@ -25,6 +25,18 @@
 #include <GeomAbs_CurveType.hxx>
 #include <cmath>
 #include <exception>
+#include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepPrimAPI_MakePrism.hxx>
+#include <GC_MakeArcOfCircle.hxx>
+#include <gp_Circ.hxx>
+#include <gp_Ax2.hxx>
+#include <TopoDS_Wire.hxx>
+#include <algorithm>
+#include <numbers>
 
 namespace sagomacad::kernel {
 struct Shape::Impl { TopoDS_Shape shape; };
@@ -34,6 +46,57 @@ std::string occt_message(const Standard_Failure& failure) {
     const char* text=failure.GetMessageString();
     return text && *text ? std::string(text) : "Operazione OpenCascade fallita";
 }
+}
+Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& boundary,const std::vector<std::vector<std::string>>& holes) noexcept {
+    try {
+        if(boundary.empty()||boundary.size()>4096||holes.size()>1024)throw std::runtime_error("Contorno del profilo non valido");
+        auto world=[&](double x,double y){return s.plane=="XY"?gp_Pnt(x,y,0):s.plane=="XZ"?gp_Pnt(x,0,y):gp_Pnt(0,x,y);};
+        auto point=[&](const std::string& id){for(const auto& p:s.points)if(p.id==id)return world(p.x,p.y);throw std::runtime_error("Punto del profilo mancante: "+id);};
+        const gp_Dir normal=s.plane=="XY"?gp_Dir(0,0,1):s.plane=="XZ"?gp_Dir(0,-1,0):gp_Dir(1,0,0);
+        auto wire=[&](const std::vector<std::string>& ids){
+            BRepBuilderAPI_MakeWire builder;
+            for(const auto& id:ids){
+                auto it=std::find_if(s.entities.begin(),s.entities.end(),[&](const auto& e){return e.id==id&&!e.construction;});
+                if(it==s.entities.end())throw std::runtime_error("Entità del profilo mancante: "+id);
+                const auto& e=*it;
+                if(e.kind=="line")builder.Add(BRepBuilderAPI_MakeEdge(point(e.points.at(0)),point(e.points.at(1))).Edge());
+                else if(e.kind=="circle")builder.Add(BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(point(e.points.at(0)),normal),e.radius)).Edge());
+                else if(e.kind=="arc"){
+                    auto c=point(e.points.at(0)),a=point(e.points.at(1)),b=point(e.points.at(2));
+                    auto local=[&](gp_Pnt p){return s.plane=="XY"?std::pair(p.X(),p.Y()):s.plane=="XZ"?std::pair(p.X(),p.Z()):std::pair(p.Y(),p.Z());};
+                    auto [cx,cy]=local(c);auto [ax,ay]=local(a);auto [bx,by]=local(b);
+                    double u=std::atan2(ay-cy,ax-cx),v=std::atan2(by-cy,bx-cx);while(v<=u)v+=2*std::numbers::pi;
+                    GC_MakeArcOfCircle arc(a,world(cx+e.radius*std::cos((u+v)/2),cy+e.radius*std::sin((u+v)/2)),b);
+                    if(!arc.IsDone())throw std::runtime_error("Arco del profilo non valido");
+                    builder.Add(BRepBuilderAPI_MakeEdge(arc.Value()).Edge());
+                }else throw std::runtime_error("Entità non ammessa nel profilo");
+                if(!builder.IsDone())throw std::runtime_error("Contorno del profilo non connesso");
+            }
+            if(!builder.IsDone()||!builder.Wire().Closed())throw std::runtime_error("Il profilo non è chiuso");
+            return builder.Wire();
+        };
+        BRepBuilderAPI_MakeFace outer(wire(boundary),true);if(!outer.IsDone())throw std::runtime_error("Faccia del profilo non valida");
+        TopoDS_Shape face=outer.Face();
+        for(const auto& h:holes){BRepBuilderAPI_MakeFace hole(wire(h),true);if(!hole.IsDone())throw std::runtime_error("Foro del profilo non valido");BRepAlgoAPI_Cut cut(face,hole.Face());cut.Build();if(!cut.IsDone())throw std::runtime_error("Foro del profilo fallito");face=cut.Shape();}
+        return Result<Shape>::success(Shape(std::make_shared<Shape::Impl>(face)));
+    }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}
+    catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Creazione profilo fallita");}
+}
+Result<Shape> extrude(const Shape& face,Vec3 v) noexcept {
+    if(!face.impl_||!std::isfinite(v.x)||!std::isfinite(v.y)||!std::isfinite(v.z)||!positive(std::hypot(v.x,v.y,v.z)))return Result<Shape>::failure("Vettore estrusione non valido");
+    try{BRepPrimAPI_MakePrism builder(face.impl_->shape,gp_Vec(v.x,v.y,v.z));builder.Build();if(!builder.IsDone())throw std::runtime_error("Estrusione fallita");auto shape=Shape(std::make_shared<Shape::Impl>(builder.Shape()));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);}
+    catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Estrusione fallita");}
+}
+Result<Shape> boolean_operation(const Shape& a,const Shape& b,const std::string& op) noexcept {
+    if(op=="cut"||op=="subtract")return subtract(a,b);
+    if(!a.impl_||!b.impl_)return Result<Shape>::failure("Corpo o utensile assente");
+    try{
+        TopoDS_Shape result;
+        if(op=="join"){BRepAlgoAPI_Fuse operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Unione fallita");result=operation.Shape();}
+        else if(op=="intersect"){BRepAlgoAPI_Common operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Intersezione fallita");result=operation.Shape();}
+        else throw std::runtime_error("Operazione sconosciuta: "+op);
+        auto shape=Shape(std::make_shared<Shape::Impl>(result));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error("L'operazione ha prodotto un corpo vuoto");return Result<Shape>::success(shape);
+    }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Operazione booleana fallita");}
 }
 Result<Shape> make_box(double width,double depth,double height) noexcept {
     if (!positive(width) || !positive(depth) || !positive(height))

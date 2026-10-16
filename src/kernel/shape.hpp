@@ -5,6 +5,7 @@
 #include <utility>
 #include <array>
 #include <vector>
+#include "doc/sketch.hpp"
 
 namespace sagomacad::kernel {
 
@@ -37,6 +38,9 @@ private:
     friend Result<Shape> translate(const Shape&,double,double,double) noexcept;
     friend Result<Shape> subtract(const Shape&,const Shape&) noexcept;
     friend Result<Tessellation> tessellate(const Shape&,double) noexcept;
+    friend Result<Shape> profile_face(const doc::Sketch&,const std::vector<std::string>&,const std::vector<std::vector<std::string>>&) noexcept;
+    friend Result<Shape> extrude(const Shape&,Vec3) noexcept;
+    friend Result<Shape> boolean_operation(const Shape&,const Shape&,const std::string&) noexcept;
 };
 
 Result<Shape> make_box(double width,double depth,double height) noexcept;
@@ -46,5 +50,8 @@ Result<MassProperties> mass_properties(const Shape& shape) noexcept;
 Result<Shape> translate(const Shape& shape,double x,double y,double z) noexcept;
 Result<Shape> subtract(const Shape& target,const Shape& cutter) noexcept;
 Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept;
+Result<Shape> profile_face(const doc::Sketch&,const std::vector<std::string>& boundary,const std::vector<std::vector<std::string>>& holes) noexcept;
+Result<Shape> extrude(const Shape& face,Vec3 vector) noexcept;
+Result<Shape> boolean_operation(const Shape&,const Shape&,const std::string& operation) noexcept;
 
 } // namespace sagomacad::kernel

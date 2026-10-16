@@ -193,3 +193,9 @@ Verifica finale Windows Release: CTest 34/34 in 14 secondi, check_layers e UTF-8
 
 Aggiunte regioni selezionabili con contorno esterno e fori immediatamente annidati. Rettangolo con cerchio produce corona e disco; tre contorni annidati producono tre regioni distinte. Gli ID canonici contengono gli ID delle entità, senza coordinate o indici del solver. `sketch.inspect` espone `regions` accanto ai contorni M3. Test dedicato su annidamento, picking, modifiche dimensionali, costruzioni e contorni aperti. Esaminati tutti i riferimenti Fusion 07–10 prima del lavoro UI. Build separata `build/agent-m4`; nessuna app dell'utente chiusa.
 Verifica tappa 1: build Windows Release verde, CTest 35/35 (inclusi CLI, MCP, fuzz), controllo livelli e UTF-8 verdi. Restano le tappe 2–6 di M4; M5 non iniziato.
+
+## 2026-10-16 — M4, tappa 2: estrusione
+
+Kernel con facce esatte da linee, cerchi e archi, fori annidati, prisma e booleane Unisci/Taglia/Interseca; tutte le eccezioni OCCT rimangono nel kernel. `feature.extrude` è nel registro unico CLI/MCP, conserva profili per ID, espressioni, direzioni un lato/simmetrica/due lati, distanza del secondo lato, Attraverso tutto e lista dei corpi di destinazione. Inserimento al marker, validazione su copia transazionale, rinomina e protezione dei parametri delle feature.
+
+Test GProp: corona 60×40 meno Ø10, altezza 10 = 23214,601837 mm³; dopo larghezza 80 e Ø20 = 28858,407346 mm³. Operazioni su box con utensile parzialmente sovrapposto: nuovo 1500, unione 4500, taglio 3000, intersezione 1000 mm³. Verificati limiti dei tre versi, Attraverso tutto su corpo alto 50 mm, taglio di due corpi, piano XZ, undo/redo e atomicità degli errori. Build Windows Release e CTest 36/36 verdi; livelli, UTF-8 e fuzz verdi. UI e tappe 3–6 ancora aperte, M5 non iniziato.
