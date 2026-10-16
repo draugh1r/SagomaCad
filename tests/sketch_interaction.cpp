@@ -85,6 +85,29 @@ int main(int argc,char** argv){try{
     check(e.execute("feature.suppress",{{"feature_id",id},{"suppressed",false}}).ok,"ripristina primo schizzo");previous_sketch_visible();
     check(e.execute("timeline.rollback",{{"index",0}}).ok,"rollback prima degli schizzi");previous_sketch_visible(false);
     check(e.execute("timeline.rollback",{{"index",e.session().document.timeline.size()}}).ok,"ripristina timeline");previous_sketch_visible();
+    auto profile=e.execute("sketch.inspect",{{"sketch",id}});check(profile.ok,"profilo per estrusione");
+    auto solid=e.execute("feature.extrude",{{"sketch",id},{"profiles",nlohmann::json::array({profile.value["regions"][0]["id"]})},{"distance","10 mm"}});check(solid.ok,"estrudi primo rettangolo");
+    frame();shell.state().view_transition.cancel();shell.state().camera=ui::sketch_camera(shell.state().camera,"XY");shell.state().camera.distance=140;frame();
+    auto solid_visible=[&](bool expected=true){
+        frame();frame();std::string error;
+        auto path=std::filesystem::temp_directory_path()/("sagomacad-solid-visibility-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".png");
+        check(shell.screenshot(path.string(),error),error.c_str());
+        int w=0,h=0,channels=0;auto* pixels=stbi_load(path.string().c_str(),&w,&h,&channels,4);check(pixels,"screenshot solido leggibile");
+        const auto p=shell.state().camera.project({30,10,10},v);const auto c=ui::theme(light).solid;const double intensity=.62+.38*.84;int matching=0;
+        for(int y=int(p.y)-4;y<=int(p.y)+4;++y)for(int x=int(p.x)-4;x<=int(p.x)+4;++x)if(x>=0&&x<w&&y>=0&&y<h){
+            const auto pixel=pixels+(y*w+x)*4;if(std::abs(pixel[0]-c.r*intensity*255)<4&&std::abs(pixel[1]-c.g*intensity*255)<4&&std::abs(pixel[2]-c.b*intensity*255)<4)++matching;
+        }
+        stbi_image_free(pixels);std::filesystem::remove(path);
+        check((matching>10)==expected,"il solido precedente resta visibile durante il nuovo schizzo e rispetta il contesto");
+    };
+    solid_visible();
+    check(e.execute("sketch.create",{{"plane","XY"}}).ok,"nuovo schizzo dopo solido");frame();shell.state().view_transition.advance(shell.state().camera,1);frame();
+    check(e.execute("sketch.circle",{{"x",12},{"y",10},{"diameter","8 mm"}}).ok,"cerchio sul nuovo schizzo");
+    solid_visible();snapshot("sketch-solid-visible.png");
+    check(e.execute("body.visibility",{{"body",solid.value["body_id"]},{"visible",false}}).ok,"nascondi corpo durante schizzo");solid_visible(false);
+    check(e.execute("body.visibility",{{"body",solid.value["body_id"]},{"visible",true}}).ok,"mostra corpo durante schizzo");solid_visible();
+    check(e.execute("sketch.finish").ok,"fine schizzo sul solido");solid_visible();
+    check(e.execute("sketch.edit",{{"sketch",id}}).ok,"modifica sorgente a monte");frame();shell.state().view_transition.advance(shell.state().camera,1);solid_visible(false);
     for(auto plane_name:{"XY","XZ","YZ"}){auto camera=ui::sketch_camera(ui::Camera{},plane_name);auto p=camera.project(ui::sketch_world(plane_name,{12,7}),v);engine::SketchXY xy;check(ui::sketch_cursor(camera,v,plane_name,p.x,p.y,xy),"unproject");check(std::abs(xy.x-12)<1e-8&&std::abs(xy.y-7)<1e-8,"projection roundtrip");}
     std::cout<<"UI: piano, R clic 40 Tab20 Invio, profilo, fine, riapertura OK\n";
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

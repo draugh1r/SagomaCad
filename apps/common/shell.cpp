@@ -498,11 +498,11 @@ void Shell::draw() {
                 line({i*step,-extent,0},{i*step,extent,0},i==0?t.axis_y:(i%5==0?t.grid_major:t.grid_minor));
                 line({-extent,i*step,0},{extent,i*step,0},i==0?t.axis_x:(i%5==0?t.grid_major:t.grid_minor));
             }
-            draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
-            if(state_.model.open&&!model_surfaces_.empty()){
-                auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.model.preview;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
-                draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);
-            }
+        }
+        draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
+        if(state_.model.open&&!model_surfaces_.empty()){
+            auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.model.preview;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
+            draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);
         }
         draw_sketch_canvas(t,canvas_hovered && !over_navigation && !over_cube);
         draw_model_canvas(t,canvas_hovered&&!over_navigation&&!over_cube);
