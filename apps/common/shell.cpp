@@ -412,55 +412,7 @@ void Shell::draw() {
         ImGui::TextDisabled("Nessun elemento selezionato");
     },0,&state_.properties_collapsed,z,true);
     if (state_.timeline) panel("Timeline", nullptr, t, layout.timeline, [&] {
-        ImDrawList* dl=ImGui::GetWindowDrawList();
-        const ImVec2 q=ImGui::GetCursorScreenPos();
-        dl->AddText({q.x,q.y+2*z},packed(t.muted),ui::labels.timeline);
-        const char* controls[]={"skip-back","step-back","play","step-forward","skip-forward"};
-        for (int i=0;i<5;++i)
-            icon(dl,icon_texture(controls[i]),{q.x+105*z+i*28*z,q.y},17*z,packed(t.muted));
-        dl->AddLine({q.x+255*z,q.y+9*z},{q.x+ImGui::GetContentRegionAvail().x,q.y+9*z},packed(t.border));
-        ImGui::Dummy({1,20*z});
-        if (!engine_ || engine_->session().document.timeline.empty()) ImGui::TextDisabled("Il documento è vuoto");
-        else {
-            const auto& document=engine_->session().document;
-            const auto& snapshot=regenerator_.evaluate(document);
-            std::string pending_action,pending_id;
-            bool after_edit_feature=false;
-            for (const auto& id:document.timeline) {
-                const auto found=document.features.find(id);
-                if (found==document.features.end()) continue;
-                const auto& feature=found->second;
-                const auto error=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;});
-                const bool failed=error!=snapshot.features.end() && !error->error.empty();
-                const char* glyph=feature.type=="sketch"?"pen-tool":feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"circle-dot":"circle";
-                const ImVec2 pos=ImGui::GetCursorScreenPos();
-                ImGui::PushID(id.c_str());
-                ImGui::InvisibleButton("feature",{100*z,23*z});
-                const bool double_clicked=ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
-                const bool hovered=ImGui::IsItemHovered();
-                if (ImGui::BeginPopupContextItem("feature_context")) {
-                    if (ImGui::MenuItem("Modifica feature")) open_feature_editor(id);
-                    if (ImGui::MenuItem(feature.suppressed?"Ripristina":"Sopprimi")) {pending_action="feature.suppress";pending_id=id;}
-                    if (ImGui::MenuItem("Elimina")) {pending_action="feature.delete";pending_id=id;}
-                    ImGui::EndPopup();
-                }
-                if (hovered) ImGui::SetTooltip("%s%s",feature.name.c_str(),failed?error->error.c_str():"\nDoppio clic per modificare");
-                ImGui::PopID();
-                const bool at_marker=state_.primitive_editor_open && state_.primitive_feature_id==id;
-                icon(dl,icon_texture(glyph),{pos.x+3*z,pos.y+2*z},17*z,packed(failed?t.error:t.muted));
-                dl->AddText({pos.x+24*z,pos.y+2*z},packed(failed?t.error:after_edit_feature?t.muted:t.text),feature.name.c_str());
-                if (at_marker) { dl->AddLine({pos.x+99*z,pos.y-2*z},{pos.x+99*z,pos.y+26*z},packed(t.accent),2*z); after_edit_feature=true; }
-                if (double_clicked) open_feature_editor(id);
-                ImGui::SameLine();
-            }
-            if (!pending_action.empty()) {
-                nlohmann::json params={{"feature_id",pending_id}};
-                if (pending_action=="feature.suppress") params["suppressed"]=!document.features.at(pending_id).suppressed;
-                const auto result=engine_->execute(pending_action,params);
-                if (!result.ok) state_.status_message=result.error;
-                if (result.ok && pending_id==state_.primitive_feature_id) state_.primitive_editor_open=false;
-            }
-        }
+        draw_timeline(t);
         if (glyph_sample_) ImGui::TextUnformatted("àèéìòù ÀÈÉÌÒÙ");
     }, ImGuiWindowFlags_NoScrollbar);
     panel("Viewport", nullptr, t, layout.viewport, [&] {
@@ -972,7 +924,9 @@ nlohmann::json Shell::inspect() const {
         {"properties",l.properties},{"timeline",l.timeline},{"contextual",l.contextual},
         {"header_separator",l.header_separator},{"browser_separator",l.browser_separator},{"properties_separator",l.properties_separator},{"timeline_separator",l.timeline_separator}})
         rectangles.push_back({{"id",name},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
+    auto items=nlohmann::json::array();for(const auto& r:state_.timeline_items)items.push_back({{"id",r.id},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
+        {"timeline_items",items},{"timeline_marker",{{"x",state_.timeline_marker_x},{"y",state_.timeline_marker_y},{"index",engine_?engine_->session().document.rollback:0}}},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
         {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},

@@ -59,5 +59,6 @@ private:
     void sync_sketch();
     void draw_sketch_canvas(const ui::Theme&,bool hovered);
     void draw_sketch_panels(const ui::Theme&);
+    void draw_timeline(const ui::Theme&);
 };
 }

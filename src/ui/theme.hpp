@@ -69,6 +69,9 @@ struct Theme {
         const char* finish_label="Fine schizzo";
         const char* select_plane="Seleziona un piano";
     } sketch;
+    struct TimelineTokens {
+        float icon=20,item=30,gap=4,control=22,marker_width=3,marker_hit=9,marker_height=32,row_top=3,play_interval=.6f;
+    } timeline;
 };
 inline constexpr Theme dark {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},

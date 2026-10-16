@@ -50,42 +50,66 @@ Regenerator::Cached build(const doc::Document& document,const doc::Feature& feat
 }
 }
 const Snapshot& Regenerator::evaluate(const doc::Document& document) {
-    const std::string revision=doc::to_json(document).dump();
-    if (revision_!=revision) { revision_=revision; cache_.clear(); }
     snapshot_={};
     for (const auto& body:document.bodies) snapshot_.bodies.push_back({body.id,{},{},{}});
     const auto count=std::min(document.rollback,document.timeline.size());
+    bool dirty=false;
     for (std::size_t i=0;i<count;++i) {
         const auto& id=document.timeline[i];
         const auto it=document.features.find(id);
-        if (it==document.features.end()) {
-            snapshot_.features.push_back({id,"Feature mancante nella timeline",false});
+        nlohmann::json signature={{"id",id}};
+        std::vector<std::string> affected;
+        if(it!=document.features.end()) {
+            const auto& f=it->second;
+            signature["feature"]={{"type",f.type},{"kind",int(f.kind)},{"suppressed",f.suppressed},{"data",f.data}};
+            // Only evaluated expressions influence the cache: unrelated parameters and
+            // display metadata must not force geometric work on earlier features.
+            auto evaluate=[&](const nlohmann::json& expression){if(!expression.is_string())return;doc::Quantity q;std::string error;
+                if(doc::evaluate_expression(document,expression.get<std::string>(),q,error))signature["values"].push_back({q.value,int(q.dimension)});else signature["values"].push_back(error);};
+            if(f.data.is_object()) {
+                for(const char* key:{"distance","second_distance","angle"})if(f.data.contains(key))evaluate(f.data[key]);
+                for(const char* key:{"dimensions","position","constraints"})if(f.data.contains(key)) {
+                    const auto& rows=f.data[key];if(rows.is_array()){for(const auto& row:rows)if(row.is_object()&&row.contains("expression"))evaluate(row["expression"]);}
+                    else if(rows.is_object())for(const auto& expression:rows)evaluate(expression);
+                }
+                if(f.data.contains("body_id")&&f.data["body_id"].is_string())affected.push_back(f.data["body_id"].get<std::string>());
+                if(f.data.contains("target_bodies")&&f.data["target_bodies"].is_array())for(const auto& target:f.data["target_bodies"])if(target.is_string())affected.push_back(target.get<std::string>());
+                for(const auto& target:affected)signature["targets"].push_back({target,std::any_of(document.bodies.begin(),document.bodies.end(),[&](const auto& b){return b.id==target&&b.kind==doc::BodyKind::BRep;})});
+            }
+        }
+        const auto key=signature.dump();
+        if(!dirty&&i<steps_.size()&&steps_[i].key==key) {
+            auto state=steps_[i].feature;state.cached=true;snapshot_.features.push_back(state);++snapshot_.cache_hits;
+            for(const auto& saved:steps_[i].changed_bodies)for(auto& body:snapshot_.bodies)if(body.id==saved.id)body=saved;
             continue;
         }
-        if (it->second.suppressed) { snapshot_.features.push_back({id,{},false}); continue; }
+        if(!dirty){steps_.resize(i);dirty=true;}
+        auto process=[&] {
+        if (it==document.features.end()) {
+            snapshot_.features.push_back({id,"Feature mancante nella timeline",false});
+            return;
+        }
+        if (it->second.suppressed) { snapshot_.features.push_back({id,{},false}); return; }
         if (it->second.type=="sketch") {
             try {
                 auto result=solver::solve(document,doc::read_sketch(it->second.data));
                 snapshot_.features.push_back({id,result.error,false});
             } catch(const std::exception& e) { snapshot_.features.push_back({id,e.what(),false}); }
-            continue;
+            return;
         }
-        auto [cached,inserted]=cache_.try_emplace(id);
-        if (inserted) cached->second=it->second.type=="feature.extrude"||it->second.type=="feature.revolve"?build_model_feature(document,it->second,snapshot_):build(document,it->second);
-        else ++snapshot_.cache_hits;
-        const auto& result=cached->second;
-        snapshot_.features.push_back({id,result.error,!inserted});
+        const auto result=it->second.type=="feature.extrude"||it->second.type=="feature.revolve"?build_model_feature(document,it->second,snapshot_):build(document,it->second);
+        snapshot_.features.push_back({id,result.error,false});
         try {
             const auto body_id=it->second.data.at("body_id").get<std::string>();
             const auto body=std::find_if(snapshot_.bodies.begin(),snapshot_.bodies.end(),
                 [&](const BodyState& row){return row.id==body_id;});
             if (body==snapshot_.bodies.end()) {
                 snapshot_.features.back().error="Corpo della feature non trovato";
-                continue;
+                return;
             }
             const auto operation=it->second.data.value("operation",std::string("new"));
             if((it->second.type=="feature.extrude"||it->second.type=="feature.revolve") && operation!="new") {
-                if(!result.shape) {snapshot_.features.back().error=result.error;continue;}
+                if(!result.shape) {snapshot_.features.back().error=result.error;return;}
                 std::vector<std::pair<BodyState*,kernel::Shape>> pending;
                 for(const auto& target:it->second.data.at("target_bodies")) {
                     auto dest=std::find_if(snapshot_.bodies.begin(),snapshot_.bodies.end(),[&](const auto& b){return b.id==target.get<std::string>();});
@@ -96,18 +120,18 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                 }
                 if(pending.empty())throw std::runtime_error("Corpi di destinazione mancanti");
                 for(auto& [dest,shape]:pending){dest->exact=shape;dest->final=shape;dest->error.clear();}
-                continue;
+                return;
             }
             if (operation=="subtract") {
                 if (!body->exact || !result.shape) {
                     snapshot_.features.back().error=result.error.empty()?"Corpo sorgente o utensile del taglio assente":result.error;
-                    continue;
+                    return;
                 }
                 auto cut=kernel::subtract(*body->exact,*result.shape);
                 if (!cut) {
                     snapshot_.features.back().error=cut.error;
                     body->error=cut.error;
-                    continue;
+                    return;
                 }
                 body->exact=*cut.value;
                 body->final=*cut.value;
@@ -118,6 +142,17 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                 body->error=result.error;
             } else snapshot_.features.back().error="Operazione sconosciuta: "+operation;
         } catch (const std::exception& e) { snapshot_.features.back().error=e.what(); }
+        };
+        process();
+        Step step{key,snapshot_.features.back(),{}};
+        std::sort(affected.begin(),affected.end());affected.erase(std::unique(affected.begin(),affected.end()),affected.end());
+        for(const auto& body:snapshot_.bodies)if(std::find(affected.begin(),affected.end(),body.id)!=affected.end())step.changed_bodies.push_back(body);
+        steps_.push_back(std::move(step));
+    }
+    if(count==document.timeline.size())steps_.resize(count);
+    for(const auto& state:snapshot_.features)if(state.error.empty()) {
+        auto f=document.features.find(state.id);
+        if(f!=document.features.end()&&!f->second.suppressed&&(f->second.type=="feature.extrude"||f->second.type=="feature.revolve")&&f->second.data.contains("sketch")&&f->second.data["sketch"].is_string())snapshot_.hidden_sketches.push_back(f->second.data["sketch"].get<std::string>());
     }
     return snapshot_;
 }

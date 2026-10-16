@@ -72,7 +72,10 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
         }
         if(!preview&&s.sketch_mode&&s.sketch_constraints)for(const auto& label:overlay.constraints){auto q=project(pl,label.position);dl->AddText(ImGui::GetFont(),t.sketch.constraint_size*z,{q.x+t.spacing*z,q.y+t.spacing*z},color(t.muted),label.text.c_str());}
     };
-    for(const auto& [id,result]:sketch_solutions_)if(!s.sketch_mode||id==s.sketch_view_id)draw(result,false);
+    const auto& evaluated=regenerator_.evaluate(engine_->session().document);
+    for(const auto& [id,result]:sketch_solutions_)if((!s.sketch_mode||id==s.sketch_view_id)&&
+        (id==s.sketch_view_id||std::find(evaluated.hidden_sketches.begin(),evaluated.hidden_sketches.end(),id)==evaluated.hidden_sketches.end())&&
+        std::any_of(evaluated.features.begin(),evaluated.features.end(),[&](const auto& f){return f.id==id;}))draw(result,false);
     if(!active||!s.sketch_mode)return;
     if(!active->error.empty())s.sketch_error=active->error;
     engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,plane,io.MousePos.x,io.MousePos.y,cursor);

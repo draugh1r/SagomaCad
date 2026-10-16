@@ -17,6 +17,10 @@ struct State {
     bool browser = true;
     bool properties = false;
     bool timeline = true;
+    bool timeline_dragging=false,timeline_playing=false;
+    float timeline_elapsed=0,timeline_marker_x=0,timeline_marker_y=0;
+    struct TimelineItem {std::string id;float x=0,y=0,width=0,height=0;};
+    std::vector<TimelineItem> timeline_items;
     bool browser_collapsed = false, properties_collapsed = false;
     float browser_width = light.sidebar_width-light.layout.panel_border;
     float properties_width = light.inspector_width-light.layout.panel_border;

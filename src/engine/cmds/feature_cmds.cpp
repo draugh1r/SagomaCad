@@ -5,8 +5,9 @@
 #include <cmath>
 
 namespace sagomacad::engine::cmds {
+CommandResult edit_model_feature(Session&,const nlohmann::json&,const std::string&);
 namespace {
-std::string feature_id(const nlohmann::json& params) { return string_arg(params,"feature_id",true,256); }
+std::string feature_id(const nlohmann::json& params) { return string_arg(params,params.contains("feature_id")?"feature_id":"id",true,256); }
 double checked_length(const doc::Document& document,const std::string& expression,const std::string& field) {
     doc::Quantity value; std::string error;
     if (!doc::evaluate_expression(document,expression,value,error)) throw std::runtime_error(field+": "+error);
@@ -20,11 +21,12 @@ double checked_length(const doc::Document& document,const std::string& expressio
 std::vector<CommandSpec> feature_specs() {
     return {
         {"feature.edit","Modifica feature",{"Timeline","Modifica"},std::nullopt,
-         "{feature_id: string, dimensions: {width,depth,height|radius,height|radius}, name?: string}",{},
+         "{feature_id: id, dimensions?: primitive dimensions, params?: extrude/revolve parameter changes, name?: string}",{},
          [](Session& session,const nlohmann::json& params)->CommandResult {
-             only_keys(params,{"feature_id","dimensions","name"});
              const auto id=feature_id(params);
              const auto found=session.document.features.find(id);
+             if(found!=session.document.features.end()&&(found->second.type=="feature.extrude"||found->second.type=="feature.revolve"))return edit_model_feature(session,params,id);
+             only_keys(params,{"feature_id","id","dimensions","name"});
              if (found==session.document.features.end() || found->second.type.rfind("primitive.",0)!=0)
                  return CommandResult::failure("Feature modificabile non trovata: "+id);
              if (!params.contains("dimensions") || !params["dimensions"].is_object())
@@ -57,7 +59,7 @@ std::vector<CommandSpec> feature_specs() {
         {"feature.suppress","Sopprimi feature",{"Timeline","Modifica"},std::nullopt,
          "{feature_id: string, suppressed: bool}",{},
          [](Session& session,const nlohmann::json& params)->CommandResult {
-             only_keys(params,{"feature_id","suppressed"});
+             only_keys(params,{"feature_id","id","suppressed"});
              const auto id=feature_id(params);
              if (!params.contains("suppressed") || !params["suppressed"].is_boolean())
                  return CommandResult::failure("suppressed deve essere un booleano");
@@ -69,7 +71,7 @@ std::vector<CommandSpec> feature_specs() {
         {"feature.delete","Elimina feature",{"Timeline","Modifica"},std::nullopt,
          "{feature_id: string}",{},
          [](Session& session,const nlohmann::json& params)->CommandResult {
-             only_keys(params,{"feature_id"});
+             only_keys(params,{"feature_id","id"});
              const auto id=feature_id(params);
              const auto found=session.document.features.find(id);
              if (found==session.document.features.end()) return CommandResult::failure("Feature sconosciuta: "+id);
@@ -78,12 +80,17 @@ std::vector<CommandSpec> feature_specs() {
                  body_id=found->second.data["body_id"].get<std::string>();
              session.document.features.erase(found);
              auto& timeline=session.document.timeline;
+             const auto at=std::find(timeline.begin(),timeline.end(),id);
+             if(at!=timeline.end()&&std::size_t(at-timeline.begin())<session.document.rollback)--session.document.rollback;
              timeline.erase(std::remove(timeline.begin(),timeline.end(),id),timeline.end());
-             session.document.rollback=timeline.size();
+             session.document.rollback=std::min(session.document.rollback,timeline.size());
+             if(session.active_sketch==id)session.active_sketch.clear();
              bool referenced=false;
-             for (const auto& [other_id,feature]:session.document.features)
+             for (const auto& [other_id,feature]:session.document.features) {
                  if (feature.data.is_object() && feature.data.contains("body_id") && feature.data["body_id"].is_string() &&
                      feature.data["body_id"].get<std::string>()==body_id) referenced=true;
+                 if(feature.data.contains("target_bodies")&&feature.data["target_bodies"].is_array())for(const auto& target:feature.data["target_bodies"])if(target.is_string()&&target.get<std::string>()==body_id)referenced=true;
+             }
              if (!body_id.empty() && !referenced) {
                  auto& bodies=session.document.bodies;
                  bodies.erase(std::remove_if(bodies.begin(),bodies.end(),[&](const auto& b){return b.id==body_id;}),bodies.end());

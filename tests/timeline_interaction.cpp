@@ -30,8 +30,9 @@ int main() {
     require(orbited.target.x==panned.target.x && orbited.target.y==panned.target.y && orbited.target.z==panned.target.z);
     ImGui::GetIO().AddKeyEvent(ImGuiMod_Shift,false); shell.render();
     shell.state().camera=initial_camera;
+    const auto item=shell.state().timeline_items.at(0);const float feature_x=item.x+item.width/2,feature_y=item.y+item.height/2;
     auto step=[&](bool pressed) {
-        ImGui::GetIO().AddMousePosEvent(45,885);
+        ImGui::GetIO().AddMousePosEvent(feature_x,feature_y);
         ImGui::GetIO().AddMouseButtonEvent(0,pressed);
         shell.render();
     };
@@ -44,7 +45,7 @@ int main() {
         ImGui::GetIO().AddMouseButtonEvent(1,pressed);
         shell.render();
     };
-    right(45,885,false); right(45,885,true); right(45,885,false);
+    right(feature_x,feature_y,false); right(feature_x,feature_y,true); right(feature_x,feature_y,false);
     require(ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
     ImGui::GetIO().AddMousePosEvent(500,500);
     ImGui::GetIO().AddMouseButtonEvent(0,true); shell.render();
