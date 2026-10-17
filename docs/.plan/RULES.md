@@ -12,7 +12,8 @@ Non aggiungere Tauri, Electron, webview o framework JavaScript. Non aggiungere Q
 | `docs/architecture.md` | Mappa dei moduli, livelli, confine motore/UI |
 | `docs/control-protocol.md` | Canale di controllo JSON: come pilotare e fotografare l'app |
 | `docs/ui-design.md` | Token del tema, widget condivisi, layout |
-| `log/devlog.md` | Cosa è stato fatto e cosa resta aperto |
+| `log/devlog.md` | Storia del lavoro fino a M5; lo stato attuale è in `tasks.json` |
+| `docs/.plan/prps/` | Il PRP della fase in corso, con screenshot richiesti e riferimenti SolidCraft |
 
 ## 2. Livelli (imposti)
 
@@ -39,12 +40,12 @@ apps/sagomacad   apps/sagomacad-cli
    - Indici, dimensioni e numeri da file o parametri sono ostili: controlla i limiti, evita divisioni per zero e NaN, limita le allocazioni.
    - Una feature che fallisce va in errore nella timeline, la regen continua.
    - Ogni correzione di un crash arriva con un test che crashava prima della correzione.
-6. **Asset puliti.** Si replicano 1:1 layout, flusso di lavoro, scorciatoie e comportamento di Fusion 360, con le aggiunte in stile Tinkercad indicate nel piano; mai icone, grafica, shader o codice proprietari. Icone Lucide (ISC), font Inter e JetBrains Mono (OFL). Ogni asset esterno va in `ATTRIBUTION.md` con licenza.
-7. **Verifica visiva obbligatoria.** Prima di ogni lavoro sulla UI, guarda le immagini e le note in `docs/reference/fusion/`. Ogni modifica alla UI va controllata con uno screenshot prima di considerarla finita:
+6. **Asset puliti, aspetto nostro.** Il comportamento segue le convenzioni dei CAD parametrici (Fusion come riferimento per cosa succede); l'aspetto è nostro e segue `docs/design/` e i token. Mai icone, grafica, testi, tooltip, shader o codice di Autodesk. Icone: master SVG di SolidCraft (MIT OR Apache-2.0) ricolorati per ruoli, Lucide (ISC) per la navigazione; font Inter e JetBrains Mono (OFL). Ogni asset esterno va in `ATTRIBUTION.md` con licenza. Non copiare mai uno screenshot di Fusion o Tinkercad fuori da `docs/reference/`.
+7. **Verifica visiva obbligatoria.** Ogni fase inizia con il task 0 del suo PRP: se gli screenshot di riferimento indicati non esistono, fermati e chiedili all'utente con le istruzioni del PRP. Prima di ogni lavoro sulla UI guarda le immagini e le note indicate. Dagli screenshot in `docs/reference/` prendi solo il **comportamento** (campi, ordine, cosa succede al passaggio del mouse, al clic, alla digitazione); l'**aspetto** viene da `docs/design/` e dai token. Ogni modifica alla UI va controllata con uno screenshot prima di considerarla finita:
    ```sh
    sagomacad-cli snapshot --size 1440x900 --scale 2 --out /tmp/check.png --script '[[method, params], ...]'
    ```
-   oppure avviando l'app con `--control` e chiamando `ui.screenshot`. Guarda il PNG e confronta lo screenshot del risultato con il riferimento in `docs/reference/fusion/`. Controlla almeno due dimensioni di finestra e il tema chiaro e scuro.
+   oppure avviando l'app con `--control` e chiamando `ui.screenshot`. Confronta il comportamento con `docs/reference/` e l'aspetto con `docs/design/approvate/`. Controlla almeno due dimensioni di finestra e il tema chiaro e scuro.
 8. **Il kernel si verifica coi numeri.** Ogni feature geometrica ha test su volume, area, bounding box o numero di facce, calcolati con `GProp`.
 9. **I test sono il cancello.** Ogni modifica arriva con test. Le golden image si aggiornano solo con approvazione dell'utente.
 10. **Accesso per agenti AI.** Da M1.5 in poi ogni nuovo comando o informazione sul modello deve essere raggiungibile sia dal client CLI sia via MCP, con un test.
@@ -67,7 +68,7 @@ Poi aggiungi una voce breve in `log/devlog.md`: cosa è stato fatto, numeri misu
 
 ## 5. Scelta del lavoro
 
-1. Il traguardo corrente in `PLAN.md` (sezione 12). Non iniziare il traguardo successivo senza richiesta.
+1. La fase corrente in `tasks.json` e il suo PRP in `docs/.plan/prps/`. Non iniziare la fase successiva senza richiesta, salvo le regole di autonomia di `.coderunner/CODERUNNER.md`.
 2. Le voci "resta aperto" più recenti in `log/devlog.md`.
 3. Prima l'infrastruttura (comandi, test, canale di controllo), poi le funzioni, poi la rifinitura.
 

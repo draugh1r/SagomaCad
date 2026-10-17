@@ -224,7 +224,7 @@ Stesso schema per linee (lunghezza, angolo), cerchi (diametro), archi. I vincoli
 
 ## 8. UI (`ui/`)
 
-L’obiettivo è replicare 1:1 layout, flusso di lavoro, scorciatoie e comportamento di Fusion 360, come fa PhotoCraft con Photoshop, con asset e icone nostri. Le eccezioni sono le aggiunte in stile Tinkercad della sezione 6 e del traguardo M6.
+Il flusso di lavoro e il comportamento seguono le convenzioni dei CAD parametrici, con Fusion 360 come riferimento principale per cosa succede e in che ordine. L'aspetto visivo è nostro: colori, icone, proporzioni, forme dei pannelli e testi seguono `docs/design/` e i token del tema, non Fusion. Le aggiunte in stile Tinkercad della sezione 6 e del traguardo M6 restano.
 
 - **Barra superiore:** schede contestuali (Solido, Schizzo) con gruppi di comandi a icone ed etichette, menu a tendina per gruppo.
 - **Sinistra:** browser del documento (parametri, corpi, schizzi, piani) con visibilità a occhio.
@@ -238,7 +238,8 @@ Regole:
 - Colori, raggi, spaziature e font vengono solo dai token del tema (`ui/theme.hpp`). Nessun colore scritto a mano nei widget.
 - Widget condivisi in `ui/widgets.cpp` (campo valore con unità, slider, dropdown, toggle, bottone primario e secondario, sezione a scheda).
 - Tutto lo stato della UI in una struct serializzabile (`ui/state.hpp`).
-- `docs/reference/` contiene screenshot di Fusion e Tinkercad con note su cosa replicare. Si replicano posizioni e comportamento, non icone o grafica.
+- Due tipi di riferimento: `docs/reference/` (privato, fuori da git) contiene screenshot di Fusion e Tinkercad con note e serve solo per il **comportamento** (campi, ordine dei passi, cosa succede a passaggio del mouse, clic, digitazione). `docs/design/` (nel repository) contiene token, icone e schermate di SagomaCad approvate dall'utente e serve per l'**aspetto**. Le schermate approvate stanno in `docs/design/approvate/`.
+- Icone: master SVG di SolidCraft (MIT OR Apache-2.0) con colori per ruoli semantici, citati in `ATTRIBUTION.md`; Lucide resta per le icone di navigazione che SolidCraft non copre.
 
 ---
 
@@ -457,7 +458,7 @@ CMake + vcpkg, app che apre una finestra SDL3 con ImGui docking, viewport vuoto 
 `kernel/` con OCCT, `primitive.add` (box, cilindro), tassellazione, vista shaded con spigoli, orbita/pan/zoom, view cube, `export.stl`. L'export chiede al motore quale stadio del corpo esportare anziché prendere sempre l'ultimo risultato; in M2 gli stadi esatto e finale coincidono. MCP: `render_view`, `mass_properties`, `export` (inizialmente STL) e modalità bridge verso l'app in esecuzione, inclusi `ui_screenshot` e test del collegamento.
 *Fatto quando:* un box 40x40x20 esportato in STL ha volume corretto entro la tolleranza e si apre in Bambu Studio.
 
-**LAYOUT - Shell dichiarativa con Clay — completato (16 ottobre 2026)**
+**LAYOUT - Shell dichiarativa con Clay - completato (16 ottobre 2026)**
 Clay 0.14 da vcpkg; albero shell e ribbon in `ui/layout.cpp`, arena limitata, misura testo ImGui, rettangoli `ShellLayout`, renderer decorativo ImDrawList. Dockspace rimosso. Separatori trascinabili con reset al doppio clic, pannelli comprimibili e misure persistenti nello stato UI. `ui.inspect` espone rettangoli, scala, stato e diagnostica. Test di layout, input, riavvio e confronto prima/dopo nei due temi e dimensioni, senza aggiornare golden image. La migrazione conserva M3 già presente nel branch, senza aggiungere funzioni CAD.
 
 **M3 - Sketcher 2D**
@@ -466,7 +467,7 @@ Piani di schizzo, linea, rettangolo, cerchio, arco, vincoli automatici e manuali
 
 Protocollo ed esempi: `docs/sketches.md`. Include solver Eigen con diagnostica di conflitti/ridondanze, piani dell'origine, quote parametriche, profili chiusi, trascinamento con coalescenza, modifica dalla timeline e parità CLI/MCP (`sketch_inspect`). Schizzi su faccia in M5, feature da profili in M4.
 
-**M4 - Feature e timeline — completato il 17 ottobre 2026**
+**M4 - Feature e timeline - completato il 17 ottobre 2026**
 Estrusione e taglio da profili, rivoluzione, timeline con modifica parametri e rollback, regen incrementale, feature in errore senza crash. MCP: `feature_get`.
 *Fatto quando:* cambiare la quota dello schizzo a monte aggiorna il solido e i test di volume restano corretti.
 
@@ -484,7 +485,7 @@ inserimento al marker. Rimane aperta la suddivisione di contorni intersecanti
 all'interno dello stesso schizzo (riproduzione con due cerchi sovrapposti).
 È un limite del riconoscitore di profili, distinto dal picking facce di M5.
 
-**M5 - Selezione e feature su facce — completato il 17 ottobre 2026**
+**M5 - Selezione e feature su facce - completato il 17 ottobre 2026**
 
 Picking con ID buffer, hover, clic ripetuto, schizzi su faccia, raccordi e smussi su spigoli selezionati, riferimenti topologici del punto 4. MCP: `geometry_query`, `measure`, `selection_get` e `render_view` con etichette dei riferimenti stabili. Test di integrazione headless: scatola 40×40×20 con foro passante da 10 mm creata usando solo tool MCP, volume verificato tramite `mass_properties`.
 *Fatto quando:* un raccordo su uno spigolo sopravvive alla modifica della quota a monte (test dedicato).
@@ -496,7 +497,11 @@ I test topologici delle catene reali e della faccia eliminata precedono la UI.
 Release verde, CTest 51/51, livelli e fuzz verdi. Confronti 11–16 in 32 coppie
 nei due temi e due dimensioni. Rapporto: `docs/m5-validation.md`; guida
 eseguibile: `docs/modeling-guide.md`; esempio MCP: `docs/examples/m5/`.
-M6 resta da iniziare.
+M5.5 e M6 restano da iniziare.
+
+**M5.5 - Identità visiva e infrastruttura UI**
+Due tipi di riferimento (comportamento da `docs/reference/`, aspetto da `docs/design/`), icone SVG di SolidCraft con ricolorazione per ruoli, token del tema ampliati agli stati del viewport, regola "una sola fabbrica di finestre". Viewport su GPU (OpenGL con depth buffer, linee spesse in screen space, spigoli sempre sopra le facce, sagome dei corpi curvi, sfondo a gradiente, MSAA) usato anche da snapshot e `render_view`. Handle con un nome per ogni elemento disegnato e scenari JSON che guidano l'app senza finestra. Correzione dei profili con contorni intersecanti rimasta aperta da M4.
+*Fatto quando:* la tavola di palette e icone nei due temi è approvata dall'utente e salvata in `docs/design/approvate/`; il viewport GPU disegna un pezzo M5 con spigoli netti e sagome a qualsiasi angolo; almeno 10 scenari JSON passano in ctest; due cerchi sovrapposti producono tre regioni selezionabili.
 
 **M6 - Immediatezza Tinkercad**
 Primitive trascinate dal pannello sul piano o su una faccia, fori drag and drop, push and pull sulle facce che scrive nei parametri, `body.place` faccia su faccia con snap al centro e ai bordi, allineamenti rapidi.
@@ -557,3 +562,12 @@ Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo sl
 ## 14. Primo prompt per Codex
 
 > Leggi `AGENTS.md` e `PLAN.md`. Implementa il traguardo M0 del piano: struttura delle cartelle e dei target CMake per tutti i livelli (anche vuoti), vcpkg manifest, app `sagomacad` con finestra SDL3, Dear ImGui docking e viewport OpenGL con griglia e assi, tema con token in `ui/theme.hpp`, `sagomacad-cli snapshot` che renderizza offscreen e salva un PNG, canale di controllo con `auth`, `ui.inspect` e `ui.screenshot`, script `tools/check_layers.py`, workflow GitHub Actions opzionale con il solo trigger `workflow_dispatch` per l'avvio manuale da parte dell'utente. La verifica è solo locale su Windows secondo `AGENTS.md`, mantenendo il codice portabile. Alla fine genera lo snapshot dell'app vuota in `docs/screenshots/m0.png`, guardalo, correggi quello che non va, e aggiorna `log/devlog.md`. Non iniziare M1.
+
+---
+
+## 15. Decisioni
+
+- 2026-10-17: lo stato del lavoro passa al framework code-runner. Piano in `docs/.plan/PLAN.md`, regole in `docs/.plan/RULES.md`, stato solo in `docs/.plan/tasks.json`, fasi in `docs/.plan/prps/`. I traguardi M0-M5 (con M1.5 e LAYOUT) sono registrati come fasi 1-8 concluse; il devlog resta come storia.
+- 2026-10-17: l'interfaccia non replica più Fusion 1:1. Comportamento e flusso seguono le convenzioni dei CAD parametrici (riferimento privato `docs/reference/`), l'aspetto è nostro (`docs/design/`). Motivo: evitare di copiare l'aspetto di un prodotto commerciale.
+- 2026-10-17: nuovo traguardo M5.5 dall'analisi di SolidCraft (tangency-labs/solidcraft, MIT OR Apache-2.0): icone e palette per ruoli, token, viewport GPU, handle con nome, scenari UI. Il codice Rust si studia e si traduce, mai si copia senza attribuzione; gli SVG si riusano citandoli.
+- 2026-10-17: ogni fase inizia con un task 0 bloccante che chiede all'utente gli screenshot di riferimento con istruzioni passo passo; senza i file la fase non procede.

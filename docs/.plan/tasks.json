@@ -1,11 +1,1974 @@
 {
   "meta": {
-    "projectName": "",
-    "createdAt": "",
-    "updatedAt": "2026-10-17T10:59:50Z",
+    "projectName": "SagomaCad",
+    "createdAt": "2026-10-17T10:54:00Z",
+    "updatedAt": "2026-10-17T14:09:11Z",
     "version": "1.0.0",
-    "totalPhases": 0,
-    "currentPhase": 0
+    "totalPhases": 15,
+    "currentPhase": 9
   },
-  "tasks": []
+  "tasks": [
+    {
+      "id": 1,
+      "phase": 1,
+      "title": "Traguardo M0 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M0 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M0",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 2,
+      "phase": 2,
+      "title": "Traguardo M1 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M1 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M1",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 3,
+      "phase": 3,
+      "title": "Traguardo M1.5 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M1.5 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M1.5",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 4,
+      "phase": 4,
+      "title": "Traguardo M2 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        3
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M2 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M2",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 5,
+      "phase": 5,
+      "title": "Traguardo LAYOUT (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        4
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo LAYOUT di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "LAYOUT",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 6,
+      "phase": 6,
+      "title": "Traguardo M3 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        5
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M3 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M3",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 7,
+      "phase": 7,
+      "title": "Traguardo M4 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        6
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M4 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M4",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 8,
+      "phase": 8,
+      "title": "Traguardo M5 (completato prima di code-runner)",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        7
+      ],
+      "files": [
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [
+        "Traguardo M5 di PLAN.md"
+      ],
+      "isTest": false,
+      "milestone": "M5",
+      "note": "Lavoro svolto prima dell'adozione di code-runner: dettagli in log/devlog.md"
+    },
+    {
+      "id": 9,
+      "phase": 9,
+      "title": "9.0 Riferimenti dall'utente (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        8
+      ],
+      "files": [
+        "docs/reference/ispirazione/",
+        "docs/design/README.md"
+      ],
+      "action": "USER",
+      "validation": "ls docs/reference/ispirazione/*.png && grep -q \"Scelte dell'utente\" docs/design/README.md",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 10,
+      "phase": 9,
+      "title": "9.1 Struttura dei riferimenti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        9
+      ],
+      "files": [
+        "docs/design/README.md",
+        "docs/design/approvate/.gitkeep",
+        "docs/reference/README.md",
+        "docs/ui-design.md"
+      ],
+      "action": "CREATE",
+      "validation": "git check-ignore docs/reference/README.md && test -f docs/design/README.md",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 11,
+      "phase": 9,
+      "title": "9.2 Import dei master SVG di SolidCraft",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        10
+      ],
+      "files": [
+        "assets/icons/solidcraft/svg/**",
+        "assets/icons/solidcraft/palette.toml",
+        "assets/icons/solidcraft/aliases.toml",
+        "assets/icons/solidcraft/LICENSE-MIT",
+        "assets/icons/solidcraft/LICENSE-APACHE",
+        "ATTRIBUTION.md",
+        "tools/import_solidcraft_icons.py"
+      ],
+      "action": "CREATE",
+      "validation": "python tools/import_solidcraft_icons.py --check && grep -q \"assets/icons/solidcraft\" ATTRIBUTION.md",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 12,
+      "phase": 9,
+      "title": "9.3 Renderer delle icone per ruoli",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        11
+      ],
+      "files": [
+        "src/ui/icons.hpp",
+        "src/ui/icons.cpp",
+        "tools/palette_to_json.py",
+        "tests/icons.cpp",
+        "CMakeLists.txt"
+      ],
+      "action": "CREATE",
+      "validation": "cmake --build build --config Release && ctest --test-dir build -R icons --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 13,
+      "phase": 9,
+      "title": "9.4 Mappa comandi, icone e accenti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        12
+      ],
+      "files": [
+        "src/ui/toolbar_catalog.cpp",
+        "src/ui/toolbar_catalog.hpp",
+        "tools/update_parity.py",
+        "docs/parity.md"
+      ],
+      "action": "MODIFY",
+      "validation": "python tools/update_parity.py --check",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 14,
+      "phase": 9,
+      "title": "9.5 Token del tema ampliati",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        13
+      ],
+      "files": [
+        "src/ui/theme.hpp",
+        "tests/theme_tokens.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R theme_tokens --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 15,
+      "phase": 9,
+      "title": "9.6 Fabbrica unica delle finestre",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        14
+      ],
+      "files": [
+        "src/ui/frame.hpp",
+        "src/ui/frame.cpp",
+        "apps/common/*.cpp",
+        "ImGui::Begin",
+        "tests/frame_rule.py"
+      ],
+      "action": "CREATE",
+      "validation": "python tests/frame_rule.py && ctest --test-dir build --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 16,
+      "phase": 9,
+      "title": "9.7 Tavola di design e approvazione (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        15
+      ],
+      "files": [
+        "apps/sagomacad-cli/",
+        "design-board",
+        "docs/design/tavola-light.png",
+        "docs/design/tavola-dark.png",
+        "docs/design/approvate/tavola-*.png"
+      ],
+      "action": "USER",
+      "validation": "test -f docs/design/approvate/tavola-light.png && test -f docs/design/approvate/tavola-dark.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 17,
+      "phase": 9,
+      "title": "9.8 Icone applicate a ribbon, browser, timeline e menu",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        16
+      ],
+      "files": [
+        "apps/common/shell.cpp",
+        "apps/common/timeline_widget.cpp",
+        "src/ui/widgets.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-ribbon.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 18,
+      "phase": 9,
+      "title": "9.9 Documentazione",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        17
+      ],
+      "files": [
+        "docs/ui-design.md",
+        "docs/design/README.md"
+      ],
+      "action": "MODIFY",
+      "validation": "python tests/test_utf8.py",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 19,
+      "phase": 9,
+      "title": "9.10 Verifica della fase",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        18
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py",
+      "features": [
+        "Riferimenti separati: comportamento da `docs/reference/`, aspetto da `docs/design/`",
+        "Icone SVG di SolidCraft con ricolorazione per ruoli, citate in ATTRIBUTION.md",
+        "Token del tema ampliati agli stati del viewport",
+        "Regola \"una sola fabbrica di finestre\", con test"
+      ],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 20,
+      "phase": 10,
+      "title": "10.0 Screenshot di riferimento (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        19
+      ],
+      "files": [
+        "docs/reference/fusion/17-stile-visivo.png",
+        ".md",
+        "docs/reference/fusion/18-spigoli-e-sagome.png",
+        ".md",
+        "docs/reference/fusion/19-spigoli-angolo-radente.png",
+        ".md"
+      ],
+      "action": "USER",
+      "validation": "ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 21,
+      "phase": 10,
+      "title": "10.1 Modulo di rendering OpenGL",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        20
+      ],
+      "files": [
+        "src/ui/render/gl_viewport.hpp",
+        "src/ui/render/gl_viewport.cpp",
+        "src/ui/render/shaders/*.glsl",
+        "CMakeLists.txt",
+        "tools/check_layers.py"
+      ],
+      "action": "CREATE",
+      "validation": "cmake --build build --config Release && ctest --test-dir build -R gl_viewport --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 22,
+      "phase": 10,
+      "title": "10.2 Facce e luce",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        21
+      ],
+      "files": [
+        "src/ui/render/shaders/solid.frag",
+        "solid.vert"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[[\"engine.execute\",{\"command\":\"primitive.add\",\"params\":{\"kind\":\"box\"}}]]'",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 23,
+      "phase": 10,
+      "title": "10.3 Linee spesse in screen space",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        22
+      ],
+      "files": [
+        "src/ui/render/shaders/line.vert",
+        "line.frag"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R gl_lines --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 24,
+      "phase": 10,
+      "title": "10.4 Spigoli sempre sopra le facce",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        23
+      ],
+      "files": [
+        "src/ui/render/gl_viewport.cpp",
+        "docs/examples/m5/camera-radente.json"
+      ],
+      "action": "MODIFY",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-grazing.png --script docs/examples/m5/camera-radente.json",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 25,
+      "phase": 10,
+      "title": "10.5 Sagome dei corpi curvi",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        24
+      ],
+      "files": [
+        "src/ui/render/shaders/solid.frag",
+        "docs/examples/m5/cilindro-raccordi.json"
+      ],
+      "action": "MODIFY",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-silhouette.png --script docs/examples/m5/cilindro-raccordi.json",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 26,
+      "phase": 10,
+      "title": "10.6 Sfondo, griglia e piani dell'origine",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        25
+      ],
+      "files": [
+        "src/ui/render/gl_viewport.cpp",
+        "apps/common/shell.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 27,
+      "phase": 10,
+      "title": "10.7 Picking e anteprime sulla nuova pipeline",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        26
+      ],
+      "files": [
+        "src/engine/picking.cpp",
+        "apps/common/geometry_widget.cpp",
+        "apps/common/model_widget.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"picking|m5_interaction|model_interaction\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 28,
+      "phase": 10,
+      "title": "10.8 Snapshot, render_view e prestazioni",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        27
+      ],
+      "files": [
+        "apps/sagomacad-cli/main.cpp",
+        "apps/sagomacad-cli/mcp_visual.cpp",
+        "tests/test_mcp.py"
+      ],
+      "action": "MODIFY",
+      "validation": "pytest tests/test_mcp.py -k render_view",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 29,
+      "phase": 10,
+      "title": "10.9 Handle con un nome",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        28
+      ],
+      "files": [
+        "src/ui/handles.hpp",
+        "src/ui/handles.cpp",
+        "apps/common/shell.cpp",
+        "apps/common/*_widget.cpp",
+        "apps/common/control.cpp",
+        "docs/control-protocol.md"
+      ],
+      "action": "CREATE",
+      "validation": "pytest tests/test_control.py -k handles",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 30,
+      "phase": 10,
+      "title": "10.10 Esecutore degli scenari JSON",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        29
+      ],
+      "files": [
+        "apps/sagomacad-cli/scenario.cpp",
+        "apps/sagomacad-cli/scenario.hpp",
+        "CMakeLists.txt",
+        "tests/scenarios/*.json",
+        "docs/scenarios.md"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 31,
+      "phase": 10,
+      "title": "10.11 Primi scenari",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        30
+      ],
+      "files": [
+        "tests/scenarios/*.json"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 32,
+      "phase": 10,
+      "title": "10.12 Profili con contorni intersecanti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        31
+      ],
+      "files": [
+        "src/solver/profile_regions.cpp",
+        "tests/profile_regions.cpp",
+        "tests/scenarios/profili-intersecanti.json"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"profile_regions|profili-intersecanti\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 33,
+      "phase": 10,
+      "title": "10.13 Verifica criterio di fine fase",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        32
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py && ./build/apps/sagomacad-cli/sagomacad-cli fuzz-commands",
+      "features": [
+        "Viewport su GPU con depth buffer e MSAA, condiviso da finestra, snapshot e `render_view`",
+        "Linee spesse in screen space, spigoli sopra le facce, sagome, sfondo a gradiente",
+        "Handle con un nome per ogni elemento disegnato, esposti da `ui.inspect` e usabili dal canale di controllo",
+        "Scenari JSON headless, un test ctest per file",
+        "Correzione dei profili con contorni intersecanti"
+      ],
+      "isTest": false,
+      "milestone": "M5.5"
+    },
+    {
+      "id": 34,
+      "phase": 11,
+      "title": "11.0 Screenshot di riferimento (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        33
+      ],
+      "files": [
+        "docs/reference/fusion/20-premi-tira.png",
+        "23-primitiva-box.png",
+        ".md",
+        "docs/reference/tinkercad/24-forme.png",
+        "28-maniglie.png",
+        ".md"
+      ],
+      "action": "USER",
+      "validation": "ls docs/reference/fusion/2[0-3]-*.png docs/reference/tinkercad/2[4-8]-*.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 35,
+      "phase": 11,
+      "title": "11.1 Modello delle primitive complete",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        34
+      ],
+      "files": [
+        "src/doc/document.hpp",
+        "src/doc/document.cpp",
+        "src/regen/model_features.cpp",
+        "src/kernel/shape.cpp",
+        "tests/primitive.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R primitive --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 36,
+      "phase": 11,
+      "title": "11.2 Comandi live per i gesti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        35
+      ],
+      "files": [
+        "src/engine/command.hpp",
+        "src/engine/registry.cpp",
+        "tests/command.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R command --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 37,
+      "phase": 11,
+      "title": "11.3 Operazione automatica bloccata",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        36
+      ],
+      "files": [
+        "src/engine/tools/smart_operation.hpp",
+        "src/engine/tools/smart_operation.cpp",
+        "tests/smart_operation.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R smart_operation --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 38,
+      "phase": 11,
+      "title": "11.4 Premi/tira",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        37
+      ],
+      "files": [
+        "src/engine/cmds/face_cmds.cpp",
+        "src/regen/extrusion.cpp",
+        "tests/push_pull.cpp",
+        "tests/scenarios/premi-tira.json"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R \"push_pull|premi-tira\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 39,
+      "phase": 11,
+      "title": "11.5 Pannello Forme",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        38
+      ],
+      "files": [
+        "src/ui/layout.cpp",
+        "shapes",
+        "src/ui/state.hpp",
+        "apps/common/shapes_panel.cpp",
+        "src/ui/toolbar_catalog.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R \"layout|scenario\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 40,
+      "phase": 11,
+      "title": "11.6 Fori trascinati",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        39
+      ],
+      "files": [
+        "apps/common/shapes_panel.cpp",
+        "src/engine/cmds/primitive_cmds.cpp",
+        "tests/scenarios/foro-trascinato.json"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R foro-trascinato --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 41,
+      "phase": 11,
+      "title": "11.7 Maniglie delle dimensioni",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        40
+      ],
+      "files": [
+        "apps/common/primitive_handles.cpp",
+        "src/engine/tools/primitive_tool.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 42,
+      "phase": 11,
+      "title": "11.8 Triade di spostamento",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        41
+      ],
+      "files": [
+        "apps/common/gizmo.cpp",
+        "src/engine/cmds/body_cmds.cpp",
+        "src/doc/document.hpp",
+        "tests/body_move.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R body_move --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 43,
+      "phase": 11,
+      "title": "11.9 Appoggia faccia su faccia",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        42
+      ],
+      "files": [
+        "src/regen/place_feature.cpp",
+        "src/engine/cmds/body_cmds.cpp",
+        "tests/body_place.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R body_place --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 44,
+      "phase": 11,
+      "title": "11.10 Aggancio durante il trascinamento",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        43
+      ],
+      "files": [
+        "src/engine/tools/drag_snap.cpp",
+        "apps/common/geometry_widget.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 45,
+      "phase": 11,
+      "title": "11.11 Allineamenti rapidi",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        44
+      ],
+      "files": [
+        "src/engine/cmds/body_cmds.cpp",
+        "apps/common/align_widget.cpp",
+        "tests/body_align.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R body_align --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 46,
+      "phase": 11,
+      "title": "11.12 Seleziona il successivo come comando",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        45
+      ],
+      "files": [
+        "src/engine/cmds/",
+        "selection.cycle",
+        "tools/update_parity.py"
+      ],
+      "action": "MODIFY",
+      "validation": "python tools/update_parity.py --check && pytest tests/test_mcp.py -k cycle",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 47,
+      "phase": 11,
+      "title": "11.13 Timeline, browser e modifica",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        46
+      ],
+      "files": [
+        "apps/common/timeline_widget.cpp",
+        "src/ui/feature_editor.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"timeline|feature_edit\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 48,
+      "phase": 11,
+      "title": "11.14 CLI, MCP e guida",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        47
+      ],
+      "files": [
+        "docs/modeling-guide.md",
+        "docs/mcp.md",
+        "tests/test_modeling_agents.py"
+      ],
+      "action": "MODIFY",
+      "validation": "pytest tests/test_modeling_agents.py",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 49,
+      "phase": 11,
+      "title": "11.15 Fuzz dei comandi",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        48
+      ],
+      "files": [
+        "apps/sagomacad-cli/fuzz.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "./build/apps/sagomacad-cli/sagomacad-cli fuzz-commands",
+      "features": [],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 50,
+      "phase": 11,
+      "title": "11.16 Verifica criterio di fine fase",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        49
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py",
+      "features": [
+        "Primitive (box, cilindro, sfera, cono, toro) trascinate dal pannello su un piano o su una faccia, come feature parametriche",
+        "Fori trascinati sulle facce",
+        "`face.pushPull` che scrive nella feature esistente quando può, altrimenti crea un'estrusione",
+        "`body.place` faccia su faccia con snap al centro e ai bordi e offset",
+        "Allineamenti rapidi",
+        "`selection.cycle` registrato come comando",
+        "Operazione automatica bloccata durante il trascinamento (SolidCraft)",
+        "Comandi `live` per i gesti (SolidCraft)",
+        "Triade di spostamento e aggancio durante il trascinamento (SolidCraft)"
+      ],
+      "isTest": false,
+      "milestone": "M6"
+    },
+    {
+      "id": 51,
+      "phase": 12,
+      "title": "12.0 Screenshot di riferimento (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        50
+      ],
+      "files": [
+        "docs/reference/fusion/29-export.png",
+        "31-stampa-3d.png",
+        ".md",
+        "docs/reference/bambu/32-import-stl.png",
+        "33-oggetti-3mf.png",
+        ".md"
+      ],
+      "action": "USER",
+      "validation": "ls docs/reference/fusion/29-*.png docs/reference/fusion/30-*.png docs/reference/fusion/31-*.png docs/reference/bambu/3[23]-*.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 52,
+      "phase": 12,
+      "title": "12.1 Stadio del corpo nell'export",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        51
+      ],
+      "files": [
+        "src/engine/cmds/export_cmds.cpp",
+        "src/regen/regenerator.cpp",
+        "tests/export_stl.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R export --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 53,
+      "phase": 12,
+      "title": "12.2 Tolleranza di tassellazione",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        52
+      ],
+      "files": [
+        "src/doc/document.hpp",
+        "src/mesh/surface.cpp",
+        "src/engine/cmds/export_cmds.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R export --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 54,
+      "phase": 12,
+      "title": "12.3 Export 3MF",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        53
+      ],
+      "files": [
+        "src/mesh/three_mf.cpp",
+        "src/mesh/three_mf.hpp",
+        "vcpkg.json",
+        "ATTRIBUTION.md",
+        "tests/export_3mf.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R export_3mf --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 55,
+      "phase": 12,
+      "title": "12.4 Export STEP",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        54
+      ],
+      "files": [
+        "src/kernel/step_export.cpp",
+        "src/engine/cmds/export_cmds.cpp",
+        "tests/export_step.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R export_step --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 56,
+      "phase": 12,
+      "title": "12.5 Un corpo o tutti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        55
+      ],
+      "files": [
+        "src/engine/cmds/export_cmds.cpp",
+        "apps/common/shell.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "pytest tests/test_cli.py -k export",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 57,
+      "phase": 12,
+      "title": "12.6 Dialog \"Salva come mesh\"",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        56
+      ],
+      "files": [
+        "apps/common/export_dialog.cpp",
+        "src/ui/frame.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-export.png --script '[[\"ui.start\",{\"command\":\"export.mesh\"}]]'",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 58,
+      "phase": 12,
+      "title": "12.7 Apri in Bambu Studio",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        57
+      ],
+      "files": [
+        "src/automation/slicers.cpp",
+        "src/engine/cmds/export_cmds.cpp",
+        "tests/slicers.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R slicers --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 59,
+      "phase": 12,
+      "title": "12.8 Controllo di stampabilità",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        58
+      ],
+      "files": [
+        "src/kernel/printability.cpp",
+        "src/engine/cmds/measure_cmds.cpp",
+        "apps/common/geometry_widget.cpp",
+        "tests/printability.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R printability --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 60,
+      "phase": 12,
+      "title": "12.9 MCP e CLI",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        59
+      ],
+      "files": [
+        "apps/sagomacad-cli/mcp.cpp",
+        "docs/mcp.md",
+        "docs/agent-cli.md",
+        "tests/test_mcp.py"
+      ],
+      "action": "MODIFY",
+      "validation": "pytest tests/test_mcp.py",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 61,
+      "phase": 12,
+      "title": "12.10 Fuzz e guida",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        60
+      ],
+      "files": [
+        "apps/sagomacad-cli/fuzz.cpp",
+        "docs/modeling-guide.md"
+      ],
+      "action": "MODIFY",
+      "validation": "./build/apps/sagomacad-cli/sagomacad-cli fuzz-commands",
+      "features": [],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 62,
+      "phase": 12,
+      "title": "12.11 Verifica criterio di fine fase",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        61
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py",
+      "features": [
+        "`export.3mf`, `export.step`",
+        "Tolleranza di tassellazione impostabile",
+        "Export di un corpo o di tutti",
+        "Apertura diretta in Bambu Studio se installato",
+        "Stadio del corpo: STEP esatto, STL e 3MF finale",
+        "MCP: `export` anche per 3MF e STEP, `check_printability`",
+        "3MF con nomi e colori dei corpi e dialog \"Salva come mesh\" con scelta dello slicer (SolidCraft)"
+      ],
+      "isTest": false,
+      "milestone": "M7"
+    },
+    {
+      "id": 63,
+      "phase": 13,
+      "title": "13.0 Screenshot di riferimento (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        62
+      ],
+      "files": [
+        "docs/reference/fusion/34-menu-radiale-corpo.png",
+        "38-casella-s.png",
+        ".md"
+      ],
+      "action": "USER",
+      "validation": "ls docs/reference/fusion/3[4-8]-*.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 64,
+      "phase": 13,
+      "title": "13.1 Menu del tasto destro e menu radiale",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        63
+      ],
+      "files": [
+        "src/engine/context_menu.cpp",
+        "apps/common/context_menu_widget.cpp",
+        "apps/common/control.cpp",
+        "tests/context_menu.cpp",
+        "tests/scenarios/menu-radiale.json"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R \"context_menu|menu-radiale\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 65,
+      "phase": 13,
+      "title": "13.2 Ripeti l'ultimo comando",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        64
+      ],
+      "files": [
+        "src/ui/state.hpp",
+        "apps/common/shell.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 66,
+      "phase": 13,
+      "title": "13.3 Scorciatoie personalizzabili",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        65
+      ],
+      "files": [
+        "src/ui/keymap.hpp",
+        "src/ui/keymap.cpp",
+        "tests/keymap.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R keymap --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 67,
+      "phase": 13,
+      "title": "13.4 Finestra Preferenze",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        66
+      ],
+      "files": [
+        "apps/common/preferences_window.cpp",
+        "src/ui/state.hpp"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-prefs.png --script '[[\"ui.set\",{\"preferences\":true}]]'",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 68,
+      "phase": 13,
+      "title": "13.5 Casella S",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        67
+      ],
+      "files": [
+        "apps/common/shortcut_box.cpp",
+        "src/ui/state.hpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 69,
+      "phase": 13,
+      "title": "13.6 Tema chiaro e scuro completi",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        68
+      ],
+      "files": [
+        "src/ui/theme.hpp",
+        "tests/theme_tokens.cpp",
+        "tests/scenarios/tema-*.json"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"theme_tokens|tema-\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 70,
+      "phase": 13,
+      "title": "13.7 Salvataggio di recupero",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        69
+      ],
+      "files": [
+        "src/automation/recovery.cpp",
+        "apps/common/recovery_dialog.cpp",
+        "tests/recovery.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R recovery --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 71,
+      "phase": 13,
+      "title": "13.8 Report dei crash riproducibili",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        70
+      ],
+      "files": [
+        "src/automation/crash_report.cpp",
+        "apps/sagomacad/main.cpp",
+        "apps/sagomacad-cli/main.cpp",
+        "docs/crash-reports.md",
+        "tests/test_cli.py"
+      ],
+      "action": "CREATE",
+      "validation": "pytest tests/test_cli.py -k crashes",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 72,
+      "phase": 13,
+      "title": "13.9 Documentazione e fuzz",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        71
+      ],
+      "files": [
+        "docs/ui-design.md",
+        "docs/.plan/RULES.md",
+        "apps/sagomacad-cli/fuzz.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "./build/apps/sagomacad-cli/sagomacad-cli fuzz-commands && python tests/test_utf8.py",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 73,
+      "phase": 13,
+      "title": "13.10 Verifica della fase",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        72
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py",
+      "features": [
+        "Menu radiale col tasto destro, con Ripeti",
+        "Scorciatoie personalizzabili con rilevamento dei conflitti",
+        "Casella S di ricerca dei comandi al cursore (SolidCraft)",
+        "Tema chiaro e scuro completi, finestra Preferenze",
+        "Salvataggio di recupero",
+        "Report dei crash riproducibili (SolidCraft)"
+      ],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 74,
+      "phase": 14,
+      "title": "14.0 Mockup del pannello Agente (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        73
+      ],
+      "files": [
+        "docs/design/mockup-pannello-agente.png",
+        "docs/design/approvate/pannello-agente.png"
+      ],
+      "action": "USER",
+      "validation": "test -f docs/design/approvate/pannello-agente.png",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 75,
+      "phase": 14,
+      "title": "14.1 Modello di prova e misure",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        74
+      ],
+      "files": [
+        "perf/generate_model.py",
+        "perf/run.py",
+        "perf/README.md",
+        "perf/baseline.json"
+      ],
+      "action": "CREATE",
+      "validation": "python perf/run.py --quick",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 76,
+      "phase": 14,
+      "title": "14.2 Cache delle mesh per revisione",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        75
+      ],
+      "files": [
+        "src/regen/regenerator.cpp",
+        "src/mesh/surface.cpp",
+        "src/ui/render/gl_viewport.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "python perf/run.py --quick --compare perf/baseline.json",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 77,
+      "phase": 14,
+      "title": "14.3 Anteprima fuori dal thread della finestra",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        76
+      ],
+      "files": [
+        "src/engine/preview_worker.cpp",
+        "src/engine/tools/model_preview.cpp",
+        "src/engine/tools/surface_preview.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R preview --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 78,
+      "phase": 14,
+      "title": "14.4 OK e storia fuori dal thread della finestra",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        77
+      ],
+      "files": [
+        "src/engine/deferred.cpp",
+        "apps/common/shell.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "ctest --test-dir build -R deferred --output-on-failure && python perf/run.py --quick",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 79,
+      "phase": 14,
+      "title": "14.5 Registro delle azioni degli agenti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        78
+      ],
+      "files": [
+        "src/automation/agent_log.cpp",
+        "src/automation/dispatch.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "pytest tests/test_control.py -k agent_log",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 80,
+      "phase": 14,
+      "title": "14.6 Pannello Agente",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        79
+      ],
+      "files": [
+        "src/ui/layout.cpp",
+        "apps/common/agent_panel.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-agent.png --script tests/scenarios/agente-registro.json",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 81,
+      "phase": 14,
+      "title": "14.7 Interruttore \"Consenti agenti\"",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        80
+      ],
+      "files": [
+        "src/automation/dispatch.cpp",
+        "apps/common/control.cpp",
+        "apps/common/shell.cpp",
+        "src/ui/state.hpp"
+      ],
+      "action": "MODIFY",
+      "validation": "pytest tests/test_mcp_integration.py -k allow_agents",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 82,
+      "phase": 14,
+      "title": "14.8 Passi dell'agente nella timeline",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        81
+      ],
+      "files": [
+        "src/doc/document.hpp",
+        "apps/common/timeline_widget.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"document|timeline\" --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 83,
+      "phase": 14,
+      "title": "14.9 Evidenziazione delle modifiche",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        82
+      ],
+      "files": [
+        "src/ui/render/gl_viewport.cpp",
+        "src/ui/theme.hpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R scenario --output-on-failure",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 84,
+      "phase": 14,
+      "title": "14.10 Cursore animato dell'agente",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        83
+      ],
+      "files": [
+        "apps/common/agent_cursor.cpp",
+        "apps/common/control.cpp"
+      ],
+      "action": "CREATE",
+      "validation": "pytest tests/test_control.py -k agent_cursor",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 85,
+      "phase": 14,
+      "title": "14.11 CLI, MCP, fuzz e documentazione",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        84
+      ],
+      "files": [
+        "docs/mcp.md",
+        "docs/agent-cli.md",
+        "apps/sagomacad-cli/fuzz.cpp",
+        "tests/test_mcp.py"
+      ],
+      "action": "MODIFY",
+      "validation": "pytest tests/test_mcp.py && ./build/apps/sagomacad-cli/sagomacad-cli fuzz-commands",
+      "features": [],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 86,
+      "phase": 14,
+      "title": "14.12 Verifica criterio di fine fase",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        85
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py && python perf/run.py",
+      "features": [
+        "Prestazioni su modelli con centinaia di feature",
+        "Anteprima e OK calcolati fuori dal thread della finestra (SolidCraft)",
+        "Pannello Agente con registro delle azioni",
+        "Interruttore \"Consenti agenti\"",
+        "Evidenziazione delle modifiche dell'agente nel viewport",
+        "Cursore animato dell'agente (SolidCraft)"
+      ],
+      "isTest": false,
+      "milestone": "M8"
+    },
+    {
+      "id": 87,
+      "phase": 15,
+      "title": "15.0 MCP di Fusion per il confronto (bloccante)",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        86
+      ],
+      "files": [
+        "docs/reference/fusion/39-mcp-fusion.md"
+      ],
+      "action": "USER",
+      "validation": "test -f docs/reference/fusion/39-mcp-fusion.md",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 88,
+      "phase": 15,
+      "title": "15.1 Scenario schizzo, estrusione, raccordo, foro, 3MF",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        87
+      ],
+      "files": [
+        "tests/e2e/flusso-classico.json"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli scenario run tests/e2e/flusso-classico.json",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 89,
+      "phase": 15,
+      "title": "15.2 Scenario rapido stile Tinkercad",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        88
+      ],
+      "files": [
+        "tests/e2e/flusso-rapido.json"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli scenario run tests/e2e/flusso-rapido.json",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 90,
+      "phase": 15,
+      "title": "15.3 Modifica a monte che regge",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        89
+      ],
+      "files": [
+        "tests/e2e/modifica-a-monte.json"
+      ],
+      "action": "CREATE",
+      "validation": "sagomacad-cli scenario run tests/e2e/modifica-a-monte.json",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 91,
+      "phase": 15,
+      "title": "15.4 Ripristino dopo crash",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        90
+      ],
+      "files": [
+        "tests/e2e/ripristino.py"
+      ],
+      "action": "CREATE",
+      "validation": "python tests/e2e/ripristino.py",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 92,
+      "phase": 15,
+      "title": "15.5 Agente via MCP crea ed esporta una staffa",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        91
+      ],
+      "files": [
+        "tests/e2e/agente-staffa.py"
+      ],
+      "action": "CREATE",
+      "validation": "python tests/e2e/agente-staffa.py",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 93,
+      "phase": 15,
+      "title": "15.6 Confronto con le schermate approvate",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        92
+      ],
+      "files": [
+        "tools/compare_golden.py",
+        "tests/e2e/golden.json"
+      ],
+      "action": "CREATE",
+      "validation": "python tools/compare_golden.py --all",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 94,
+      "phase": 15,
+      "title": "15.7 Benchmark per agenti",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        93
+      ],
+      "files": [
+        "bench/tasks/*.md",
+        "bench/run.py",
+        "bench/README.md"
+      ],
+      "action": "CREATE",
+      "validation": "python bench/run.py --dry-run",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 95,
+      "phase": 15,
+      "title": "15.8 Rapporto",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        94
+      ],
+      "files": [
+        "bench/report.md",
+        "log/devlog.md"
+      ],
+      "action": "CREATE",
+      "validation": "test -f bench/report.md",
+      "features": [],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    },
+    {
+      "id": 96,
+      "phase": 15,
+      "title": "15.9 Verifica finale",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        95
+      ],
+      "files": [],
+      "action": "VERIFY",
+      "validation": "cmake --build build --config Release && ctest --test-dir build --output-on-failure && python tools/check_layers.py && python tools/compare_golden.py --all && ./build/apps/sagomacad-cli/sagomacad-cli fuzz-commands",
+      "features": [
+        "Flussi completi utente (schizzo, estrusione, raccordo, foro, export 3MF)",
+        "Flusso rapido stile Tinkercad",
+        "Modifica a monte che regge",
+        "Ripristino dopo crash",
+        "Agente via MCP che crea ed esporta una staffa",
+        "Confronto con le schermate approvate (golden image)",
+        "Benchmark per agenti"
+      ],
+      "isTest": true,
+      "testType": "e2e",
+      "milestone": "M8"
+    }
+  ]
 }
