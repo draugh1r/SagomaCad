@@ -2,10 +2,10 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-17T14:53:02.682655+00:00",
+    "updatedAt": "2026-10-17T19:52:37.728132+00:00",
     "version": "1.0.0",
     "totalPhases": 15,
-    "currentPhase": 9
+    "currentPhase": 10
   },
   "tasks": [
     {
@@ -369,7 +369,8 @@
       "startedAt": "2026-10-17T14:39:43.434176+00:00",
       "note": "Approvazione utente: ok ci siamo, 2026-10-17; tavole archiviate in approvate/.",
       "blockedAt": "2026-10-17T14:47:19.711662+00:00",
-      "completedAt": "2026-10-17T19:44:38.314256+00:00"
+      "completedAt": "2026-10-17T19:44:38.314256+00:00",
+      "commit": "b80ef1e"
     },
     {
       "id": 17,
@@ -393,7 +394,7 @@
       "startedAt": "2026-10-17T19:44:41.397572+00:00",
       "completedAt": "2026-10-17T19:49:40.756108+00:00",
       "note": "Icone applicate a ribbon 26px, menu/palette/browser 16px e timeline 20px; ruoli passivi per disabilitati. Build Release e 57/57 ctest; otto screenshot Solido/Schizzo nei due temi e due dimensioni, palette e DPI2 ispezionati contro le tavole approvate.",
-      "commit": "b80ef1e783df34420e8d512c3b67a820232e6209"
+      "commit": "66c1877"
     },
     {
       "id": 18,
@@ -416,13 +417,13 @@
       "startedAt": "2026-10-17T19:49:43.439687+00:00",
       "completedAt": "2026-10-17T19:51:25.555819+00:00",
       "note": "Documentata aggiunta master, ruoli, palette, approvazione e fabbrica finestre. Master originali separati da import SolidCraft, collisioni rifiutate con test. UTF-8, build Release e 57/57 ctest passati.",
-      "commit": "66c1877a5dfd91db3e06817ed81113bc8714ef47"
+      "commit": "7d16093"
     },
     {
       "id": 19,
       "phase": 9,
       "title": "9.10 Verifica della fase",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         18
@@ -437,7 +438,10 @@
         "Regola \"una sola fabbrica di finestre\", con test"
       ],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T19:51:28.247619+00:00",
+      "completedAt": "2026-10-17T19:52:37.728132+00:00",
+      "note": "Build Release locale build/agent-phase9, 57/57 ctest (40.94s), livelli, import, parita, frame_rule, UTF-8 e fuzz 260 casi/222 MCP passati. Tavole approvate presenti; screenshot Solido/Schizzo a 1440x900 e 1280x720 nei due temi, palette e DPI2 ispezionati."
     },
     {
       "id": 20,

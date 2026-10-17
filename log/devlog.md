@@ -390,3 +390,12 @@ Resta aperta l’approvazione dell’utente sulle due tavole: non sono state cop
 ## 2026-10-17 — Correzione degli sfondi del tema chiaro
 
 Precisazione dell’utente: bianco puro in tutta l’app, pistacchio solo come accento. Corretti sfondo generale, viewport, ribbon, pannelli, intestazioni, dialog e campi; testi e bordi neutri. Aggiunto controllo dei token per sfondi bianchi e neutrali senza dominante verde. Contrasto testo 14.55:1, secondario 5.74:1. Tavola chiara rigenerata; quattro screenshot nei due temi e alle due dimensioni ispezionati. Build Release e 57/57 test locali passati. Resta l’approvazione delle tavole prevista dal task 9.7.
+
+
+## 2026-10-17 — Chiusura fase 9 dopo l’approvazione
+
+L’utente conferma «ok ci siamo» sull’app con sfondi bianchi: tavole chiara/scura archiviate in `docs/design/approvate/`. Applicato il renderer comune SolidCraft a ribbon (26 px), menu e palette (16 px), browser (16 px) e timeline (20 px), con cache per tema/accento/pixel e ruoli passivi per disabilitati. Lucide resta per navigazione e fallback espliciti. Verificati lookup del catalogo e master assegnati; corretta la resa delle etichette disabilitate. La palette mantiene righe compatte.
+
+Documentata la procedura per master originali in `assets/icons/sagomacad/svg/`, separati dall’import immutato SolidCraft: il compilatore include la cartella e rifiuta collisioni con master/alias importati, con test. Colori solo da palette/token, approvazione esplicita delle immagini e fabbrica unica delle finestre documentati.
+
+Verifica di uscita Windows: build Release in `build/agent-phase9`; **57/57 ctest passati in 40.94 s**, livelli, import byte per byte, parità, regola finestre, UTF-8 e fuzz verdi (260 casi comandi, 222 MCP). Otto screenshot Solido/Schizzo a 1440×900 e 1280×720 nei due temi, palette dei comandi e ribbon a DPI 2 ispezionati contro le tavole approvate. Nessuna golden preesistente modificata. Lavoro della fase 9 concluso; la fase 10 richiede il proprio PRP e i relativi prerequisiti.
