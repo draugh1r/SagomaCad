@@ -77,3 +77,28 @@ completed = subprocess.run([cli, "run", "--script", json.dumps(script)], capture
 assert completed.returncode == 0, completed.stderr + completed.stdout
 assert abs(json.loads(completed.stdout)["results"][-1]["result"]["volume_mm3"] - expected) < 1e-4
 print("Hole with two stable position dimensions through MCP and CLI OK")
+
+client = Client([cli, "mcp", "--headless"])
+try:
+    client.ok("command_run", {"command": "primitive.add", "params": {"kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}})
+    vertical = client.ok("geometry_query", {"kind": "edge", "type": "line", "parallel_to": [0, 0, 1]})["entities"]
+    assert len(vertical) == 4 and all(e["name"] and e["description"] for e in vertical)
+    top = client.ok("geometry_query", {"kind": "face", "normal": [0, 0, 1]})["entities"][0]["ref"]
+    bottom = client.ok("geometry_query", {"kind": "face", "normal": [0, 0, -1]})["entities"][0]["ref"]
+    measurement = client.ok("measure", {"a": top, "b": bottom})
+    assert abs(measurement["distance_mm"] - 20) < 1e-6 and measurement["angle_degrees"] == 0, measurement
+    assert client.call("selection_get")["isError"]
+    client.ok("command_run", {"command": "feature.fillet", "params": {"edges": [e["ref"] for e in vertical], "radius": "2 mm"}})
+    assert len(client.ok("geometry_query", {"kind": "face"})["entities"]) == 10
+finally:
+    client.close()
+script = [["engine.execute", {"command": c, "params": p}] for c, p in [
+    ("primitive.add", {"kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}),
+    ("geometry.query", {"kind": "edge", "parallel_to": [0, 0, 1]}),
+    ("inspect.measure", {"a": {"body": "body-1", "name": "primitive-1/z_max", "kind": "face"}, "b": {"body": "body-1", "name": "primitive-1/z_min", "kind": "face"}}),
+]]
+completed = subprocess.run([cli, "run", "--script", json.dumps(script)], capture_output=True, text=True, encoding="utf-8", timeout=60)
+assert completed.returncode == 0, completed.stderr + completed.stdout
+reply = json.loads(completed.stdout)["results"]
+assert len(reply[1]["result"]["entities"]) == 4 and abs(reply[2]["result"]["distance_mm"] - 20) < 1e-6
+print("Geometry query, measure, headless selection refusal and all-vertical-edge agent workflow OK")

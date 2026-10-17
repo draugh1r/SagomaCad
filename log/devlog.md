@@ -314,3 +314,11 @@ Registrato `feature.hole` (H): faccia piana stabile, punto locale, diametro/prof
 Test: Ø8 passante a 10 mm dai due bordi su scatola 40×40×20, poi 60×40×35: centro x=y=10, volume 84000−560π mm³ e 7 facce. Variante cieca profonda 6: volume 84000−96π mm³ e 8 facce. Una quota guidata dal parametro offset passa da 10 a 12 mantenendo l'altra a 10; verificati cache, modifica, persistenza, errore atomico per centro esterno ed errore leggibile quando un taglio a monte elimina la faccia. Il flusso passa anche da CLI e MCP, compresa l'ispezione delle due quote con firme geometriche.
 
 Build Windows Release verde, CTest **49/49 in 25,35 s**, livelli/UTF-8/fuzz verdi. **Cancello prima della UI superato:** sono ora testate le catene reali di schizzi su faccia, estrusioni da faccia, raccordi e fori dopo modifiche a monte, più cancellazione effettiva e prosecuzione della regen. UI ancora invariata fino a questo commit; restano integrazione, strumenti agenti e confronto visivo. M6 non iniziato.
+
+## 2026-10-17 — M5, tappa 7a: query, misure e selezione per gli agenti
+
+Aggiunti comandi geometry.query, inspect.measure, selection.set/get e tool MCP geometry_query, measure, selection_get. Query con filtri corpo/tipo di entità/tipo geometrico/direzione parallela/normale e limite dei risultati; facce, spigoli e vertici restituiscono nomi, firme, descrizioni e bordi delle facce. Misure OCCT esatte della distanza minima e angolo acuto fra piani/rette; angolo null quando non definito. selection_get rifiuta la modalità headless; collegamento al viewport nativo nella prossima tappa UI.
+
+Test con 26 entità della scatola, filtro dei quattro spigoli verticali, distanza 20 mm fra sommità e fondo, angoli 0° e 90°, limiti delle query e vettore nullo rifiutato. Un agente MCP interroga gli spigoli verticali e li raccorda con R2: il corpo ha 10 facce. Parità CLI per query e misure, test della selezione solo nella sessione nativa simulata.
+
+Build Windows Release verde, CTest **50/50 in 25,49 s**, livelli/UTF-8/fuzz verdi. Resta render_view labels e la guida finale, da completare con il renderer della prossima tappa. Nessuna CI; M6 escluso.

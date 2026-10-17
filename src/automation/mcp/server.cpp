@@ -47,6 +47,9 @@ Json tools_catalog() {
         entry("document_open","Apre un documento in una radice consentita",schema({{"path",text_schema()}},{"path"})),
         entry("document_save","Salva un documento in una radice consentita",schema({{"path",text_schema()},{"overwrite",bool_schema()}})),
         entry("render_view","Renderizza un PNG da vista iso, top, front o right",schema({{"view",{{"type","string"},{"enum",Json::array({"iso","top","front","right"})}}},{"size",text_schema()}},{"view"})),
+        entry("geometry_query","Facce, spigoli e vertici con nomi stabili, firme e filtri geometrici",schema({{"body",text_schema()},{"kind",text_schema()},{"type",text_schema()},{"parallel_to",{{"type","array"},{"minItems",3},{"maxItems",3},{"items",{{"type","number"}}}}},{"normal",{{"type","array"},{"minItems",3},{"maxItems",3},{"items",{{"type","number"}}}}},{"limit",{{"type","integer"}}}})),
+        entry("measure","Distanza minima e angolo fra due entità stabili",schema({{"a",object_schema()},{"b",object_schema()}},{"a","b"})),
+        entry("selection_get","Legge la selezione utente nell'app aperta (solo bridge)",schema()),
         entry("mass_properties","Volume, area, baricentro e bounding box di un corpo",schema({{"body",text_schema()}})),
         entry("export","Esporta STL nella cartella export consentita",schema({{"format",{{"type","string"},{"enum",Json::array({"stl"})}}},{"path",text_schema()},{"body",text_schema()},{"stage",text_schema()},{"tolerance",{{"type","number"}}},{"overwrite",bool_schema()}},{"format","path"})),
         entry("ui_screenshot","Cattura la finestra dell'app aperta (solo bridge)",schema())
@@ -202,6 +205,13 @@ Json Server::tool(std::string_view name,const Json& a) {
         Json params={{"path",filename.string()}};
         for (const auto* key:{"body","stage","tolerance"}) if (a.contains(key)) params[key]=a[key];
         return invoke("engine.execute",{{"command","export.stl"},{"params",params}});
+    }
+    if(name=="geometry_query")return invoke("engine.execute",{{"command","geometry.query"},{"params",a}});
+    if(name=="measure")return invoke("engine.execute",{{"command","inspect.measure"},{"params",a}});
+    if(name=="selection_get"){
+        if(!a.is_object()||!a.empty())return tool_error("mcp.invalid_arguments","selection_get non accetta argomenti");
+        if(!bridge_)return tool_error("mcp.bridge_required","selection_get richiede l'app aperta");
+        return invoke("engine.execute",{{"command","selection.get"},{"params",a}});
     }
     if (name=="render_view") return visuals_(name,a);
     if (name=="ui_screenshot") {

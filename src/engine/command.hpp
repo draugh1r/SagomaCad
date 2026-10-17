@@ -43,6 +43,8 @@ struct Session {
     std::filesystem::path path;
     History history;
     std::string active_sketch; // editing state, not document geometry
+    nlohmann::json selection=nlohmann::json::array();
+    bool native_view=false;
 };
 
 struct CommandSpec {
@@ -95,6 +97,7 @@ std::vector<CommandSpec> sketch_visibility_specs();
 std::vector<CommandSpec> model_specs();
 std::vector<CommandSpec> surface_specs();
 std::vector<CommandSpec> hole_specs();
+std::vector<CommandSpec> geometry_specs();
 }
 
 } // namespace sagomacad::engine
