@@ -193,7 +193,8 @@
       "isTest": false,
       "milestone": "M5.5",
       "note": "Requisito screenshot sostituito dall'utente il 2026-10-17: riferimento SolidCraft locale. Scelte registrate in docs/design/README.md.",
-      "completedAt": "2026-10-17T14:15:49.132228+00:00"
+      "completedAt": "2026-10-17T14:15:49.132228+00:00",
+      "commit": "5786ca5"
     },
     {
       "id": 10,
@@ -215,7 +216,8 @@
       "features": [],
       "isTest": false,
       "milestone": "M5.5",
-      "completedAt": "2026-10-17T14:16:36.535836+00:00"
+      "completedAt": "2026-10-17T14:16:36.535836+00:00",
+      "commit": "d7b3680"
     },
     {
       "id": 11,
@@ -240,13 +242,14 @@
       "features": [],
       "isTest": false,
       "milestone": "M5.5",
-      "completedAt": "2026-10-17T14:17:12.197179+00:00"
+      "completedAt": "2026-10-17T14:17:12.197179+00:00",
+      "commit": "5e6f456"
     },
     {
       "id": 12,
       "phase": 9,
       "title": "9.3 Renderer delle icone per ruoli",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         11
@@ -263,7 +266,10 @@
       "features": [],
       "isTest": false,
       "milestone": "M5.5",
-      "startedAt": "2026-10-17T14:17:12.197193+00:00"
+      "startedAt": "2026-10-17T14:17:12.197193+00:00",
+      "completedAt": "2026-10-17T14:28:26.889832+00:00",
+      "note": "Build Release isolata build/agent-phase9, 53/53 ctest; 268 master nei due temi, cache, alias, GAP e fallback verificati.",
+      "commit": "5e6f456839064c00bd1886c13196c24dc6dc935d"
     },
     {
       "id": 13,
