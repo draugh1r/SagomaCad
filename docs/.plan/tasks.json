@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-17T14:47:19.711662+00:00",
+    "updatedAt": "2026-10-17T14:53:02.682655+00:00",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 9
@@ -367,7 +367,7 @@
       "isTest": false,
       "milestone": "M5.5",
       "startedAt": "2026-10-17T14:39:43.434176+00:00",
-      "note": "Tavole docs/design/tavola-light.png e tavola-dark.png generate e ispezionate. CLI design-board e MCP design_board operativi, build Release build/agent-phase9 e 57/57 ctest passati; DPI 1/2 verificati. In attesa di approvazione esplicita delle due tavole (PRP 9.7), poi copiare in approvate/ e proseguire con 9.8. Nessuna golden aggiornata.",
+      "note": "Tavole CLI/MCP pronte; su richiesta dell’utente il tema chiaro usa sfondi #ffffff in tutta l’app, testi/bordi neutri e pistacchio solo negli accenti. Tavola chiara rigenerata e ispezionata, screenshot a 1440x900/1280x720 nei due temi verificati. Resta in attesa di approvazione esplicita delle tavole (PRP 9.7); nessuna copia in approvate/.",
       "blockedAt": "2026-10-17T14:47:19.711662+00:00"
     },
     {

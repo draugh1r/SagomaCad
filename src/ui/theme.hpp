@@ -9,9 +9,9 @@ constexpr Color rgb(unsigned value,float alpha=1) {
 }
 // Name, light, dark, opacity. One list drives both themes, the board and validation.
 #define SAGOMACAD_VISUAL_COLORS(X) \
-    X(app_bar,0xf4f6ef,0x191f1b,1) \
-    X(toolbar,0xf6f8f1,0x202821,1) \
-    X(panel_header,0xe8eddf,0x2b352c,1) \
+    X(app_bar,0xffffff,0x191f1b,1) \
+    X(toolbar,0xffffff,0x202821,1) \
+    X(panel_header,0xffffff,0x2b352c,1) \
     X(hover,0xe6eed9,0x35442d,1) \
     X(accent_soft,0xe1edce,0x34472a,1) \
     X(text_on_accent,0x243019,0x243019,1) \
@@ -29,35 +29,35 @@ constexpr Color rgb(unsigned value,float alpha=1) {
     X(origin_plane,0xe7ba7c,0xd8a569,.20f) \
     X(origin_plane_edge,0x9f702c,0xe5b77b,.75f) \
     X(origin_plane_hover,0xc2d6a4,0xa4c478,.45f) \
-    X(origin_point,0x626b58,0xcbd5bf,1) \
+    X(origin_point,0x666666,0xcbd5bf,1) \
     X(construction_plane,0xe7ba7c,0xd8a569,.16f) \
     X(preview_add,0x5b9bc9,0x79b4dd,.35f) \
     X(preview_new,0x9fc472,0xb5d18b,.35f) \
     X(preview_cut,0xd86550,0xef8873,.35f) \
     X(preview_sketch,0x679249,0xa5c980,.45f) \
-    X(viewport_top,0xf9fbf5,0x202820,1) \
-    X(viewport_bottom,0xe8eddf,0x151c17,1) \
+    X(viewport_top,0xffffff,0x202820,1) \
+    X(viewport_bottom,0xffffff,0x151c17,1) \
     X(body_selected,0xa6c77d,0xb2cc8e,1) \
-    X(dimension,0x303b2b,0xe3ecd9,1) \
-    X(dimension_driven,0x616c58,0xa4b297,1) \
+    X(dimension,0x333333,0xe3ecd9,1) \
+    X(dimension_driven,0x666666,0xa4b297,1) \
     X(sketch_projected,0x8852ad,0xbf8de1,1) \
     X(sketch_lost,0xb24759,0xf08b9a,1) \
     X(sketch_construction,0xac702b,0xe4af67,1) \
     X(sketch_centerline,0xa06b36,0xd8a36a,1) \
     X(constraint,0xb34d42,0xe38c7e,1) \
-    X(glyph_bg,0xf9fbf5,0x242d24,.94f) \
+    X(glyph_bg,0xffffff,0x242d24,.94f) \
     X(glyph_edge,0xd9b4a9,0x80574a,1) \
     X(box_window,0x4f86ad,0x82bbdd,.30f) \
     X(box_crossing,0x70994d,0xa5cb79,.30f) \
     X(timeline_item,0xffffff,0x303b2e,1) \
     X(timeline_error,0xf9dfd8,0x5c332d,1) \
     X(timeline_marker,0x4d603c,0xb8d48f,1) \
-    X(dialog_bg,0xfafcf7,0x242e25,1) \
-    X(dialog_border,0xc9d2bf,0x4e5d46,1) \
-    X(heading_bg,0xe1e8d7,0x35412f,1) \
-    X(subheading_bg,0xedf1e6,0x2c3728,1) \
+    X(dialog_bg,0xffffff,0x242e25,1) \
+    X(dialog_border,0xd8d8d8,0x4e5d46,1) \
+    X(heading_bg,0xffffff,0x35412f,1) \
+    X(subheading_bg,0xffffff,0x2c3728,1) \
     X(field,0xffffff,0x1c251d,1) \
-    X(overlay,0xfafcf7,0x242e25,.94f) \
+    X(overlay,0xffffff,0x242e25,.94f) \
     X(warning,0xa06a1d,0xe5b15c,1)
 struct VisualTokens {
 #define SAGOMA_FIELD(name,l,d,a) Color name{};
@@ -182,10 +182,10 @@ constexpr Theme make_theme(Theme t,bool light) {
     SAGOMACAD_VISUAL_COLORS(SAGOMA_VALUE)
 #undef SAGOMA_VALUE
     t.accent=rgb(light?0x93c572:0xb1ce8a);
-    t.background=rgb(light?0xf2f5ed:0x192119);
+    t.background=rgb(light?0xffffff:0x192119);
     t.panel=t.visual.dialog_bg;t.panel_alt=t.visual.subheading_bg;
     t.viewport=t.visual.viewport_top;t.border=t.visual.dialog_border;
-    t.text=rgb(light?0x293322:0xe6eddd);t.muted=rgb(light?0x5e6b52:0xa7b59a);
+    t.text=rgb(light?0x292929:0xe6eddd);t.muted=rgb(light?0x666666:0xa7b59a);
     t.table_header=t.visual.heading_bg;t.table_header_text=t.text;
     t.sketch.constrained=t.text;t.sketch.finish=t.accent;
     t.sketch.free=rgb(light?0x3478bd:0x88b8ee);

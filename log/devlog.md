@@ -385,3 +385,8 @@ Nuovo `sagomacad-cli design-board`, anche MCP `design_board`: tavole PNG 1600×1
 Verifica locale Windows: build Release isolata in `build/agent-phase9` (CLI in agent-root occupato, lasciato attivo); **57/57 ctest** passati in 40.24 s, controllo livelli, import SVG, parità, regola finestre e UTF-8 verdi. Fuzz: 260 casi su 42 comandi e 222 casi MCP. Test MCP della tavola verifica immagini, argomenti invalidi e invarianza del documento/storia. Nessuna verifica o esecuzione CI remota.
 
 Resta aperta l’approvazione dell’utente sulle due tavole: non sono state copiate in `docs/design/approvate/`. Solo dopo la conferma si applicano le icone a ribbon/browser/timeline/menu (9.8), si completa la documentazione e si verifica la fase. Branch `phase/9`, nessun merge su main.
+
+
+## 2026-10-17 — Correzione degli sfondi del tema chiaro
+
+Precisazione dell’utente: bianco puro in tutta l’app, pistacchio solo come accento. Corretti sfondo generale, viewport, ribbon, pannelli, intestazioni, dialog e campi; testi e bordi neutri. Aggiunto controllo dei token per sfondi bianchi e neutrali senza dominante verde. Contrasto testo 14.55:1, secondario 5.74:1. Tavola chiara rigenerata; quattro screenshot nei due temi e alle due dimensioni ispezionati. Build Release e 57/57 test locali passati. Resta l’approvazione delle tavole prevista dal task 9.7.

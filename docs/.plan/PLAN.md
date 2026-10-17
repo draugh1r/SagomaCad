@@ -573,3 +573,5 @@ Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo sl
 - 2026-10-17: ogni fase inizia con un task 0 bloccante che chiede all'utente gli screenshot di riferimento con istruzioni passo passo; senza i file la fase non procede.
 
 - 2026-10-17: su richiesta dell'utente, per la fase 9 SolidCraft (`../solidcraft-ref`) sostituisce gli screenshot di ispirazione. Tema chiaro predefinito, accento verde pistacchio, densita compatta come Fusion.
+
+- 2026-10-17: precisazione dell’utente sul tema chiaro: background bianco in tutta l’app; verde pistacchio esclusivamente come accento, senza dominante verde negli sfondi.
