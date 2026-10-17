@@ -39,7 +39,7 @@ target_link_libraries(sagomacad_regen PUBLIC sagomacad_core sagomacad_doc sagoma
 add_library(sagomacad_mesh STATIC src/mesh/surface.cpp)
 target_include_directories(sagomacad_mesh PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(sagomacad_mesh PUBLIC sagomacad_core sagomacad_doc sagomacad_kernel)
-add_library(sagomacad_engine STATIC src/engine/registry.cpp src/engine/tools/model_preview.cpp src/engine/tools/sketch_tool.cpp src/engine/tools/sketch_overlay.cpp src/engine/cmds/document_cmds.cpp
+add_library(sagomacad_engine STATIC src/engine/registry.cpp src/engine/picking.cpp src/engine/tools/model_preview.cpp src/engine/tools/sketch_tool.cpp src/engine/tools/sketch_overlay.cpp src/engine/cmds/document_cmds.cpp
     src/engine/cmds/param_cmds.cpp src/engine/cmds/edit_cmds.cpp src/engine/cmds/primitive_cmds.cpp src/engine/cmds/export_cmds.cpp src/engine/cmds/body_cmds.cpp src/engine/cmds/feature_cmds.cpp src/engine/cmds/measure_cmds.cpp src/engine/cmds/sketch_cmds.cpp src/engine/cmds/sketch_visibility_cmds.cpp src/engine/cmds/model_cmds.cpp)
 target_include_directories(sagomacad_engine PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_compile_definitions(sagomacad_engine PRIVATE SAGOMACAD_EXPORT_DIR="${PROJECT_SOURCE_DIR}/export")
@@ -184,3 +184,7 @@ target_link_libraries(model_interaction_test PRIVATE sagomacad_shell)
 target_include_directories(model_interaction_test PRIVATE ${STB_INCLUDE_DIRS})
 add_test(NAME model_interaction COMMAND model_interaction_test ${CMAKE_BINARY_DIR}/m4-evidence)
 add_test(NAME modeling_agents COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_modeling_agents.py $<TARGET_FILE:sagomacad-cli> ${CMAKE_BINARY_DIR}/m4-acceptance)
+
+add_executable(picking_test tests/picking.cpp)
+target_link_libraries(picking_test PRIVATE sagomacad_engine)
+add_test(NAME picking COMMAND picking_test)

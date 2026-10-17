@@ -36,6 +36,8 @@
 #include <gp_Circ.hxx>
 #include <gp_Ax2.hxx>
 #include <TopoDS_Wire.hxx>
+#include <TopExp.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <algorithm>
 #include <numbers>
 
@@ -230,13 +232,16 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
                 if (result.triangles.size()>2000000) return Result<Tessellation>::failure("Troppi triangoli");
             }
         }
-        for (TopExp_Explorer explorer(shape.impl_->shape,TopAbs_EDGE);explorer.More();explorer.Next()) {
-            const auto edge=TopoDS::Edge(explorer.Current());
+        TopTools_IndexedMapOfShape edge_map;
+        TopExp::MapShapes(shape.impl_->shape,TopAbs_EDGE,edge_map);
+        for (int edge_id=1;edge_id<=edge_map.Extent();++edge_id) {
+            const auto edge=TopoDS::Edge(edge_map(edge_id));
             BRepAdaptor_Curve curve(edge);
             const double first=curve.FirstParameter(),last=curve.LastParameter();
             if (!std::isfinite(first) || !std::isfinite(last) || last<first) continue;
             const int count=curve.GetType()==GeomAbs_Line?1:48;
             Polyline line;
+            line.edge_id=edge_id;
             for (int i=0;i<=count;++i)
                 line.points.push_back(point(curve.Value(first+(last-first)*i/count)));
             result.edges.push_back(std::move(line));

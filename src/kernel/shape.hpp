@@ -20,7 +20,7 @@ template<class T> struct Result {
 struct Vec3 { double x=0.0,y=0.0,z=0.0; };
 struct MassProperties { double volume=0.0; double area=0.0; Vec3 center; Vec3 minimum; Vec3 maximum; };
 struct Triangle { std::array<Vec3,3> vertices; Vec3 normal; int face_id=0; };
-struct Polyline { std::vector<Vec3> points; };
+struct Polyline { std::vector<Vec3> points; int edge_id=0; };
 struct Tessellation { std::vector<Triangle> triangles; std::vector<Polyline> edges; };
 
 class Shape {
