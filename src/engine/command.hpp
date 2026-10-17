@@ -94,6 +94,7 @@ std::vector<CommandSpec> sketch_specs();
 std::vector<CommandSpec> sketch_visibility_specs();
 std::vector<CommandSpec> model_specs();
 std::vector<CommandSpec> surface_specs();
+std::vector<CommandSpec> hole_specs();
 }
 
 } // namespace sagomacad::engine

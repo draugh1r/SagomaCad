@@ -306,3 +306,11 @@ Registrati `feature.fillet` (F) e `feature.chamfer`: liste di spigoli dello stes
 Test reali con quattro spigoli verticali, R3/D3, cambio della scatola da 40×40×20 a 60×40×35: 10 facce e volumi analitici corretti. Verificati modifica a 2 mm e undo, errore atomico di creazione, parametro R portato a 1000 mm con errore leggibile e corpo precedente da 84000 mm³, ritorno a R3. CLI e MCP eseguono sia raccordo sia smusso su quattro nomi stabili e verificano i volumi.
 
 Build Windows Release verde, CTest **48/48 in 26,05 s**, livelli/UTF-8/fuzz verdi. Le scorciatoie sono dichiarate nel registro; maniglie, dialoghi e picking del viewport verranno collegati dopo il test reale del foro, ultimo requisito del cancello prima della UI. M5 in corso, M6 non iniziato.
+
+## 2026-10-17 — M5, tappa 6a: foro e quote persistenti dai bordi nel motore
+
+Registrato `feature.hole` (H): faccia piana stabile, punto locale, diametro/profondità come espressioni o passante. Il clic cattura automaticamente i due bordi lineari più vicini non paralleli; distanze e lato diventano due vincoli serializzati sui loro nomi stabili. Si possono fornire esplicitamente e modificare con feature.edit. La posizione viene risolta dalle due equazioni nella faccia attuale, senza fissare il centro in coordinate globali. Validati appartenenza dei bordi, parallelismo, centro interno alla faccia, dimensioni e risultati OCCT.
+
+Test: Ø8 passante a 10 mm dai due bordi su scatola 40×40×20, poi 60×40×35: centro x=y=10, volume 84000−560π mm³ e 7 facce. Variante cieca profonda 6: volume 84000−96π mm³ e 8 facce. Una quota guidata dal parametro offset passa da 10 a 12 mantenendo l'altra a 10; verificati cache, modifica, persistenza, errore atomico per centro esterno ed errore leggibile quando un taglio a monte elimina la faccia. Il flusso passa anche da CLI e MCP, compresa l'ispezione delle due quote con firme geometriche.
+
+Build Windows Release verde, CTest **49/49 in 25,35 s**, livelli/UTF-8/fuzz verdi. **Cancello prima della UI superato:** sono ora testate le catene reali di schizzi su faccia, estrusioni da faccia, raccordi e fori dopo modifiche a monte, più cancellazione effettiva e prosecuzione della regen. UI ancora invariata fino a questo commit; restano integrazione, strumenti agenti e confronto visivo. M6 non iniziato.

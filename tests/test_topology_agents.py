@@ -54,3 +54,26 @@ for command, amount in (("feature.fillet", "radius"), ("feature.chamfer", "dista
     assert completed.returncode == 0, completed.stderr + completed.stdout
     assert abs(json.loads(completed.stdout)["results"][-1]["result"]["volume_mm3"] - expected) < 1e-4
 print("Multiple stable edges: fillet and chamfer through MCP and CLI OK")
+
+hole_steps = [
+    ("primitive.add", {"kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}),
+    ("feature.hole", {"face": {"body": "body-1", "name": "primitive-1/z_max"}, "position": {"x": 10, "y": 10}, "diameter": "8 mm", "through_all": True}),
+    ("feature.edit", {"feature_id": "primitive-1", "dimensions": {"width": "60 mm", "height": "35 mm"}}),
+    ("model.mass_properties", {"body": "body-1"}),
+]
+expected = 84000 - 16*math.pi*35
+client = Client([cli, "mcp", "--headless"])
+try:
+    for command_id, params in hole_steps:
+        result = client.ok("command_run", {"command": command_id, "params": params})
+    assert abs(result["volume_mm3"] - expected) < 1e-4, result
+    params = client.ok("feature_get", {"feature_id": "feature-2"})["params"]
+    assert len(params["references"]) == 2
+    assert all(r["distance"] == "10 mm" and r["edge"]["signature"]["kind"] == "edge" for r in params["references"])
+finally:
+    client.close()
+script = [["engine.execute", {"command": c, "params": p}] for c, p in hole_steps]
+completed = subprocess.run([cli, "run", "--script", json.dumps(script)], capture_output=True, text=True, encoding="utf-8", timeout=60)
+assert completed.returncode == 0, completed.stderr + completed.stdout
+assert abs(json.loads(completed.stdout)["results"][-1]["result"]["volume_mm3"] - expected) < 1e-4
+print("Hole with two stable position dimensions through MCP and CLI OK")

@@ -17,4 +17,5 @@ Result<FaceFrame> face_frame(const Shape&,int id) noexcept;
 Result<doc::Sketch> face_reference_geometry(const Shape&,int id) noexcept;
 Result<Shape> fillet(const Shape&,const std::vector<int>& edges,double radius,const std::string& origin) noexcept;
 Result<Shape> chamfer(const Shape&,const std::vector<int>& edges,double distance,const std::string& origin) noexcept;
+Result<Shape> hole(const Shape&,int face_id,double x,double y,double diameter,double depth,bool through_all,const std::string& origin) noexcept;
 }

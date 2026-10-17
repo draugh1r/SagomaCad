@@ -7,6 +7,7 @@
 namespace sagomacad::engine::cmds {
 CommandResult edit_model_feature(Session&,const nlohmann::json&,const std::string&);
 CommandResult edit_surface_feature(Session&,const nlohmann::json&,const std::string&);
+CommandResult edit_hole_feature(Session&,const nlohmann::json&,const std::string&);
 namespace {
 std::string feature_id(const nlohmann::json& params) { return string_arg(params,params.contains("feature_id")?"feature_id":"id",true,256); }
 double checked_length(const doc::Document& document,const std::string& expression,const std::string& field) {
@@ -26,6 +27,7 @@ std::vector<CommandSpec> feature_specs() {
          [](Session& session,const nlohmann::json& params)->CommandResult {
              const auto id=feature_id(params);
              const auto found=session.document.features.find(id);
+             if(found!=session.document.features.end()&&found->second.type=="feature.hole")return edit_hole_feature(session,params,id);
              if(found!=session.document.features.end()&&(found->second.type=="feature.fillet"||found->second.type=="feature.chamfer"))return edit_surface_feature(session,params,id);
              if(found!=session.document.features.end()&&(found->second.type=="feature.extrude"||found->second.type=="feature.revolve"))return edit_model_feature(session,params,id);
              only_keys(params,{"feature_id","id","dimensions","name"});
