@@ -271,7 +271,7 @@ void Shell::draw() {
     const int layout_tab=state_.selected_tab;
     const auto& layout=layout_.compute(screen.x,screen.y,z,state_,t,glyph_sample_);
     layout_.render(ImGui::GetBackgroundDrawList());
-    auto texture=[&](std::string_view name) { return icon_texture(name); };
+    auto texture=[&](const ui::ToolbarCommand& c,float size,bool disabled) { return c.design_icon.empty()?icon_texture(c.icon):design_icon_texture(c.design_icon,c.accent,size,disabled); };
     auto invoke=[&](std::string_view id) { invoke_command(id); };
     auto command_button=[&](const ui::ToolbarCommand& c,ImVec2 pos,ImVec2 size,bool label) {
         ui::ribbon_button(c,{pos.x,pos.y,size.x,size.y},label,t,z,engine_,texture,invoke);
@@ -349,7 +349,7 @@ void Shell::draw() {
     },ImGuiWindowFlags_NoScrollbar);
     ImGui::PopStyleVar();
     if (state_.browser) panel("Browser", ui::labels.browser, t, layout.browser, [&] {
-        auto row=[&](const char* text,int depth,bool has_children,bool expanded,bool show_eye,bool visible) {
+        auto row=[&](const char* text,int depth,bool has_children,bool expanded,bool show_eye,bool visible,const char* glyph="folder") {
             ImDrawList* dl=ImGui::GetWindowDrawList();
             const ImVec2 q=ImGui::GetCursorScreenPos();
             const float indent=depth*15*z;
@@ -357,17 +357,18 @@ void Shell::draw() {
                 icon(dl,icon_texture(expanded?"chevron-down":"chevron-right"),{q.x+indent,q.y+2*z},13*z,packed(t.muted));
             if (show_eye)
                 icon(dl,icon_texture(visible?"eye":"eye-off"),{q.x+indent+17*z,q.y+1*z},15*z,packed(t.muted));
-            dl->AddText({q.x+indent+39*z,q.y+1*z},packed(depth==0?t.text:t.muted),text);
+            dl->AddImage(ImTextureID(design_icon_texture(glyph,std::string_view(glyph)=="sketch"?ui::IconAccent::Sketch:ui::IconAccent::Solid,t.board.browser_icon)),{q.x+indent+39*z,q.y+z},{q.x+indent+(39+t.board.browser_icon)*z,q.y+(1+t.board.browser_icon)*z});
+            dl->AddText({q.x+indent+(39+t.board.browser_icon+t.spacing)*z,q.y+1*z},packed(depth==0?t.text:t.muted),text);
             ImGui::Dummy({1,23*z});
         };
         const std::string browser_name=engine_?engine_->session().document.name:"Nuovo documento";
-        row(browser_name.c_str(),0,true,true,true,true);
-        row("Impostazioni documento",1,false,false,false,true);
-        row("Viste salvate",1,false,false,true,true);
-        row("Origine",1,true,true,true,true);
-        row("Piano XY",2,false,false,true,true);
-        row("Piano XZ",2,false,false,true,true);
-        row("Piano YZ",2,false,false,true,true);
+        row(browser_name.c_str(),0,true,true,true,true,"new");
+        row("Impostazioni documento",1,false,false,false,true,"params");
+        row("Viste salvate",1,false,false,true,true,"camera");
+        row("Origine",1,true,true,true,true,"origin");
+        row("Piano XY",2,false,false,true,true,"plane");
+        row("Piano XZ",2,false,false,true,true,"plane");
+        row("Piano YZ",2,false,false,true,true,"plane");
         const bool has_bodies=engine_ && !engine_->session().document.bodies.empty();
         row("Corpi",1,has_bodies,has_bodies,true,true);
         if (has_bodies) for (const auto& body:engine_->session().document.bodies) {
@@ -399,7 +400,7 @@ void Shell::draw() {
             ImGui::PopID();
             ImDrawList* dl=ImGui::GetWindowDrawList();
             icon(dl,icon_texture(body.visible?"eye":"eye-off"),eye_pos,15*z,packed(t.muted));
-            icon(dl,icon_texture("box"),{q.x+67*z,q.y+1*z},15*z,packed(t.muted));
+            dl->AddImage(ImTextureID(design_icon_texture("body",ui::IconAccent::Solid,t.board.browser_icon)),{q.x+67*z,q.y+z},{q.x+(67+t.board.browser_icon)*z,q.y+(1+t.board.browser_icon)*z});
             dl->AddText({q.x+87*z,q.y+1*z},packed(t.text),body.name.c_str());
             ImGui::SetCursorScreenPos(q); ImGui::Dummy({1,23*z});
         }
@@ -418,7 +419,9 @@ void Shell::draw() {
                 if(ImGui::InvisibleButton("sketch_eye",{18*z,18*z})){auto r=engine_->execute("sketch.visibility",{{"sketch",id},{"visible",!shown}});if(!r.ok)state_.status_message=r.error;}
                 if(ImGui::IsItemHovered())ImGui::SetTooltip("%s",shown?"Nascondi schizzo":"Mostra schizzo per riutilizzare i profili. Lo schizzo usato viene nascosto automaticamente.");
                 icon(ImGui::GetWindowDrawList(),icon_texture(shown?"eye":"eye-off"),{item.eye[0],item.eye[1]+z},15*z,packed(t.muted));
-                ImGui::SetCursorScreenPos({q.x+67*z,q.y});
+                auto* sketch_dl=ImGui::GetWindowDrawList();
+                sketch_dl->AddImage(ImTextureID(design_icon_texture("sketch",ui::IconAccent::Sketch,t.board.browser_icon,!shown)),{q.x+67*z,q.y+z},{q.x+(67+t.board.browser_icon)*z,q.y+(1+t.board.browser_icon)*z});
+                ImGui::SetCursorScreenPos({q.x+(67+t.board.browser_icon+t.spacing)*z,q.y});
                 if(ImGui::Selectable(f.name.c_str(),state_.sketch_view_id==id||state_.selected_profile_sketch==id)) {state_.selected_profile_sketch=id;state_.selected_profiles.clear();if(state_.model.open){state_.model.sketch=id;state_.model.profiles.clear();}}
                 auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();item.row={a.x,a.y,b.x-a.x,b.y-a.y};
                 if(ImGui::IsItemHovered()&&ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))open_feature_editor(id);
@@ -711,8 +714,13 @@ void Shell::draw_overlays(const ui::Theme& t) {
                 const auto availability=ui::command_availability(spec.id,engine_);
                 ImGui::PushID(spec.id.c_str());
                 ImGui::BeginDisabled(!availability.enabled);
-                const bool clicked=ImGui::Selectable((spec.label+"  ##command").c_str());
+                const auto at=ImGui::GetCursorScreenPos();
+                const bool clicked=ImGui::Selectable("##command",false,0,{0,std::max(ImGui::GetTextLineHeight(),t.layout.menu_icon*z)});
                 ImGui::EndDisabled();
+                const auto* artwork=ui::toolbar_command(spec.id);auto* dl=ImGui::GetWindowDrawList();
+                if(artwork&&artwork->design_icon.empty())icon(dl,icon_texture(artwork->icon),at,t.layout.menu_icon*z,packed(availability.enabled?t.text:t.muted));
+                else dl->AddImage(ImTextureID(design_icon_texture(artwork?artwork->design_icon:"placeholder",artwork?artwork->accent:ui::IconAccent::Solid,t.layout.menu_icon,!availability.enabled)),at,{at.x+t.layout.menu_icon*z,at.y+t.layout.menu_icon*z});
+                dl->AddText({at.x+(t.layout.menu_icon+t.spacing)*z,at.y},packed(availability.enabled?t.text:t.muted),spec.label.c_str());
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s",availability.enabled?spec.id.c_str():availability.reason.c_str());
                 if (clicked) { invoke_command(spec.id); state_.palette_open=false; }
                 ImGui::PopID();

@@ -83,6 +83,12 @@ constexpr ToolbarTab tabs[] = {
 std::span<const ToolbarTab> toolbar_catalog() { return tabs; }
 std::span<const ToolbarCommand> file_menu_commands() { return file_menu; }
 std::span<const ToolbarCommand> edit_toolbar_commands() { return edit_actions; }
+const ToolbarCommand* toolbar_command(std::string_view id) {
+    for(const auto& c:file_menu)if(c.id==id)return &c;
+    for(const auto& c:edit_actions)if(c.id==id)return &c;
+    for(const auto& tab:tabs)for(const auto& group:tab.groups)for(const auto& c:group.commands)if(c.id==id)return &c;
+    return nullptr;
+}
 CommandAvailability command_availability(std::string_view id, const engine::Engine* session_engine) {
     if (!session_engine) return {};
     const auto* spec = session_engine->registry().find(id);

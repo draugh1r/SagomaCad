@@ -8,7 +8,9 @@ namespace sagomacad::ui {
 namespace {
 ImU32 packed(Color c) { return ImGui::ColorConvertFloat4ToU32({c.r,c.g,c.b,c.a}); }
 void icon(ImDrawList* dl,unsigned texture,ImVec2 a,float size,ImU32 color) {
-    if (texture) dl->AddImage(static_cast<ImTextureID>(texture),a,{a.x+size,a.y+size},{0,0},{1,1},color);
+    if (!texture)return;
+    if(color)dl->AddImage(static_cast<ImTextureID>(texture),a,{a.x+size,a.y+size},{0,0},{1,1},color);
+    else dl->AddImage(static_cast<ImTextureID>(texture),a,{a.x+size,a.y+size});
 }
 }
 void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,const Theme& t,float z,
@@ -28,16 +30,16 @@ void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,co
     if (!available&&hovered) ImGui::SetTooltip("%s",status.reason.c_str());
     if (clicked&&available) invoke(command.id);
     if (hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(t.panel_alt),t.rounding*z);
-    const float icon_size=(show_label?21.0f:17.0f)*z;
-    icon(dl,texture(command.icon),{a.x+(size.x-icon_size)*0.5f,a.y+2*z},icon_size,packed(available?(command.id=="sketch.finish"?t.sketch.finish:t.text):t.muted));
+    const float logical_icon=show_label?t.board.ribbon_icon:t.layout.menu_icon,icon_size=logical_icon*z;
+    icon(dl,texture(command,logical_icon,!available),{a.x+(size.x-icon_size)*0.5f,a.y+t.layout.ribbon_icon_top*z},icon_size,command.design_icon.empty()?packed(available?t.text:t.muted):0);
     if (show_label) {
         const std::string label(command.label);
-        const float available=std::max(0.0f,size.x-t.spacing*z);
+        const float available_width=std::max(0.0f,size.x-t.spacing*z);
         const float base=t.layout.ribbon_label_size*z;
         const auto unwrapped=ImGui::GetFont()->CalcTextSizeA(base,FLT_MAX,0,label.c_str());
-        const float font_size=std::max(t.layout.ribbon_label_min*z,std::min(base,base*available/std::max(1.f,unwrapped.x))),wrap=0;
+        const float font_size=std::max(t.layout.ribbon_label_min*z,std::min(base,base*available_width/std::max(1.f,unwrapped.x))),wrap=0;
         const auto text_size=ImGui::GetFont()->CalcTextSizeA(font_size,FLT_MAX,wrap,label.c_str());
-        dl->AddText(ImGui::GetFont(),font_size,{a.x+(size.x-text_size.x)*0.5f,a.y+26*z},packed(available?t.text:t.muted),label.c_str(),nullptr,wrap);
+        dl->AddText(ImGui::GetFont(),font_size,{a.x+(size.x-text_size.x)*0.5f,a.y+(t.layout.ribbon_icon_top+logical_icon+t.layout.ribbon_label_gap)*z},packed(available?t.text:t.muted),label.c_str(),nullptr,wrap);
     }
     ImGui::PopID();
 }
@@ -53,7 +55,7 @@ void popup_command(const ToolbarCommand& command,float width,const Theme& t,floa
     const auto q=ImGui::GetItemRectMin();
     const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
     if (hovered) dl->AddRectFilled(q,{q.x+width*z,q.y+27*z},packed(t.panel_alt));
-    icon(dl,texture(command.icon),{q.x+4*z,q.y+4*z},18*z,packed(available?t.text:t.muted));
+    icon(dl,texture(command,t.layout.menu_icon,!available),{q.x+4*z,q.y+4*z},t.layout.menu_icon*z,command.design_icon.empty()?packed(available?t.text:t.muted):0);
     dl->AddText({q.x+30*z,q.y+5*z},packed(available?t.text:t.muted),std::string(command.label).c_str());
     if (!available&&hovered) ImGui::SetTooltip("%s",status.reason.c_str());
     if (clicked&&available) { invoke(command.id); ImGui::CloseCurrentPopup(); }

@@ -123,6 +123,7 @@ struct Theme {
         float label_top=4, label_right=10, label_font_size=15;
         float menu_icon_size=13, menu_icon_right=19, collapse_button=20;
         float ribbon_label_size=12.5f,ribbon_label_min=10;
+        float ribbon_icon_top=2,ribbon_label_gap=2,menu_icon=16,menu_row=27;
     } layout;
     struct SketchTokens {
         Color free{0.12f,0.40f,0.90f}, constrained{0.05f,0.05f,0.06f},profile{0.25f,0.70f,0.90f,0.14f},plane{0.65f,0.64f,0.60f,0.20f},plane_hover{0.98f,0.66f,0.12f,0.55f},finish{0.12f,0.65f,0.29f};

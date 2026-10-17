@@ -375,7 +375,7 @@
       "id": 17,
       "phase": 9,
       "title": "9.8 Icone applicate a ribbon, browser, timeline e menu",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         16
@@ -389,7 +389,11 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-ribbon.png",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T19:44:41.397572+00:00",
+      "completedAt": "2026-10-17T19:49:40.756108+00:00",
+      "note": "Icone applicate a ribbon 26px, menu/palette/browser 16px e timeline 20px; ruoli passivi per disabilitati. Build Release e 57/57 ctest; otto screenshot Solido/Schizzo nei due temi e due dimensioni, palette e DPI2 ispezionati contro le tavole approvate.",
+      "commit": "b80ef1e783df34420e8d512c3b67a820232e6209"
     },
     {
       "id": 18,

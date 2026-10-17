@@ -4,7 +4,7 @@
 #include <functional>
 
 namespace sagomacad::ui {
-using IconTexture=std::function<unsigned int(std::string_view)>;
+using IconTexture=std::function<unsigned int(const ToolbarCommand&,float,bool)>;
 using InvokeCommand=std::function<void(std::string_view)>;
 void ribbon_button(const ToolbarCommand&, LayoutRect, bool show_label, const Theme&, float scale,
                    const engine::Engine*, const IconTexture&, const InvokeCommand&);

@@ -1,4 +1,5 @@
 #include "ui/icons.hpp"
+#include "ui/toolbar_catalog.hpp"
 #include <iostream>
 #include <stdexcept>
 using namespace sagomacad::ui;
@@ -8,6 +9,12 @@ int main(int argc,char** argv) try {
     {
         Icons icons(argv[1],[&](const IconBitmap& b){check(!b.rgba.empty(),"upload bitmap");return ++uploads;},[&](unsigned){++deletes;});
         const auto masters=icons.masters();check(masters.size()>=268,"all masters loaded");
+        for(const auto& tab:toolbar_catalog())for(const auto& group:tab.groups)for(const auto& command:group.commands) {
+            check(toolbar_command(command.id)!=nullptr,"catalog lookup");
+            if(!command.design_icon.empty())check(!icons.raster(command.design_icon,command.accent,true,26).fallback,"live command has a master");
+            else check(!command.icon.empty(),"explicit Lucide fallback");
+        }
+        check(toolbar_command("unknown")==nullptr,"unknown catalog entry");
         for(const auto& id:masters)for(bool light:{true,false}) {
             const auto image=icons.raster(id,IconAccent::Solid,light,24);
             check(!image.fallback&&image.rgba.size()==24*24*4,"master rasterizes");

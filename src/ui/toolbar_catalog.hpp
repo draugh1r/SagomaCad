@@ -28,6 +28,7 @@ struct ToolbarTab {
 std::span<const ToolbarTab> toolbar_catalog();
 std::span<const ToolbarCommand> file_menu_commands();
 std::span<const ToolbarCommand> edit_toolbar_commands();
+const ToolbarCommand* toolbar_command(std::string_view id);
 struct CommandAvailability {
     bool registered = false;
     bool enabled = false;

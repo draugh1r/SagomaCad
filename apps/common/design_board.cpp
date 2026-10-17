@@ -19,8 +19,7 @@ std::vector<ui::ToolbarCommand> board_commands() {
     return result;
 }
 }
-void Shell::draw_design_board(const ui::Theme& t) {
-    const float z=float(scale_);const bool light=state_.theme=="light";
+unsigned Shell::design_icon_texture(std::string_view id,ui::IconAccent accent,float size,bool disabled) {
     if(!design_icons_) {
         design_icons_=std::make_unique<ui::Icons>(std::string(SAGOMACAD_ASSET_DIR)+"/icons/solidcraft/icons.json",
             [](const ui::IconBitmap& image){
@@ -31,6 +30,10 @@ void Shell::draw_design_board(const ui::Theme& t) {
                 glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image.pixels,image.pixels,0,GL_RGBA,GL_UNSIGNED_BYTE,image.rgba.data());glBindTexture(GL_TEXTURE_2D,0);return texture;
             },[](unsigned texture){glDeleteTextures(1,&texture);});
     }
+    return design_icons_->texture(id,accent,state_.theme=="light",unsigned(std::lround(size*scale_)),disabled);
+}
+void Shell::draw_design_board(const ui::Theme& t) {
+    const float z=float(scale_);const bool light=state_.theme=="light";
     const auto colors=ui::theme_colors(t);const auto commands=board_commands();const auto display=ImGui::GetIO().DisplaySize;
     const auto layout=layout_.design_board(display.x,display.y,z,t,colors.size(),commands.size());
     auto* dl=ImGui::GetBackgroundDrawList();
@@ -41,7 +44,7 @@ void Shell::draw_design_board(const ui::Theme& t) {
         text(r.x+t.spacing*z,r.y+t.spacing*z*.5f,label,t.text);
     };
     auto draw_icon=[&](std::string_view id,ui::IconAccent accent,float x,float y,float size,bool disabled=false){
-        auto texture=design_icons_->texture(id,accent,light,unsigned(std::lround(size*z)),disabled);
+        auto texture=design_icon_texture(id,accent,size,disabled);
         if(texture)dl->AddImage(ImTextureID(texture),{x,y},{x+size*z,y+size*z});
     };
     text(layout.header.x,layout.header.y,"SagomaCad / Identità visiva",t.text,t.board.heading*z);
