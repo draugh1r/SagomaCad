@@ -28,6 +28,13 @@ def knockouts(text, gap):
             if tag == 'g':
                 visit(node)
             if gap in (node.get('fill'), node.get('stroke')):
+                # SVG paints fill before stroke. A GAP stroke also erases the
+                # current shape's fill, not just shapes drawn before this node.
+                if node.get('stroke') == gap and node.get('fill', 'none') not in ('none', gap):
+                    foreground = copy.deepcopy(node)
+                    foreground.set('stroke', 'none')
+                    parent.append(foreground)
+                    node.set('fill', 'none')
                 counter[0] += 1
                 name = f'sagoma_gap_{counter[0]}'
                 mask = ET.SubElement(defs, f'{{{NS}}}mask', id=name,

@@ -23,6 +23,7 @@ int main(int argc,char** argv)try {
             check(contrast(t.text,background)>=4.5,"text contrast");
         check(contrast(t.muted,t.panel)>=4.5,"secondary text contrast");
         check(contrast(t.table_header_text,t.table_header)>=4.5,"table heading contrast");
+        check(contrast(t.visual.text_on_accent,t.accent)>=4.5,"primary button contrast");
         std::cout<<(is_light?"light":"dark")<<": "<<names.size()<<" tokens, text contrast "<<contrast(t.text,t.panel)<<", secondary "<<contrast(t.muted,t.panel)<<'\n';
     }
     const std::regex literal(R"((?:\bColor(?:\s+\w+)?|\bImVec4)\s*\{\s*[.0-9]|\bIM_COL32\s*\(\s*[.0-9]|(?:ColorConvertFloat4ToU32|PushStyleColor)\s*\([^\n]*\{\s*[.0-9]|\bglClearColor\s*\(\s*[.0-9])");

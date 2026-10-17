@@ -200,6 +200,7 @@ Shell::Shell(int width, int height, int scale, bool hidden, bool light) : scale_
     imgui_ready_ = true;
 }
 Shell::~Shell() {
+    design_icons_.reset();
     if (imgui_ready_) { ImGui_ImplOpenGL3_Shutdown(); ImGui_ImplSDL3_Shutdown(); }
     for (const auto& [_,texture] : icon_textures_) glDeleteTextures(1,&texture);
     if (ImGui::GetCurrentContext()) ImGui::DestroyContext();
@@ -282,7 +283,7 @@ void Shell::draw() {
         ImDrawList* dl=ImGui::GetWindowDrawList();
         const ImVec2 p=ImGui::GetCursorScreenPos();
         const float width=ImGui::GetContentRegionAvail().x;
-        dl->AddText(p,packed(t.accent),"SagomaCad");
+        dl->AddText(p,packed(t.visual.sel_edge),"SagomaCad");
         const std::string document_name=engine_?engine_->session().document.name:"Nuovo documento";
         dl->AddText({p.x+126*z,p.y},packed(t.text),document_name.c_str());
         const ImVec2 file_pos={p.x+126*z+ImGui::CalcTextSize(document_name.c_str()).x+26*z,p.y-2*z};
@@ -870,7 +871,7 @@ void Shell::render() {
     ImGui_ImplOpenGL3_NewFrame(); ImGui_ImplSDL3_NewFrame(); ImGui::NewFrame();
     style(ui::theme(state_.theme == "light"), scale_);
     ui::frame::reset_records();
-    draw();
+    if(state_.design_board)draw_design_board(ui::theme(state_.theme=="light"));else draw();
     save_settings();
     ImGui::Render();
     int w=0,h=0; SDL_GetWindowSizeInPixels(window_,&w,&h);
@@ -970,7 +971,7 @@ nlohmann::json Shell::inspect() const {
     auto items=nlohmann::json::array();for(const auto& r:state_.timeline_items)items.push_back({{"id",r.id},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     auto frames=nlohmann::json::array();for(const auto& r:ui::frame::records())frames.push_back({{"name",r.name},{"kind",r.kind},{"x",r.rect.x},{"y",r.rect.y},{"width",r.rect.width},{"height",r.rect.height},{"minimum",r.minimum},{"maximum",r.maximum}});
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
-        {"frames",frames},{"palette_search",state_.palette_search},
+        {"frames",frames},{"palette_search",state_.palette_search},{"design_board",state_.design_board},
         {"timeline_items",items},{"timeline_marker",{{"x",state_.timeline_marker_x},{"y",state_.timeline_marker_y},{"index",engine_?engine_->session().document.rollback:0}}},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},

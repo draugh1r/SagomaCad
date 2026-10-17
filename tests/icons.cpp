@@ -35,6 +35,7 @@ int main(int argc,char** argv) try {
         auto alpha=[&](unsigned x,unsigned y){return badge.rgba[(y*64+x)*4+3];};
         check(alpha(44,45)==0,"plus exposes transparency through earlier artwork");
         check(alpha(43,33)<32,"gap erases the document outside the badge foreground");
+        check(alpha(44,34)<32,"GAP stroke also erases its own fill");
         check(alpha(47,39)>200,"later foreground survives knockout");
         std::cout<<masters.size()<<" masters in both themes; cache, aliases and roles verified\n";
     }

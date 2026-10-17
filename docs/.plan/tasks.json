@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-17T14:12:22Z",
+    "updatedAt": "2026-10-17T14:47:19.711662+00:00",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 9
@@ -269,7 +269,7 @@
       "startedAt": "2026-10-17T14:17:12.197193+00:00",
       "completedAt": "2026-10-17T14:28:26.889832+00:00",
       "note": "Build Release isolata build/agent-phase9, 53/53 ctest; 268 master nei due temi, cache, alias, GAP e fallback verificati.",
-      "commit": "5e6f456839064c00bd1886c13196c24dc6dc935d"
+      "commit": "3ad5e74"
     },
     {
       "id": 13,
@@ -294,7 +294,7 @@
       "startedAt": "2026-10-17T14:28:29.491172+00:00",
       "completedAt": "2026-10-17T14:30:47.019207+00:00",
       "note": "Mappa catalogo e accenti verificata da update_parity.py --check; build Release e 53/53 test.",
-      "commit": "3ad5e74b579ddf06c73b296ba9cb753e5187cbab"
+      "commit": "b1d6ba2"
     },
     {
       "id": 14,
@@ -317,7 +317,7 @@
       "startedAt": "2026-10-17T14:30:49.643330+00:00",
       "completedAt": "2026-10-17T14:33:33.423114+00:00",
       "note": "77 token; contrasto testo 12.78/11.74 e secondario 5.49/6.51. Screenshot ispezionati nei due temi a 1440x900 e 1280x720. Build Release, 54/54 ctest.",
-      "commit": "b1d6ba202ebe07373dbfeba9fc05103200243368"
+      "commit": "90ec922"
     },
     {
       "id": 15,
@@ -343,13 +343,13 @@
       "startedAt": "2026-10-17T14:33:36.018899+00:00",
       "completedAt": "2026-10-17T14:39:40.741772+00:00",
       "note": "Fabbrica unica, pannelli Clay, limiti su due dimensioni/temi/DPI; 56/56 test. Test palette aggiornato al rettangolo reale del campo, senza ridurre controlli. Quattro screenshot ispezionati.",
-      "commit": "90ec922d141bc15edf94f7bd2580d1b65c58b388"
+      "commit": "e475f7c"
     },
     {
       "id": 16,
       "phase": 9,
       "title": "9.7 Tavola di design e approvazione (bloccante)",
-      "status": "pending",
+      "status": "blocked",
       "priority": "high",
       "dependencies": [
         15
@@ -365,7 +365,10 @@
       "validation": "test -f docs/design/approvate/tavola-light.png && test -f docs/design/approvate/tavola-dark.png",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:39:43.434176+00:00",
+      "note": "Tavole docs/design/tavola-light.png e tavola-dark.png generate e ispezionate. CLI design-board e MCP design_board operativi, build Release build/agent-phase9 e 57/57 ctest passati; DPI 1/2 verificati. In attesa di approvazione esplicita delle due tavole (PRP 9.7), poi copiare in approvate/ e proseguire con 9.8. Nessuna golden aggiornata.",
+      "blockedAt": "2026-10-17T14:47:19.711662+00:00"
     },
     {
       "id": 17,

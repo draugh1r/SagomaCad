@@ -2,6 +2,7 @@
 #include "ui/state.hpp"
 #include "ui/layout.hpp"
 #include "ui/theme.hpp"
+#include "ui/icons.hpp"
 #include "engine/command.hpp"
 #include "regen/regenerator.hpp"
 #include "mesh/surface.hpp"
@@ -67,6 +68,8 @@ private:
     ui::Viewport current_viewport_{};
     std::unordered_map<std::string, unsigned int> icon_textures_;
     unsigned int icon_texture(std::string_view name);
+    std::unique_ptr<ui::Icons> design_icons_;
+    void draw_design_board(const ui::Theme&);
     void draw();
     void draw_overlays(const ui::Theme& theme);
     void invoke_command(std::string_view id);

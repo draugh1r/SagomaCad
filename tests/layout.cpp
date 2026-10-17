@@ -71,4 +71,13 @@ int main() {
     restore_layout_state(restored,{{"browser_width",-100},{"properties_width",1e300},{"timeline_height","wrong"},{"browser","wrong"}});
     require(restored.browser_width==light.layout.browser_min&&restored.properties_width==light.layout.properties_max&&restored.timeline_height==140);
     restore_layout_state(restored,nlohmann::json::array());
+    for(float width:{1280.f,1600.f})for(float scale:{1.f,2.f}) {
+        const auto board=layout.design_board(width*scale,1800*scale,scale,light,theme_colors(light).size(),37);
+        const std::array areas{board.header,board.tokens,board.icons,board.ribbon,board.browser,board.timeline,board.dialog};
+        for(size_t i=0;i<areas.size();++i) {
+            const auto r=areas[i];require(r.visible());
+            require(r.x>=0&&r.y>=0&&r.x+r.width<=width*scale+.1f&&r.y+r.height<=1800*scale+.1f);
+            for(size_t j=i+1;j<areas.size();++j)require(!overlap(r,areas[j]));
+        }
+    }
 }

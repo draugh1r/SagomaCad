@@ -63,6 +63,30 @@ LayoutEngine::LayoutEngine(int element_limit):impl_(std::make_unique<Impl>(eleme
 LayoutEngine::~LayoutEngine() { if (Clay_GetCurrentContext()==impl_->context) Clay_SetCurrentContext(nullptr); }
 const ShellLayout& LayoutEngine::last() const { return impl_->last; }
 const std::string& LayoutEngine::error() const { return impl_->error; }
+DesignBoardLayout LayoutEngine::design_board(float w,float h,float z,const Theme& t,size_t colors,size_t icons) {
+    auto& self=*impl_;if(!self.context||!std::isfinite(w)||!std::isfinite(h)||w<=0||h<=0||!std::isfinite(z)||z<=0||z>8||colors>512||icons>512)return {};
+    auto* previous=Clay_GetCurrentContext();Clay_SetCurrentContext(self.context);Clay_SetLayoutDimensions({w,h});Clay_BeginLayout();
+    const auto margin=px(t.board.margin*z);const auto columns=size_t(t.board.columns);
+    const float token_height=(t.frame.heading_height+((colors+columns-1)/columns)*t.board.row)*z;
+    const float icon_height=(t.frame.heading_height+((icons+columns-1)/columns)*t.board.icon_row)*z;
+    CLAY({.id=id("board"),.layout={.sizing={CLAY_SIZING_FIXED(w),CLAY_SIZING_FIXED(h)},.padding={margin,margin,margin,margin},.childGap=px(t.spacing*z),.layoutDirection=CLAY_TOP_TO_BOTTOM}}) {
+        CLAY({.id=id("board_header"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(t.layout.topbar_height*z)}}}) {}
+        CLAY({.id=id("board_tokens"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(token_height)}}}) {}
+        CLAY({.id=id("board_icons"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(icon_height)}}}) {}
+        CLAY({.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED((t.board.example_height+t.frame.heading_height)*z)},.childGap=px(t.spacing*z)}}) {
+            CLAY({.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_GROW(0)},.childGap=px(t.spacing*z),.layoutDirection=CLAY_TOP_TO_BOTTOM}}) {
+                CLAY({.id=id("board_ribbon"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(t.model.row*4*z)}}}) {}
+                CLAY({.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_GROW(0)},.childGap=px(t.spacing*z)}}) {
+                    CLAY({.id=id("board_browser"),.layout={.sizing={CLAY_SIZING_FIXED(t.frame.dialog_max*z),CLAY_SIZING_GROW(0)}}}) {}
+                    CLAY({.id=id("board_timeline"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_GROW(0)}}}) {}
+                }
+            }
+            CLAY({.id=id("board_dialog"),.layout={.sizing={CLAY_SIZING_FIXED(t.selection.dialog_width*z),CLAY_SIZING_GROW(0)}}}) {}
+        }
+    }
+    Clay_EndLayout();DesignBoardLayout result{rect("board_header"),rect("board_tokens"),rect("board_icons"),rect("board_ribbon"),rect("board_browser"),rect("board_timeline"),rect("board_dialog")};
+    Clay_SetCurrentContext(previous);return result;
+}
 const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,const Theme& t,bool glyph) {
     auto& self=*impl_;
     if (!self.context || !std::isfinite(w)||!std::isfinite(h)||!std::isfinite(z)||w<0||h<0||z<=0||z>8||w>65535||h>65535) {

@@ -24,5 +24,13 @@ class KnockoutTests(unittest.TestCase):
         self.assertIn('fill="black"', result)
         self.assertIn('stroke="#236ead"', result)
 
+    def test_gap_stroke_erases_its_own_fill(self):
+        svg = '<svg xmlns="http://www.w3.org/2000/svg"><circle fill="#236ead" stroke="#ffffff" stroke-width="4"/></svg>'
+        root = ET.fromstring(knockouts(svg, '#ffffff'))
+        group = root.find(f'{{{NS}}}g')
+        self.assertEqual(group[0].get('fill'), '#236ead')
+        self.assertEqual(group[0].get('stroke'), 'none')
+        self.assertEqual(root[-1].get('fill'), 'none')
+
 if __name__ == '__main__':
     unittest.main()

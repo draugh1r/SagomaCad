@@ -151,6 +151,8 @@ struct Theme {
     struct BoardTokens {
         float margin=24,heading=25,row=32,icon_row=58,swatch=20;
         float columns=4,example_height=200;
+        std::array<float,3> icon_sizes{{16,24,32}};
+        float ribbon_icon=26,browser_icon=16,disabled_icon=24;
     } board;
 };
 inline constexpr Theme dark_base {
@@ -179,7 +181,7 @@ constexpr Theme make_theme(Theme t,bool light) {
 #define SAGOMA_VALUE(name,l,d,a) t.visual.name=rgb(light?l:d,a);
     SAGOMACAD_VISUAL_COLORS(SAGOMA_VALUE)
 #undef SAGOMA_VALUE
-    t.accent=rgb(light?0x719849:0xb1ce8a);
+    t.accent=rgb(light?0x93c572:0xb1ce8a);
     t.background=rgb(light?0xf2f5ed:0x192119);
     t.panel=t.visual.dialog_bg;t.panel_alt=t.visual.subheading_bg;
     t.viewport=t.visual.viewport_top;t.border=t.visual.dialog_border;

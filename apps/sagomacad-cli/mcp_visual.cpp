@@ -48,6 +48,20 @@ fs::path temporary_png() {
 
 Json mcp_visual_tool(std::string_view name,const Json& a,const McpInvoke& commands,
                      bool bridge,sagomacad::engine::Engine& local_engine) {
+    if(name=="design_board") {
+        if(!a.is_object()||(a.contains("theme")&&!a["theme"].is_string()))return failure("mcp.invalid_arguments","theme deve essere light o dark");
+        for(auto it=a.begin();it!=a.end();++it)if(it.key()!="theme")return failure("mcp.invalid_arguments","Argomento sconosciuto: "+it.key());
+        const auto theme=a.value("theme",std::string("light"));
+        if(theme!="light"&&theme!="dark")return failure("mcp.invalid_arguments","theme deve essere light o dark");
+        sagomacad::Shell shell(1600,1800,1,true,theme=="light");
+        if(!shell.valid())return failure("mcp.render_failed",shell.error());
+        shell.state().design_board=true;
+        for(int i=0;i<3;++i){shell.poll();shell.render();}
+        const auto path=temporary_png();std::string error;
+        if(!shell.screenshot(path.string(),error))return failure("mcp.render_failed",error);
+        auto result=image_result(path,{{"theme",theme},{"width",1600},{"height",1800},{"tokens",sagomacad::ui::theme_colors(sagomacad::ui::theme(theme=="light")).size()}});
+        std::error_code ignored;fs::remove(path,ignored);return result;
+    }
     if (name=="render_view") {
         if (!a.is_object() || !a.contains("view") || !a["view"].is_string() ||
             (a.contains("size") && !a["size"].is_string()) || (a.contains("labels")&&!a["labels"].is_boolean()))
