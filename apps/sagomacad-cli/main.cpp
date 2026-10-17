@@ -14,11 +14,13 @@ int main(int argc,char** argv) {
     if (argc>=2 && (std::string(argv[1])=="call" || std::string(argv[1])=="run"))
         return client_cli(argc,argv);
     if (argc>=2 && std::string(argv[1])=="mcp") return mcp_cli(argc,argv);
-    if (argc<2 || std::string(argv[1])!="snapshot") {
-        std::cerr<<"Usage: sagomacad-cli snapshot --size WIDTHxHEIGHT [--scale 1|2] --out file.png [--theme dark|light] [--glyph-test] [--script JSON]\n";
+    const bool design_board=argc>=2&&std::string(argv[1])=="design-board";
+    if (argc<2 || (!design_board&&std::string(argv[1])!="snapshot")) {
+        std::cerr<<"Usage: sagomacad-cli snapshot --size WIDTHxHEIGHT [--scale 1|2] --out file.png [--theme dark|light] [--glyph-test] [--script JSON]\n"
+                 <<"       sagomacad-cli design-board --out file.png [--theme light|dark] [--scale 1|2]\n";
         return 2;
     }
-    int width=1440,height=900,scale=1;
+    int width=design_board?1600:1440,height=design_board?1800:900,scale=1;
     std::string output,theme="light",script="[]";
     bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false,export_dialog=false;
     nlohmann::json parameter_draft,feature_draft,sketch_draft;
@@ -43,6 +45,9 @@ int main(int argc,char** argv) {
     if (width<320 || height<240 || width>4096 || height>4096 || scale<1 || scale>2 ||
         width*scale>8192 || height*scale>8192 || output.empty() || (theme!="dark" && theme!="light")) {
         std::cerr<<"Invalid snapshot options\n"; return 2;
+    }
+    if(design_board&&(width<1280||height<1800||script!="[]"||glyph_test)) {
+        std::cerr<<"Design board needs at least 1280x1800, without a model script or glyph test\n";return 2;
     }
     auto steps=nlohmann::json::parse(script,nullptr,false);
     if (!steps.is_array()) { std::cerr<<"--script must be a JSON array\n"; return 2; }
@@ -93,6 +98,7 @@ int main(int argc,char** argv) {
     sagomacad::Shell shell(width,height,scale,true,theme=="light");
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
     shell.bind_engine(&engine);
+    shell.state().design_board=design_board;
     shell.state().sketch_mode=sketch_mode;
     shell.state().sketch_plane_picker=sketch_plane_picker;
     shell.state().palette_open=palette_open;

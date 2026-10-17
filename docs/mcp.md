@@ -103,3 +103,7 @@ Per «raccorda R2 tutti gli spigoli verticali», interrogare kind=edge, type=lin
 parallel_to=[0,0,1], poi passare gli entities[].ref a feature.fillet attraverso
 command_run. Esempi completi eseguibili, inclusi schizzo su faccia, foro a 10 mm
 dai bordi e cambi a monte: [guida di modellazione](modeling-guide.md).
+
+## Tavola di design
+
+`design_board({"theme":"light"})` restituisce la tavola PNG di token, icone e campioni UI (1600×1800); `theme` può essere `light` (predefinito) o `dark`. Funziona sia headless sia in bridge e non modifica documento, storia o schermata dell’app aperta. Equivalente CLI: `sagomacad-cli design-board --theme light --out tavola.png`.

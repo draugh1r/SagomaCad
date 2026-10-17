@@ -1,4 +1,5 @@
 #include "shell.hpp"
+#include "ui/frame.hpp"
 #include "ui/sketch_view.hpp"
 #include "regen/attached_sketch.hpp"
 #include "engine/tools/sketch_overlay.hpp"
@@ -140,9 +141,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
 void Shell::draw_sketch_panels(const ui::Theme& t){
     auto& s=state_;if(!engine_||!s.sketch_mode||!sketch_solutions_.contains(s.sketch_view_id))return;
     const auto& result=sketch_solutions_.at(s.sketch_view_id);auto& tool=s.sketch_tool;const float z=float(scale_);const auto v=current_viewport_;auto* previous=ImGui::GetCurrentContext();(void)previous;
-    ImGui::SetNextWindowPos({float(v.x+v.width)-t.sketch.palette_width*z-t.padding*z,float(v.y)+t.sketch.palette_y*z},ImGuiCond_Always);
-    ImGui::SetNextWindowSize({t.sketch.palette_width*z,std::min(t.sketch.palette_height*z,float(v.height)-t.sketch.palette_y*z-t.padding*z)},ImGuiCond_Always);
-    ImGui::Begin(t.sketch.palette,nullptr,ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoScrollbar);
+    ui::frame::dialog(t.sketch.palette,nullptr,layout_.last().sketch_palette,t,z,ImGuiWindowFlags_NoScrollbar);
     ImGui::BeginChild("##sketch_options",{0,-ImGui::GetFrameHeightWithSpacing()-t.padding*z-t.spacing*z});
     ImGui::TextColored(rgba(result.state=="conflict"||result.state=="error"?t.error:t.muted),"%s · %d GDL",result.state=="constrained"?"Completamente vincolato":result.state=="conflict"?"In conflitto":result.state=="error"?"Errore di valutazione":"Libero",result.degrees_of_freedom);
     if(ImGui::Button("Guarda")){auto dest=ui::sketch_camera(s.camera,result.sketch.plane);s.view_transition.begin(s.camera,dest,t.cube.transition_duration);}
@@ -154,8 +153,7 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
         auto projection=s.camera.project(ui::sketch_world(result.sketch.plane,{tool.cursor_x,tool.cursor_y}),v);
         float left=std::clamp(float(projection.x)+t.sketch.dimension_offset*z,float(v.x)+t.padding*z,float(v.x+v.width)-t.sketch.palette_width*z-t.sketch.field_width*z-t.padding*z*3);
         float top=std::clamp(float(projection.y)+t.sketch.dimension_offset*z,float(v.y)+t.padding*z,float(v.y+v.height)-t.sketch.field_height*z*5);
-        ImGui::SetNextWindowPos({left,top},ImGuiCond_Always);ImGui::SetNextWindowSize({t.sketch.field_width*z+t.padding*z*2,0},ImGuiCond_Always);
-        ImGui::Begin("##sketch_live_dimensions",nullptr,ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoMouseInputs);
+        ui::frame::overlay("##sketch_live_dimensions",{left,top,t.sketch.field_width*z+t.padding*z*2,0},ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoMouseInputs);
         const char* labels[2]={tool.kind=="rect"?"Larghezza":tool.kind=="circle"?"Diametro":tool.kind=="arc"?"Raggio":"Lunghezza",tool.kind=="rect"?"Altezza":"Angolo"};
         int count=tool.kind=="circle"?1:2;bool confirm=false;int focus=s.sketch_field_focus?tool.active_field:-1;s.sketch_field_focus=false;
         const auto live=tool.live_values();
@@ -177,7 +175,7 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
         ImGui::End();if(confirm){auto r=tool.confirm(*engine_);if(r.ok&&r.value.value("preview",false)){std::snprintf(s.sketch_fields[0].data(),s.sketch_fields[0].size(),"%s",tool.fields[0].c_str());tool.active_field=1;s.sketch_field_focus=true;}if(!tool.error.empty())s.sketch_error=tool.error;}
     }
     if(s.sketch_dimension_open){
-        ImGui::SetNextWindowSize({t.file_dialog_width*z,0},ImGuiCond_Appearing);ImGui::Begin("Quota schizzo",&s.sketch_dimension_open,ImGuiWindowFlags_AlwaysAutoResize);
+        ui::frame::window("Quota schizzo",&s.sketch_dimension_open,t,z,{t.file_dialog_width*z,0},false,ImGuiWindowFlags_AlwaysAutoResize);
         if(s.sketch_dimension_id.empty()) {
             const std::array<std::string,5> kinds={"length","distance","diameter","radius","angle"};
             int kind=int(std::find(kinds.begin(),kinds.end(),s.sketch_dimension_kind)-kinds.begin());
@@ -190,7 +188,7 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
         if(!s.sketch_error.empty())ImGui::TextColored(rgba(t.error),"%s",s.sketch_error.c_str());ImGui::End();
     }
     if(s.sketch_constraint_open){
-        ImGui::Begin("Vincolo schizzo",&s.sketch_constraint_open,ImGuiWindowFlags_AlwaysAutoResize);
+        ui::frame::window("Vincolo schizzo",&s.sketch_constraint_open,t,z,{t.file_dialog_width*z,0},false,ImGuiWindowFlags_AlwaysAutoResize);
         const char* kinds[]={"coincident","horizontal","vertical","parallel","perpendicular","tangent","equal","midpoint","fix"};
         ImGui::Combo("Tipo",&s.sketch_constraint_kind,"Coincidente\0Orizzontale\0Verticale\0Parallelo\0Perpendicolare\0Tangente\0Uguale\0Punto medio\0Fisso\0");ImGui::TextUnformatted("Seleziona le geometrie con Shift+clic.");
         for(const auto& id:s.sketch_selection)ImGui::TextUnformatted(id.c_str());

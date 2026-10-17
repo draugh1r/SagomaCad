@@ -1,4 +1,5 @@
 #include "shell.hpp"
+#include "ui/frame.hpp"
 #include "ui/model_editor.hpp"
 #include "ui/sketch_view.hpp"
 #include <imgui.h>
@@ -75,11 +76,11 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
 }
 void Shell::draw_model_panel(const ui::Theme& t){
     auto& m=state_.model;if(!m.open||!engine_)return;const float z=float(scale_);const auto r=layout_.last().contextual;if(!r.visible())return;
-    ImGui::SetNextWindowPos({r.x,r.y});ImGui::SetNextWindowSize({r.width,r.height});
+    
     constexpr auto flags=ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding,t.rounding*z);
-    if(ImGui::Begin("##model_panel",nullptr,flags)){
-        m.fields.clear();ImGui::TextUnformatted(m.revolve?"RIVOLUZIONE":"ESTRUDI");ImGui::Separator();
+    if(ui::frame::dialog("##model_panel",nullptr,r,t,z,flags)){
+        m.fields.clear();ui::frame::heading(m.revolve?"RIVOLUZIONE":"ESTRUDI",t,z);
         const float content=std::max(t.model.row*z,ImGui::GetContentRegionAvail().y-t.model.footer*z);
         ImGui::BeginChild("model_fields",{0,content},ImGuiChildFlags_None,ImGuiWindowFlags_NoBackground);
         auto record=[&](const char* key){auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();m.fields[key]={a.x,a.y,b.x-a.x,b.y-a.y};};

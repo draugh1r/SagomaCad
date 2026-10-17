@@ -47,6 +47,7 @@ struct State {
     CubeInteraction cube_interaction;
     int navigation_mode = -1; // -1: pointer, 0: pan, 1: orbit, 2: zoom
     std::string theme = "light";
+    bool design_board=false;
     bool browser = true;
     bool properties = false;
     bool timeline = true;
@@ -74,6 +75,7 @@ struct State {
     bool previous_sketch_mode = false;
     bool palette_open = false;
     bool palette_focus = false;
+    std::array<float,4> palette_search{};
     bool parameters_open = false;
     bool file_dialog_open = false;
     bool primitive_editor_open = false;

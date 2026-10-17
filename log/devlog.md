@@ -372,3 +372,30 @@ Verifica finale Windows: **build Release verde, CTest 51/51 in 35,64 s**, livell
 | [16-foro-light-1280](../docs/screenshots/m5-confronto/16-foro-light-1280.png) | Faccia selezionata, cilindro rosso, quote dai bordi e campi diametro/estensione/profondità. | Ø8 passante a 10 dai bordi invece di Ø11 cieco; campi del foro semplice M5. Quote distanziate, drag e digitazione verificati; Passante nel viewport. Tema chiaro. Altezza 720: campi e footer accessibili. |
 | [16-foro-dark-1440](../docs/screenshots/m5-confronto/16-foro-dark-1440.png) | Faccia selezionata, cilindro rosso, quote dai bordi e campi diametro/estensione/profondità. | Ø8 passante a 10 dai bordi invece di Ø11 cieco; campi del foro semplice M5. Quote distanziate, drag e digitazione verificati; Passante nel viewport. Tema scuro. Altezza 900: pannello completo. |
 | [16-foro-dark-1280](../docs/screenshots/m5-confronto/16-foro-dark-1280.png) | Faccia selezionata, cilindro rosso, quote dai bordi e campi diametro/estensione/profondità. | Ø8 passante a 10 dai bordi invece di Ø11 cieco; campi del foro semplice M5. Quote distanziate, drag e digitazione verificati; Passante nel viewport. Tema scuro. Altezza 720: campi e footer accessibili. |
+
+
+## 2026-10-17 — Identità visiva, infrastruttura e tavole della fase 9
+
+Scelte esplicite dell’utente: riferimento SolidCraft al posto degli screenshot di ispirazione, tema chiaro, verde pistacchio e densità compatta. Riferimenti e regole di approvazione in `docs/design/README.md`. Importati senza alterazioni 268 SVG, palette, alias e licenze dal commit SolidCraft `72145d4aba05eab66e7a49b383bee9c9f5764da3`; import ripetibile con verifica byte per byte. Renderer C++/lunasvg per ruoli, alias, dimensione DPI, cache texture e placeholder; GAP cancella fino alla trasparenza, compreso il riempimento della propria forma quando è un bordo. Test di rasterizzazione su tutti i master nei due temi.
+
+Catalogo: 37 comandi unici con icona/accento, due fallback Lucide espliciti. Parità generata e controllata senza riscrittura in modalità `--check`. Tema: 77 token registrati, accento UI chiaro #93c572/scuro #b1ce8a; contrasto testo 12.78:1/11.74:1, secondario 5.49:1/6.51:1. Finestre attraverso `ui/frame.cpp`; pannelli dei comandi e tavolozza Schizzo dichiarati in Clay, dialog limitati dai token e finestre flottanti centrate. Test con coordinate fisse della ricerca aggiornato al rettangolo reale, conservando controlli di digitazione/undo. Corretto anche un sormonto visivo dell’intestazione sul pulsante di compressione del browser.
+
+Nuovo `sagomacad-cli design-board`, anche MCP `design_board`: tavole PNG 1600×1800 con tutti i token, catalogo 16/24/32 px e ruoli disabilitati, ribbon, browser, timeline e dialog. Aree della tavola dichiarate in Clay. Tavole nei due temi ispezionate; verificata anche scala 2. Screenshot shell/finestra parametri a 1440×900 e 1280×720 nei due temi controllati.
+
+Verifica locale Windows: build Release isolata in `build/agent-phase9` (CLI in agent-root occupato, lasciato attivo); **57/57 ctest** passati in 40.24 s, controllo livelli, import SVG, parità, regola finestre e UTF-8 verdi. Fuzz: 260 casi su 42 comandi e 222 casi MCP. Test MCP della tavola verifica immagini, argomenti invalidi e invarianza del documento/storia. Nessuna verifica o esecuzione CI remota.
+
+Resta aperta l’approvazione dell’utente sulle due tavole: non sono state copiate in `docs/design/approvate/`. Solo dopo la conferma si applicano le icone a ribbon/browser/timeline/menu (9.8), si completa la documentazione e si verifica la fase. Branch `phase/9`, nessun merge su main.
+
+
+## 2026-10-17 — Correzione degli sfondi del tema chiaro
+
+Precisazione dell’utente: bianco puro in tutta l’app, pistacchio solo come accento. Corretti sfondo generale, viewport, ribbon, pannelli, intestazioni, dialog e campi; testi e bordi neutri. Aggiunto controllo dei token per sfondi bianchi e neutrali senza dominante verde. Contrasto testo 14.55:1, secondario 5.74:1. Tavola chiara rigenerata; quattro screenshot nei due temi e alle due dimensioni ispezionati. Build Release e 57/57 test locali passati. Resta l’approvazione delle tavole prevista dal task 9.7.
+
+
+## 2026-10-17 — Chiusura fase 9 dopo l’approvazione
+
+L’utente conferma «ok ci siamo» sull’app con sfondi bianchi: tavole chiara/scura archiviate in `docs/design/approvate/`. Applicato il renderer comune SolidCraft a ribbon (26 px), menu e palette (16 px), browser (16 px) e timeline (20 px), con cache per tema/accento/pixel e ruoli passivi per disabilitati. Lucide resta per navigazione e fallback espliciti. Verificati lookup del catalogo e master assegnati; corretta la resa delle etichette disabilitate. La palette mantiene righe compatte.
+
+Documentata la procedura per master originali in `assets/icons/sagomacad/svg/`, separati dall’import immutato SolidCraft: il compilatore include la cartella e rifiuta collisioni con master/alias importati, con test. Colori solo da palette/token, approvazione esplicita delle immagini e fabbrica unica delle finestre documentati.
+
+Verifica di uscita Windows: build Release in `build/agent-phase9`; **57/57 ctest passati in 40.94 s**, livelli, import byte per byte, parità, regola finestre, UTF-8 e fuzz verdi (260 casi comandi, 222 MCP). Otto screenshot Solido/Schizzo a 1440×900 e 1280×720 nei due temi, palette dei comandi e ribbon a DPI 2 ispezionati contro le tavole approvate. Nessuna golden preesistente modificata. Lavoro della fase 9 concluso; la fase 10 richiede il proprio PRP e i relativi prerequisiti.

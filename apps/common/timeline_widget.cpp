@@ -43,11 +43,10 @@ void Shell::draw_timeline(const ui::Theme& t){
             if(ImGui::MenuItem("Elimina")){action="feature.delete";pending=id;}
             ImGui::EndPopup();
         }
-        auto tint=failed?t.error:inactive?t.muted:t.text;if(inactive)tint.a=.35f;
-        if(hovered)dl->AddRectFilled(p,{p.x+tokens.item*z,p.y+tokens.item*z},color(t.panel_alt),t.rounding*z);
-        const char* glyph=feature.type=="sketch"?"pen-tool":feature.type=="feature.extrude"?"move-3d":feature.type=="feature.revolve"?"rotate-3d":feature.type=="feature.fillet"?"blend":feature.type=="feature.chamfer"?"diamond":feature.type=="feature.hole"?"circle-dot":feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"circle-dot":"circle";
-        auto texture=icon_texture(glyph);const float inset=(tokens.item-tokens.icon)*z/2;
-        if(texture)dl->AddImage((ImTextureID)(intptr_t)texture,{p.x+inset,p.y+inset},{p.x+inset+tokens.icon*z,p.y+inset+tokens.icon*z},{0,0},{1,1},color(tint));
+        if(hovered||failed)dl->AddRectFilled(p,{p.x+tokens.item*z,p.y+tokens.item*z},color(failed?t.visual.timeline_error:t.visual.hover),t.rounding*z);
+        const char* glyph=feature.type=="sketch"?"sketch":feature.type=="feature.extrude"?"extrude":feature.type=="feature.revolve"?"revolve":feature.type=="feature.fillet"?"fillet":feature.type=="feature.chamfer"?"chamfer":feature.type=="feature.hole"?"hole":feature.type=="primitive.box"?"box":feature.type=="primitive.cylinder"?"cylinder":feature.type=="primitive.sphere"?"sphere":"placeholder";
+        auto texture=design_icon_texture(glyph,feature.type=="sketch"?ui::IconAccent::Sketch:ui::IconAccent::Solid,tokens.icon,inactive);const float inset=(tokens.item-tokens.icon)*z/2;
+        if(texture)dl->AddImage(ImTextureID(texture),{p.x+inset,p.y+inset},{p.x+inset+tokens.icon*z,p.y+inset+tokens.icon*z});
         if(feature.suppressed)dl->AddLine(p,{p.x+tokens.item*z,p.y+tokens.item*z},color(t.muted),z);
         ImGui::PopID();
     }

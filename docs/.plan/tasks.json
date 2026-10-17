@@ -2,10 +2,10 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-17T14:09:11Z",
+    "updatedAt": "2026-10-17T19:52:37.728132+00:00",
     "version": "1.0.0",
     "totalPhases": 15,
-    "currentPhase": 9
+    "currentPhase": 10
   },
   "tasks": [
     {
@@ -178,7 +178,7 @@
       "id": 9,
       "phase": 9,
       "title": "9.0 Riferimenti dall'utente (bloccante)",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         8
@@ -188,16 +188,19 @@
         "docs/design/README.md"
       ],
       "action": "USER",
-      "validation": "ls docs/reference/ispirazione/*.png && grep -q \"Scelte dell'utente\" docs/design/README.md",
+      "validation": "test -d ../solidcraft-ref && grep -q \"Scelte dell'utente\" docs/design/README.md",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Requisito screenshot sostituito dall'utente il 2026-10-17: riferimento SolidCraft locale. Scelte registrate in docs/design/README.md.",
+      "completedAt": "2026-10-17T14:15:49.132228+00:00",
+      "commit": "5786ca5"
     },
     {
       "id": 10,
       "phase": 9,
       "title": "9.1 Struttura dei riferimenti",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         9
@@ -212,13 +215,15 @@
       "validation": "git check-ignore docs/reference/README.md && test -f docs/design/README.md",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "completedAt": "2026-10-17T14:16:36.535836+00:00",
+      "commit": "d7b3680"
     },
     {
       "id": 11,
       "phase": 9,
       "title": "9.2 Import dei master SVG di SolidCraft",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         10
@@ -236,13 +241,15 @@
       "validation": "python tools/import_solidcraft_icons.py --check && grep -q \"assets/icons/solidcraft\" ATTRIBUTION.md",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "completedAt": "2026-10-17T14:17:12.197179+00:00",
+      "commit": "5e6f456"
     },
     {
       "id": 12,
       "phase": 9,
       "title": "9.3 Renderer delle icone per ruoli",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         11
@@ -258,13 +265,17 @@
       "validation": "cmake --build build --config Release && ctest --test-dir build -R icons --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:17:12.197193+00:00",
+      "completedAt": "2026-10-17T14:28:26.889832+00:00",
+      "note": "Build Release isolata build/agent-phase9, 53/53 ctest; 268 master nei due temi, cache, alias, GAP e fallback verificati.",
+      "commit": "3ad5e74"
     },
     {
       "id": 13,
       "phase": 9,
       "title": "9.4 Mappa comandi, icone e accenti",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         12
@@ -279,13 +290,17 @@
       "validation": "python tools/update_parity.py --check",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:28:29.491172+00:00",
+      "completedAt": "2026-10-17T14:30:47.019207+00:00",
+      "note": "Mappa catalogo e accenti verificata da update_parity.py --check; build Release e 53/53 test.",
+      "commit": "b1d6ba2"
     },
     {
       "id": 14,
       "phase": 9,
       "title": "9.5 Token del tema ampliati",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         13
@@ -298,13 +313,17 @@
       "validation": "ctest --test-dir build -R theme_tokens --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:30:49.643330+00:00",
+      "completedAt": "2026-10-17T14:33:33.423114+00:00",
+      "note": "77 token; contrasto testo 12.78/11.74 e secondario 5.49/6.51. Screenshot ispezionati nei due temi a 1440x900 e 1280x720. Build Release, 54/54 ctest.",
+      "commit": "90ec922"
     },
     {
       "id": 15,
       "phase": 9,
       "title": "9.6 Fabbrica unica delle finestre",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         14
@@ -320,13 +339,17 @@
       "validation": "python tests/frame_rule.py && ctest --test-dir build --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:33:36.018899+00:00",
+      "completedAt": "2026-10-17T14:39:40.741772+00:00",
+      "note": "Fabbrica unica, pannelli Clay, limiti su due dimensioni/temi/DPI; 56/56 test. Test palette aggiornato al rettangolo reale del campo, senza ridurre controlli. Quattro screenshot ispezionati.",
+      "commit": "e475f7c"
     },
     {
       "id": 16,
       "phase": 9,
       "title": "9.7 Tavola di design e approvazione (bloccante)",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         15
@@ -342,13 +365,18 @@
       "validation": "test -f docs/design/approvate/tavola-light.png && test -f docs/design/approvate/tavola-dark.png",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:39:43.434176+00:00",
+      "note": "Approvazione utente: ok ci siamo, 2026-10-17; tavole archiviate in approvate/.",
+      "blockedAt": "2026-10-17T14:47:19.711662+00:00",
+      "completedAt": "2026-10-17T19:44:38.314256+00:00",
+      "commit": "b80ef1e"
     },
     {
       "id": 17,
       "phase": 9,
       "title": "9.8 Icone applicate a ribbon, browser, timeline e menu",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         16
@@ -362,13 +390,17 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-ribbon.png",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T19:44:41.397572+00:00",
+      "completedAt": "2026-10-17T19:49:40.756108+00:00",
+      "note": "Icone applicate a ribbon 26px, menu/palette/browser 16px e timeline 20px; ruoli passivi per disabilitati. Build Release e 57/57 ctest; otto screenshot Solido/Schizzo nei due temi e due dimensioni, palette e DPI2 ispezionati contro le tavole approvate.",
+      "commit": "66c1877"
     },
     {
       "id": 18,
       "phase": 9,
       "title": "9.9 Documentazione",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         17
@@ -381,13 +413,17 @@
       "validation": "python tests/test_utf8.py",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T19:49:43.439687+00:00",
+      "completedAt": "2026-10-17T19:51:25.555819+00:00",
+      "note": "Documentata aggiunta master, ruoli, palette, approvazione e fabbrica finestre. Master originali separati da import SolidCraft, collisioni rifiutate con test. UTF-8, build Release e 57/57 ctest passati.",
+      "commit": "7d16093"
     },
     {
       "id": 19,
       "phase": 9,
       "title": "9.10 Verifica della fase",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         18
@@ -402,7 +438,10 @@
         "Regola \"una sola fabbrica di finestre\", con test"
       ],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T19:51:28.247619+00:00",
+      "completedAt": "2026-10-17T19:52:37.728132+00:00",
+      "note": "Build Release locale build/agent-phase9, 57/57 ctest (40.94s), livelli, import, parita, frame_rule, UTF-8 e fuzz 260 casi/222 MCP passati. Tavole approvate presenti; screenshot Solido/Schizzo a 1440x900 e 1280x720 nei due temi, palette e DPI2 ispezionati."
     },
     {
       "id": 20,

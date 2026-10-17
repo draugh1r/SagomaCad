@@ -63,6 +63,30 @@ LayoutEngine::LayoutEngine(int element_limit):impl_(std::make_unique<Impl>(eleme
 LayoutEngine::~LayoutEngine() { if (Clay_GetCurrentContext()==impl_->context) Clay_SetCurrentContext(nullptr); }
 const ShellLayout& LayoutEngine::last() const { return impl_->last; }
 const std::string& LayoutEngine::error() const { return impl_->error; }
+DesignBoardLayout LayoutEngine::design_board(float w,float h,float z,const Theme& t,size_t colors,size_t icons) {
+    auto& self=*impl_;if(!self.context||!std::isfinite(w)||!std::isfinite(h)||w<=0||h<=0||!std::isfinite(z)||z<=0||z>8||colors>512||icons>512)return {};
+    auto* previous=Clay_GetCurrentContext();Clay_SetCurrentContext(self.context);Clay_SetLayoutDimensions({w,h});Clay_BeginLayout();
+    const auto margin=px(t.board.margin*z);const auto columns=size_t(t.board.columns);
+    const float token_height=(t.frame.heading_height+((colors+columns-1)/columns)*t.board.row)*z;
+    const float icon_height=(t.frame.heading_height+((icons+columns-1)/columns)*t.board.icon_row)*z;
+    CLAY({.id=id("board"),.layout={.sizing={CLAY_SIZING_FIXED(w),CLAY_SIZING_FIXED(h)},.padding={margin,margin,margin,margin},.childGap=px(t.spacing*z),.layoutDirection=CLAY_TOP_TO_BOTTOM}}) {
+        CLAY({.id=id("board_header"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(t.layout.topbar_height*z)}}}) {}
+        CLAY({.id=id("board_tokens"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(token_height)}}}) {}
+        CLAY({.id=id("board_icons"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(icon_height)}}}) {}
+        CLAY({.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED((t.board.example_height+t.frame.heading_height)*z)},.childGap=px(t.spacing*z)}}) {
+            CLAY({.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_GROW(0)},.childGap=px(t.spacing*z),.layoutDirection=CLAY_TOP_TO_BOTTOM}}) {
+                CLAY({.id=id("board_ribbon"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(t.model.row*4*z)}}}) {}
+                CLAY({.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_GROW(0)},.childGap=px(t.spacing*z)}}) {
+                    CLAY({.id=id("board_browser"),.layout={.sizing={CLAY_SIZING_FIXED(t.frame.dialog_max*z),CLAY_SIZING_GROW(0)}}}) {}
+                    CLAY({.id=id("board_timeline"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_GROW(0)}}}) {}
+                }
+            }
+            CLAY({.id=id("board_dialog"),.layout={.sizing={CLAY_SIZING_FIXED(t.selection.dialog_width*z),CLAY_SIZING_GROW(0)}}}) {}
+        }
+    }
+    Clay_EndLayout();DesignBoardLayout result{rect("board_header"),rect("board_tokens"),rect("board_icons"),rect("board_ribbon"),rect("board_browser"),rect("board_timeline"),rect("board_dialog")};
+    Clay_SetCurrentContext(previous);return result;
+}
 const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,const Theme& t,bool glyph) {
     auto& self=*impl_;
     if (!self.context || !std::isfinite(w)||!std::isfinite(h)||!std::isfinite(z)||w<0||h<0||z<=0||z>8||w>65535||h>65535) {
@@ -125,12 +149,18 @@ const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,
                 CLAY({.id=id("properties_separator"),.layout={.sizing={CLAY_SIZING_FIXED(horizontal_divider),CLAY_SIZING_GROW(0)}},.backgroundColor=color(t.border)}) {}
                 CLAY({.id=id("properties"),.layout={.sizing={CLAY_SIZING_FIXED(properties*fraction),CLAY_SIZING_GROW(0)}}}) {}
             }
-            if(s.model.open||s.surface.open) {
+            if(s.model.open||s.surface.open||s.primitive_create_open||s.primitive_editor_open) {
                 const float panel_top=std::min(t.model.top*z,std::max(0.f,h-header-timeline-divider*2-t.model.footer*z-t.model.row*z*2));
                 const float panel_height=((s.surface.open?(s.surface.command=="feature.hole"?t.selection.hole_height:t.selection.dialog_height):s.model.revolve?t.model.revolve_height:t.model.height)+t.model.row*((!s.model.revolve&&s.model.direction==2?1:0)+(s.model.operation!=3?1:0)))*z;
-                CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(std::min((s.surface.open?t.selection.dialog_width:t.model.width)*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(panel_height,std::max(0.f,h-header-timeline-divider*2-panel_top-t.padding*z)))}},
+                const float panel_width=s.primitive_create_open||s.primitive_editor_open?t.frame.dialog_max:s.surface.open?t.selection.dialog_width:t.model.width;
+                CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(std::min(panel_width*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(panel_height,std::max(0.f,h-header-timeline-divider*2-panel_top-t.padding*z)))}},
                     .floating={.offset={-t.padding*z,panel_top},.parentId=id("viewport").id,.zIndex=2,.attachPoints={.element=CLAY_ATTACH_POINT_RIGHT_TOP,.parent=CLAY_ATTACH_POINT_RIGHT_TOP},.attachTo=CLAY_ATTACH_TO_ELEMENT_WITH_ID}}) {}
             }else {CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(0),CLAY_SIZING_GROW(0)}}}) {}}
+            if(s.sketch_mode) {
+                const float palette_top=std::min(t.sketch.palette_y*z,std::max(0.f,h-header-timeline-t.frame.min_height*z));
+                CLAY({.id=id("sketch_palette"),.layout={.sizing={CLAY_SIZING_FIXED(std::min(t.sketch.palette_width*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(t.sketch.palette_height*z,std::max(0.f,h-header-timeline-palette_top-t.padding*z)))}},
+                    .floating={.offset={-t.padding*z,palette_top},.parentId=id("viewport").id,.zIndex=2,.attachPoints={.element=CLAY_ATTACH_POINT_RIGHT_TOP,.parent=CLAY_ATTACH_POINT_RIGHT_TOP},.attachTo=CLAY_ATTACH_TO_ELEMENT_WITH_ID}}) {}
+            }
         }
         if (s.timeline) {
             CLAY({.id=id("timeline_separator"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(divider)}},.backgroundColor=color(t.border)}) {}
@@ -153,6 +183,7 @@ const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,
     candidate.topbar=rect("topbar"); candidate.ribbon=rect("ribbon"); candidate.browser=s.browser?rect("browser"):LayoutRect{};
     candidate.viewport=rect("viewport"); candidate.properties=s.properties?rect("properties"):LayoutRect{};
     candidate.timeline=s.timeline?rect("timeline"):LayoutRect{}; candidate.contextual=rect("contextual");
+    candidate.sketch_palette=s.sketch_mode?rect("sketch_palette"):LayoutRect{};
     candidate.header_separator=rect("header_separator"); candidate.browser_separator=s.browser?rect("browser_separator"):LayoutRect{};
     candidate.properties_separator=s.properties?rect("properties_separator"):LayoutRect{}; candidate.timeline_separator=s.timeline?rect("timeline_separator"):LayoutRect{};
     candidate.group_count=ribbon_visible?std::min(groups.size(),candidate.groups.size()):0;

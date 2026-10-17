@@ -571,3 +571,7 @@ Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo sl
 - 2026-10-17: l'interfaccia non replica più Fusion 1:1. Comportamento e flusso seguono le convenzioni dei CAD parametrici (riferimento privato `docs/reference/`), l'aspetto è nostro (`docs/design/`). Motivo: evitare di copiare l'aspetto di un prodotto commerciale.
 - 2026-10-17: nuovo traguardo M5.5 dall'analisi di SolidCraft (tangency-labs/solidcraft, MIT OR Apache-2.0): icone e palette per ruoli, token, viewport GPU, handle con nome, scenari UI. Il codice Rust si studia e si traduce, mai si copia senza attribuzione; gli SVG si riusano citandoli.
 - 2026-10-17: ogni fase inizia con un task 0 bloccante che chiede all'utente gli screenshot di riferimento con istruzioni passo passo; senza i file la fase non procede.
+
+- 2026-10-17: su richiesta dell'utente, per la fase 9 SolidCraft (`../solidcraft-ref`) sostituisce gli screenshot di ispirazione. Tema chiaro predefinito, accento verde pistacchio, densita compatta come Fusion.
+
+- 2026-10-17: precisazione dell’utente sul tema chiaro: background bianco in tutta l’app; verde pistacchio esclusivamente come accento, senza dominante verde negli sfondi.

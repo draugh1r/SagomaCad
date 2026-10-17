@@ -110,3 +110,15 @@ Aggiornare anche il budget delle larghezze per conservare il minimo del viewport
 Non calcolare la posizione del nuovo pannello nella shell. I dialoghi e le tavolozze
 contestuali già presenti conservano il comportamento precedente; `contextual` è
 riservato e vuoto. Evidenze e differenze visive: `docs/screenshots/layout/README.md`.
+
+## Identità visiva
+
+Riferimenti di comportamento: `docs/reference/` (privati). Aspetto: `docs/design/` e token del tema; SolidCraft è il riferimento autorizzato per la fase 9. Tema predefinito chiaro, accento verde pistacchio e densità compatta. Solo le schermate approvate esplicitamente dall’utente entrano in `docs/design/approvate/`.
+
+## Icone e finestre condivise (M5.5)
+
+Ribbon, menu File e dei gruppi, palette dei comandi, browser e timeline usano il renderer `ui::Icons` tramite `Shell::design_icon_texture`. Le icone del ribbon sono 26 px, quelle dei menu/palette/browser 16 px, quelle della timeline 20 px, prima della scala DPI. `toolbar_command` permette alla palette di riusare la stessa associazione del ribbon; le operazioni non catalogate mostrano il segnaposto. I due fallback espliciti Lucide sono Salva con nome e Scorri selezione; i controlli di navigazione restano Lucide. I ruoli passivi delle voci disabilitate conservano la gradazione delle facce. Gli errori nella timeline usano lo sfondo di errore, senza alterare il master.
+
+Tutti gli `ImGui::Begin` e il posizionamento delle finestre sono in `src/ui/frame.cpp`. I pannelli leggono rettangoli Clay; i dialog applicano i limiti dei token e rimangono agganciati al viewport. Le finestre flottanti si aprono centrate. `heading` usa i token delle intestazioni e riserva spazio al pulsante di compressione del browser. `frame_rule` impedisce creazioni dirette altrove; `frame_limits` verifica limiti e posizioni nei due temi, su due dimensioni e a DPI 1/2. `ui.inspect` espone i rettangoli e i limiti in `frames`, oltre al rettangolo `palette_search` per input riproducibile.
+
+La procedura per master originali, palette, alias e approvazione delle schermate è in `docs/design/README.md`. Gli sfondi del tema chiaro sono bianchi; testi e bordi sono neutri, il pistacchio è un accento. Le tavole approvate sono il riferimento visivo della fase.

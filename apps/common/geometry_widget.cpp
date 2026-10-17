@@ -1,4 +1,5 @@
 #include "shell.hpp"
+#include "ui/frame.hpp"
 #include "ui/surface_editor.hpp"
 #include "ui/sketch_view.hpp"
 #include "engine/tools/model_preview.hpp"
@@ -93,8 +94,8 @@ void Shell::draw_surface_panel(const ui::Theme& t){
     if(s.selection_filters_open){ImGui::OpenPopup("Filtri di selezione");s.selection_filters_open=false;}
     if(ImGui::BeginPopup("Filtri di selezione")){ImGui::TextUnformatted("FILTRI DI SELEZIONE");ImGui::Checkbox("Facce",&s.pick_filter.faces);ImGui::Checkbox("Spigoli",&s.pick_filter.edges);ImGui::Checkbox("Corpi",&s.pick_filter.bodies);ImGui::Checkbox("Schizzi",&s.pick_filter.sketches);ImGui::EndPopup();}
     if(!m.open||!engine_)return;auto r=layout_.last().contextual;if(!r.visible())return;
-    ImGui::SetNextWindowPos({r.x,r.y});ImGui::SetNextWindowSize({r.width,r.height});ImGui::Begin("##surface_panel",nullptr,ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings);
-    ImGui::TextUnformatted(m.command=="feature.fillet"?"RACCORDO":m.command=="feature.chamfer"?"SMUSSO":"FORO");ImGui::Separator();
+    ui::frame::dialog("##surface_panel",nullptr,r,t,z);
+    ui::frame::heading(m.command=="feature.fillet"?"RACCORDO":m.command=="feature.chamfer"?"SMUSSO":"FORO",t,z);
     ImGui::BeginChild("surface_fields",{0,-t.model.footer*z},false);
     auto field=[&](const char* label,const char* key,auto& buffer){ImGui::AlignTextToFramePadding();ImGui::TextUnformatted(label);ImGui::SameLine(t.model.label_width*z);ImGui::SetNextItemWidth(-t.padding*z);ImGui::InputText((std::string("##")+key).c_str(),buffer.data(),buffer.size(),ImGuiInputTextFlags_AutoSelectAll);auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();m.fields[key]={a.x,a.y,b.x-a.x,b.y-a.y};};
     if(m.command=="feature.hole"){

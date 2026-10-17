@@ -19,11 +19,13 @@ struct RibbonLayout {
 };
 struct ShellLayout {
     LayoutRect topbar, ribbon, browser, viewport, properties, timeline, contextual;
+    LayoutRect sketch_palette;
     LayoutRect header_separator, browser_separator, properties_separator, timeline_separator;
     std::array<RibbonLayout,8> groups{};
     size_t group_count=0;
     int tab_index=0;
 };
+struct DesignBoardLayout {LayoutRect header,tokens,icons,ribbon,browser,timeline,dialog;};
 // Owns one bounded Clay arena; no Clay types escape ui/.
 class LayoutEngine {
 public:
@@ -33,6 +35,7 @@ public:
     LayoutEngine(const LayoutEngine&)=delete;
     const ShellLayout& compute(float width, float height, float scale, const State&, const Theme&, bool glyph_sample=false);
     const ShellLayout& last() const;
+    DesignBoardLayout design_board(float width,float height,float scale,const Theme&,size_t colors,size_t icons);
     const std::string& error() const;
     void render(ImDrawList*) const;
 private:
