@@ -4,6 +4,7 @@
 #include "regen/model_features.hpp"
 #include "kernel/topology.hpp"
 #include "regen/attached_sketch.hpp"
+#include "regen/surface_features.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -79,7 +80,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             auto evaluate=[&](const nlohmann::json& expression){if(!expression.is_string())return;doc::Quantity q;std::string error;
                 if(doc::evaluate_expression(document,expression.get<std::string>(),q,error))signature["values"].push_back({q.value,int(q.dimension)});else signature["values"].push_back(error);};
             if(f.data.is_object()) {
-                for(const char* key:{"distance","second_distance","angle"})if(f.data.contains(key))evaluate(f.data[key]);
+                for(const char* key:{"distance","second_distance","angle","radius"})if(f.data.contains(key))evaluate(f.data[key]);
                 for(const char* key:{"dimensions","position","constraints"})if(f.data.contains(key)) {
                     const auto& rows=f.data[key];if(rows.is_array()){for(const auto& row:rows)if(row.is_object()&&row.contains("expression"))evaluate(row["expression"]);}
                     else if(rows.is_object())for(const auto& expression:rows)evaluate(expression);
@@ -109,7 +110,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             } catch(const std::exception& e) { snapshot_.features.push_back({id,e.what(),false}); }
             return;
         }
-        const auto result=it->second.type=="feature.extrude"||it->second.type=="feature.revolve"?build_model_feature(document,it->second,snapshot_):build(document,it->second);
+        const auto result=it->second.type=="feature.extrude"||it->second.type=="feature.revolve"?build_model_feature(document,it->second,snapshot_):it->second.type=="feature.fillet"||it->second.type=="feature.chamfer"?build_surface_feature(document,it->second,snapshot_):build(document,it->second);
         snapshot_.features.push_back({id,result.error,false});
         try {
             const auto body_id=it->second.data.at("body_id").get<std::string>();
@@ -118,6 +119,9 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
             if (body==snapshot_.bodies.end()) {
                 snapshot_.features.back().error="Corpo della feature non trovato";
                 return;
+            }
+            if(it->second.type=="feature.fillet"||it->second.type=="feature.chamfer"){
+                if(result.shape){body->exact=result.shape;body->final=result.shape;body->error.clear();}return;
             }
             const auto operation=it->second.data.value("operation",std::string("new"));
             if((it->second.type=="feature.extrude"||it->second.type=="feature.revolve") && operation!="new") {

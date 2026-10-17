@@ -1,5 +1,6 @@
 """Face support is reachable through MCP command_run and the headless CLI."""
 import json
+import math
 import subprocess
 import sys
 from test_mcp_integration import Client
@@ -33,3 +34,23 @@ assert completed.returncode == 0, completed.stderr + completed.stdout
 reply = json.loads(completed.stdout)
 assert abs(reply["results"][-1]["result"]["bbox_mm"]["min"]["z"] - 40) < 1e-5, reply
 print("Face support, projection, upstream change and cylinder position through MCP and CLI OK")
+
+edge_refs = [{"body": "body-1", "name": f"primitive-1/edge(primitive-1/x_{x},primitive-1/y_{y})"}
+             for x in ("min", "max") for y in ("min", "max")]
+for command, amount in (("feature.fillet", "radius"), ("feature.chamfer", "distance")):
+    dress_steps = [("primitive.add", {"kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}),
+                   (command, {"edges": edge_refs, amount: "2 mm"}),
+                   ("model.mass_properties", {"body": "body-1"})]
+    expected = (1600 - (4-math.pi if amount == "radius" else 2)*4)*20
+    client = Client([cli, "mcp", "--headless"])
+    try:
+        for command_id, params in dress_steps:
+            result = client.ok("command_run", {"command": command_id, "params": params})
+        assert abs(result["volume_mm3"] - expected) < 1e-4, result
+    finally:
+        client.close()
+    script = [["engine.execute", {"command": c, "params": p}] for c, p in dress_steps]
+    completed = subprocess.run([cli, "run", "--script", json.dumps(script)], capture_output=True, text=True, encoding="utf-8", timeout=60)
+    assert completed.returncode == 0, completed.stderr + completed.stdout
+    assert abs(json.loads(completed.stdout)["results"][-1]["result"]["volume_mm3"] - expected) < 1e-4
+print("Multiple stable edges: fillet and chamfer through MCP and CLI OK")

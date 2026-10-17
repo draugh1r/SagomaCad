@@ -298,3 +298,11 @@ Build Windows Release verde, CTest **46/46 in 24,05 s**, inclusi fuzz, livelli e
 Test su dodici combinazioni operazione/direzione e sulle stesse dopo cambio larghezza/altezza a monte, faccia laterale con normale X, modifica distanza, rifiuto atomico di sorgenti incompatibili. Verificato Attraverso tutto da faccia z=30 verso un altro corpo alto 40: volume 94000 mm³ in una direzione e 92000 mm³ sui due lati. Esteso il test CLI/MCP: estrusione diretta che segue la sommità fino a z=40.
 
 Build Windows Release verde, CTest **47/47 in 23,64 s**, livelli e fuzz inclusi verdi. UI ancora invariata in attesa delle regressioni reali di raccordi e fori. M5 in corso, M6 escluso.
+
+## 2026-10-17 — M5, tappa 5a: raccordo e smusso parametrici nel motore
+
+Registrati `feature.fillet` (F) e `feature.chamfer`: liste di spigoli dello stesso corpo, raggio/distanza come espressione, firme catturate, modifica tramite feature.edit, un passo di undo. La rigenerazione risolve i nomi su ogni valutazione e propaga la storia OCCT. In caso di errore conserva la forma precedente e segnala nella feature nomi stabili e ID degli spigoli coinvolti. Nessuna eccezione OCCT esce dal kernel.
+
+Test reali con quattro spigoli verticali, R3/D3, cambio della scatola da 40×40×20 a 60×40×35: 10 facce e volumi analitici corretti. Verificati modifica a 2 mm e undo, errore atomico di creazione, parametro R portato a 1000 mm con errore leggibile e corpo precedente da 84000 mm³, ritorno a R3. CLI e MCP eseguono sia raccordo sia smusso su quattro nomi stabili e verificano i volumi.
+
+Build Windows Release verde, CTest **48/48 in 26,05 s**, livelli/UTF-8/fuzz verdi. Le scorciatoie sono dichiarate nel registro; maniglie, dialoghi e picking del viewport verranno collegati dopo il test reale del foro, ultimo requisito del cancello prima della UI. M5 in corso, M6 non iniziato.
