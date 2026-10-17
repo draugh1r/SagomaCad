@@ -1,4 +1,4 @@
-# AGENTS.md - guida per agenti AI e contributori
+# RULES.md - regole del progetto per agenti AI e contributori (ex docs/AGENTS.md)
 
 `SagomaCad` è un CAD parametrico desktop in **C++20**: il flusso di Fusion 360 (schizzi con vincoli, feature, timeline) con l'immediatezza di Tinkercad, file in locale, pensato per la stampa 3D. Kernel geometrico OpenCascade, interfaccia Dear ImGui per i widget e Clay per il layout, su SDL3 e OpenGL. Leggi questo file per primo, poi `PLAN.md` nella stessa cartella e il resto di `docs/`.
 

@@ -1,6 +1,6 @@
 # Piano di sviluppo - SagomaCad
 
-Documento da dare a Codex come guida del progetto. Va letto insieme ad `AGENTS.md`.
+Documento da dare a Codex come guida del progetto. Va letto insieme a `RULES.md` (stessa cartella), che contiene le regole del codice.
 Il nome del progetto è SagomaCad; identificatori tecnici, binari e formato file usano `sagomacad`.
 
 ---
