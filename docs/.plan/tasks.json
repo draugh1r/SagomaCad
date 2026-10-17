@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-17T14:09:11Z",
+    "updatedAt": "2026-10-17T14:12:22Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 9
@@ -178,7 +178,7 @@
       "id": 9,
       "phase": 9,
       "title": "9.0 Riferimenti dall'utente (bloccante)",
-      "status": "pending",
+      "status": "blocked",
       "priority": "high",
       "dependencies": [
         8
@@ -191,7 +191,8 @@
       "validation": "ls docs/reference/ispirazione/*.png && grep -q \"Scelte dell'utente\" docs/design/README.md",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Mancano 2-4 screenshot PNG con note in docs/reference/ispirazione/ e le preferenze dell'utente (tema, accento, densita) in docs/design/README.md, sezione Scelte dell'utente. Il task 9.0 impone di fermarsi prima degli altri task."
     },
     {
       "id": 10,
