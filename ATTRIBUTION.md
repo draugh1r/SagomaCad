@@ -12,3 +12,7 @@ Eigen 5 è installato tramite vcpkg sotto licenza MPL-2.0 ed è usato dal solver
 OpenCascade è installato tramite vcpkg sotto LGPL 2.1 con eccezione OCCT; il testo della licenza è distribuito dal relativo pacchetto vcpkg.
 
 Le icone della UI provengono da [Lucide](https://lucide.dev/), commit `70562c1ee1c4fdcf736fe97bc893fb8511927934`, con licenza ISC e componenti derivate da Feather sotto MIT. Il testo della licenza è in `assets/icons/LUCIDE-LICENSE.txt`. Gli SVG sono rasterizzati localmente tramite LunaSVG, installato con vcpkg sotto licenza MIT.
+
+## SolidCraft UI icons
+
+`assets/icons/solidcraft/` (SVG masters, palette and aliases): SolidCraft contributors, [source](https://github.com/tangency-labs/solidcraft/tree/72145d4aba05eab66e7a49b383bee9c9f5764da3/assets/icons/ui/design), commit `72145d4aba05eab66e7a49b383bee9c9f5764da3`, MIT OR Apache-2.0. Both license texts are included. Icon role and knockout resolution in `tools/palette_to_json.py` and `src/ui/icons.cpp` follows `crates/ui-egui/src/icon_svg.rs`; window factory policy follows `crates/ui-egui/src/frame.rs`.

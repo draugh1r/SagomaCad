@@ -221,7 +221,7 @@
       "id": 11,
       "phase": 9,
       "title": "9.2 Import dei master SVG di SolidCraft",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         10
@@ -239,13 +239,14 @@
       "validation": "python tools/import_solidcraft_icons.py --check && grep -q \"assets/icons/solidcraft\" ATTRIBUTION.md",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "completedAt": "2026-10-17T14:17:12.197179+00:00"
     },
     {
       "id": 12,
       "phase": 9,
       "title": "9.3 Renderer delle icone per ruoli",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "dependencies": [
         11
@@ -261,7 +262,8 @@
       "validation": "cmake --build build --config Release && ctest --test-dir build -R icons --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:17:12.197193+00:00"
     },
     {
       "id": 13,
