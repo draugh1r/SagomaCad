@@ -33,7 +33,7 @@ target_link_libraries(sagomacad_solver PUBLIC sagomacad_core sagomacad_doc PRIVA
 add_library(sagomacad_kernel STATIC src/kernel/box_volume.cpp src/kernel/shape.cpp src/kernel/topology.cpp src/kernel/face_sketch.cpp)
 target_include_directories(sagomacad_kernel PUBLIC ${PROJECT_SOURCE_DIR}/src ${OpenCASCADE_INCLUDE_DIR})
 target_link_libraries(sagomacad_kernel PUBLIC sagomacad_core sagomacad_doc ${OpenCASCADE_LIBRARIES})
-add_library(sagomacad_regen STATIC src/regen/regenerator.cpp src/regen/model_features.cpp src/regen/attached_sketch.cpp)
+add_library(sagomacad_regen STATIC src/regen/regenerator.cpp src/regen/model_features.cpp src/regen/attached_sketch.cpp src/regen/extrusion.cpp)
 target_include_directories(sagomacad_regen PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(sagomacad_regen PUBLIC sagomacad_core sagomacad_doc sagomacad_solver sagomacad_kernel)
 add_library(sagomacad_mesh STATIC src/mesh/surface.cpp)
@@ -198,3 +198,7 @@ target_link_libraries(face_sketch_test PRIVATE sagomacad_engine)
 add_test(NAME face_sketch COMMAND face_sketch_test)
 
 add_test(NAME topology_agents COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_topology_agents.py $<TARGET_FILE:sagomacad-cli>)
+
+add_executable(face_extrude_test tests/face_extrude.cpp)
+target_link_libraries(face_extrude_test PRIVATE sagomacad_engine)
+add_test(NAME face_extrude COMMAND face_extrude_test)

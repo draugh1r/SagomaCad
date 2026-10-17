@@ -1,6 +1,7 @@
 #include "regen/model_features.hpp"
 #include "kernel/topology.hpp"
 #include "regen/attached_sketch.hpp"
+#include "regen/extrusion.hpp"
 #include "doc/expression.hpp"
 #include "solver/sketch_solver.hpp"
 #include "solver/profile_regions.hpp"
@@ -15,7 +16,17 @@ kernel::Shape checked(kernel::Result<kernel::Shape> r){if(!r)throw std::runtime_
 }
 Regenerator::Cached build_model_feature(const doc::Document& d,const doc::Feature& f,const Snapshot& snapshot){
     try {
-        const auto& data=f.data;auto id=data.at("sketch").get<std::string>();auto found=d.features.find(id);
+        const auto& data=f.data;
+        if(data.contains("face")){
+            if(f.type!="feature.extrude")throw std::runtime_error("La faccia è ammessa solo per Estrudi");
+            auto ref=data.at("face").get<doc::TopologyRef>();auto body=std::find_if(snapshot.bodies.begin(),snapshot.bodies.end(),[&](const auto& b){return b.id==ref.body;});
+            if(body==snapshot.bodies.end()||!body->exact)throw std::runtime_error("Corpo della faccia sorgente assente: "+ref.body);
+            auto face=kernel::resolve(*body->exact,ref,"face");if(!face)throw std::runtime_error(face.error);
+            auto frame=kernel::face_frame(*body->exact,face.value->id);if(!frame)throw std::runtime_error(frame.error);
+            auto swept=sweep_profile(d,data,snapshot,checked(kernel::face_shape(*body->exact,face.value->id)),frame.value->normal,frame.value->origin);
+            if(!swept)throw std::runtime_error(swept.error);auto named=kernel::name_topology(*swept.value,f.id);return {named.value,named.error};
+        }
+        auto id=data.at("sketch").get<std::string>();auto found=d.features.find(id);
         if(found==d.features.end()||found->second.type!="sketch")throw std::runtime_error("Schizzo sorgente mancante: "+id);
         if(found->second.suppressed)throw std::runtime_error("Schizzo sorgente soppresso: "+id);
         auto before=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;});
@@ -47,29 +58,9 @@ Regenerator::Cached build_model_feature(const doc::Document& d,const doc::Featur
                 }else if(type!="full")throw std::runtime_error("Tipo rivoluzione non valido: angle o full");
                 auto swept=checked(kernel::revolve(face,origin,direction,angle));shape=shape?checked(kernel::boolean_operation(*shape,swept,"join")):swept;continue;
             }
-            double distance=value(d,data,"distance"),start=0;
-            auto direction=data.value("direction",std::string("one_side"));auto extent=data.value("extent",std::string("distance"));
-            if(direction!="one_side"&&direction!="symmetric"&&direction!="two_sides")throw std::runtime_error("Direzione non valida");
-            if(extent!="distance"&&extent!="through_all")throw std::runtime_error("Estensione non valida");
             const auto& sk=solved.sketch;
-            const kernel::Vec3 normal=sk.support?kernel::Vec3{sk.u[1]*sk.v[2]-sk.u[2]*sk.v[1],sk.u[2]*sk.v[0]-sk.u[0]*sk.v[2],sk.u[0]*sk.v[1]-sk.u[1]*sk.v[0]}:solved.sketch.plane=="XY"?kernel::Vec3{0,0,1}:solved.sketch.plane=="XZ"?kernel::Vec3{0,-1,0}:kernel::Vec3{1,0,0};
-            if(extent=="through_all"){
-                if(data.value("operation",std::string("new"))=="new")throw std::runtime_error("Attraverso tutto richiede corpi di destinazione");
-                double low=0,high=0;bool target=false;
-                for(const auto& body:snapshot.bodies)if(body.exact&&std::find(data.at("target_bodies").begin(),data.at("target_bodies").end(),body.id)!=data.at("target_bodies").end()){
-                    auto mass=kernel::mass_properties(*body.exact);if(!mass)throw std::runtime_error(mass.error);target=true;
-                    auto projection=[&](kernel::Vec3 p){return (p.x-sk.origin[0])*normal.x+(p.y-sk.origin[1])*normal.y+(p.z-sk.origin[2])*normal.z;};
-                    low=std::min({low,projection(mass.value->minimum),projection(mass.value->maximum)});high=std::max({high,projection(mass.value->minimum),projection(mass.value->maximum)});
-                }
-                if(!target)throw std::runtime_error("Nessun corpo di destinazione disponibile");
-                const double margin=std::max(1.,(high-low)*.01);
-                if(direction=="one_side"){if(distance<0){start=low-margin;distance=-start;}else distance=high+margin;}
-                else {start=low-margin;distance=high-low+2*margin;}
-            }else if(direction=="symmetric")start=-distance/2;
-            else if(direction=="two_sides"){double second=value(d,data,"second_distance");if(distance<=0||second<0)throw std::runtime_error("Le distanze dei due lati devono essere positive");start=-second;distance+=second;}
-            if(std::abs(distance)<1e-7)throw std::runtime_error("La distanza deve essere diversa da zero");
-            face=checked(kernel::translate(face,normal.x*start,normal.y*start,normal.z*start));
-            auto swept=checked(kernel::extrude(face,{normal.x*distance,normal.y*distance,normal.z*distance}));
+            const kernel::Vec3 normal=sk.support?kernel::Vec3{sk.u[1]*sk.v[2]-sk.u[2]*sk.v[1],sk.u[2]*sk.v[0]-sk.u[0]*sk.v[2],sk.u[0]*sk.v[1]-sk.u[1]*sk.v[0]}:sk.plane=="XY"?kernel::Vec3{0,0,1}:sk.plane=="XZ"?kernel::Vec3{0,-1,0}:kernel::Vec3{1,0,0};
+            auto swept=checked(sweep_profile(d,data,snapshot,face,normal,{sk.origin[0],sk.origin[1],sk.origin[2]}));
             shape=shape?checked(kernel::boolean_operation(*shape,swept,"join")):swept;
         }
         auto named=kernel::name_topology(*shape,f.id);return {named.value,named.error};

@@ -290,3 +290,11 @@ La suite ha trovato un alias di spigolo estraneo alla faccia dopo un profilo con
 Test reale: scatola 40×40×20, schizzo sulla sommità, cilindro Ø10 alto 6; portando larghezza a 60 e altezza a 35, il cilindro mantiene z_min=35 mm e volume 150π mm³, anche dopo serializzazione. Le quattro proiezioni sono fisse, un cerchio aggiuntivo può vincolarsi a un loro punto. Test di eliminazione effettiva a monte: un taglio prima dello schizzo passa da 5 a 40 mm di larghezza e cancella la sommità; schizzo ed estrusione dipendente segnalano errore leggibile, una sfera successiva viene rigenerata. Stesso flusso di appoggio eseguito da CLI e MCP command_run con test dedicato.
 
 Build Windows Release verde, CTest **46/46 in 24,05 s**, inclusi fuzz, livelli e UTF-8. UI ancora invariata: allineamento camera, colore delle proiezioni e confronti visivi verranno integrati dopo i test reali di raccordi e fori richiesti dal cancello topologico. Nessuna CI, M6 non iniziato.
+
+## 2026-10-17 — M5, tappa 4a: estrusione diretta delle facce nel motore
+
+`feature.extrude` accetta `face: {body,name,signature?}` in alternativa a sketch/profiles. Cattura la firma e risolve la faccia nel prefisso della timeline, verificando che sia piana. Calcolo condiviso con le estrusioni da schizzo per direzione singola/simmetrica/due lati, distanze negative, Attraverso tutto, nuovo corpo/unione/taglio/intersezione e destinazioni multiple. Attraverso tutto usa coordinate relative al piano e gli otto vertici della bounding box, anche per normali oblique. `feature.edit` conserva il riferimento o ricattura la firma quando cambia la faccia.
+
+Test su dodici combinazioni operazione/direzione e sulle stesse dopo cambio larghezza/altezza a monte, faccia laterale con normale X, modifica distanza, rifiuto atomico di sorgenti incompatibili. Verificato Attraverso tutto da faccia z=30 verso un altro corpo alto 40: volume 94000 mm³ in una direzione e 92000 mm³ sui due lati. Esteso il test CLI/MCP: estrusione diretta che segue la sommità fino a z=40.
+
+Build Windows Release verde, CTest **47/47 in 23,64 s**, livelli e fuzz inclusi verdi. UI ancora invariata in attesa delle regressioni reali di raccordi e fori. M5 in corso, M6 escluso.

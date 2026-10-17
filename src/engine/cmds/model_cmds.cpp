@@ -1,15 +1,26 @@
 #include "engine/command.hpp"
 #include "engine/cmds/validation.hpp"
 #include "regen/regenerator.hpp"
+#include "kernel/topology.hpp"
 #include <algorithm>
 namespace sagomacad::engine::cmds {
 namespace {
 using J=nlohmann::json;
+doc::TopologyRef face_ref(Session& s,const J& input){
+    auto ref=input.get<doc::TopologyRef>();regen::Regenerator regen;auto snapshot=regen.evaluate(s.document);
+    auto body=std::find_if(snapshot.bodies.begin(),snapshot.bodies.end(),[&](const auto& b){return b.id==ref.body;});
+    if(body==snapshot.bodies.end()||!body->exact)throw std::runtime_error("Corpo della faccia assente: "+ref.body);
+    auto resolved=kernel::resolve(*body->exact,ref,"face");if(!resolved)throw std::runtime_error(resolved.error);
+    if(resolved.value->signature.type!="plane")throw std::runtime_error("È richiesta una faccia piana");ref.signature=resolved.value->signature;return ref;
+}
 CommandResult create(Session& s,const J& p,const std::string& type){
-    if(type=="feature.extrude")only_keys(p,{"sketch","profiles","distance","direction","extent","second_distance","operation","target_bodies","name"});
+    if(type=="feature.extrude")only_keys(p,{"face","sketch","profiles","distance","direction","extent","second_distance","operation","target_bodies","name"});
     else only_keys(p,{"sketch","profiles","axis","type","angle","operation","target_bodies","name"});
-    J data=p;data.erase("name");data["sketch"]=string_arg(p,"sketch",true,256);
-    if(!p.contains("profiles")||!p["profiles"].is_array()||p["profiles"].empty()||p["profiles"].size()>1024)return CommandResult::failure("profiles deve contenere le regioni selezionate da sketch.inspect");
+    J data=p;data.erase("name");
+    if(p.contains("face")){
+        if(type!="feature.extrude"||p.contains("sketch")||p.contains("profiles"))return CommandResult::failure("Scegli face oppure sketch e profiles");data["face"]=face_ref(s,p.at("face"));
+    }else data["sketch"]=string_arg(p,"sketch",true,256);
+    if(!p.contains("face")&&(!p.contains("profiles")||!p["profiles"].is_array()||p["profiles"].empty()||p["profiles"].size()>1024))return CommandResult::failure("profiles deve contenere le regioni selezionate da sketch.inspect");
     for(const auto* key:{"distance","second_distance"}){data[key]=p.contains(key)?string_arg(p,key,true,4096):"10 mm";}
     for(const auto& [key,fallback]:{std::pair("direction","one_side"),std::pair("extent","distance"),std::pair("operation","new")})data[key]=p.contains(key)?string_arg(p,key,true,32):fallback;
     if(type=="feature.revolve"){
@@ -39,9 +50,12 @@ CommandResult edit_model_feature(Session& s,const J& p,const std::string& id){
     only_keys(p,{"feature_id","id","params","name"});
     if(!p.contains("params")||!p["params"].is_object())return CommandResult::failure("params deve contenere i parametri della feature");
     auto& f=s.document.features.at(id);const auto& changes=p["params"];
-    if(f.type=="feature.extrude")only_keys(changes,{"sketch","profiles","distance","direction","extent","second_distance","operation","target_bodies"});
+    if(f.type=="feature.extrude")only_keys(changes,{"face","sketch","profiles","distance","direction","extent","second_distance","operation","target_bodies"});
     else only_keys(changes,{"sketch","profiles","axis","type","angle","operation","target_bodies"});
-    const auto previous=f.data;for(auto it=changes.begin();it!=changes.end();++it)f.data[it.key()]=it.value();
+    const auto previous=f.data;
+    if(changes.contains("face")){if(changes.contains("sketch")||changes.contains("profiles"))return CommandResult::failure("Sorgenti incompatibili");f.data.erase("sketch");f.data.erase("profiles");}
+    else if(changes.contains("sketch"))f.data.erase("face");
+    for(auto it=changes.begin();it!=changes.end();++it)f.data[it.key()]=it.value();
     auto op=f.data.at("operation").get<std::string>();if(op!="new"&&op!="join"&&op!="cut"&&op!="intersect")return CommandResult::failure("Operazione non valida");
     const auto targets=f.data.value("target_bodies",J::array());
     if(!targets.is_array()||targets.size()>1024||(op=="new"&&!targets.empty())||(op!="new"&&targets.empty()))return CommandResult::failure("Corpi di destinazione non validi");
@@ -53,7 +67,9 @@ CommandResult edit_model_feature(Session& s,const J& p,const std::string& id){
     }else if(previous.value("operation",std::string("new"))!="new"){
         const auto body="body-"+id;f.data["body_id"]=body;s.document.bodies.push_back({body,f.name});
     }
-    auto saved=s.document.rollback;const auto at=std::find(s.document.timeline.begin(),s.document.timeline.end(),id);s.document.rollback=std::size_t(at-s.document.timeline.begin())+1;
+    auto saved=s.document.rollback;const auto at=std::find(s.document.timeline.begin(),s.document.timeline.end(),id);s.document.rollback=std::size_t(at-s.document.timeline.begin());
+    if(changes.contains("face"))f.data["face"]=face_ref(s,changes.at("face"));
+    ++s.document.rollback;
     regen::Regenerator regen;const auto snapshot=regen.evaluate(s.document);s.document.rollback=saved;
     const auto& state=snapshot.features.back();if(!state.error.empty())return CommandResult::failure(state.error);
     if(previous.value("operation",std::string("new"))=="new"&&op!="new"){
@@ -63,7 +79,7 @@ CommandResult edit_model_feature(Session& s,const J& p,const std::string& id){
     return {true,{{"feature_id",id},{"body_id",f.data["body_id"]}}, {}};
 }
 std::vector<CommandSpec> model_specs(){return {{"feature.extrude","Estrudi",{"Solido","Crea"},"E",
-    "{sketch: id, profiles: [region_id|[entity_id,...],...], distance?: expression, direction?: one_side|symmetric|two_sides, second_distance?: expression, extent?: distance|through_all, operation?: new|join|cut|intersect, target_bodies?: [id,...], name?: string}",{},
+    "{face?: {body,name,signature?}, sketch?: id, profiles?: [region_id|[entity_id,...],...], distance?: expression, direction?: one_side|symmetric|two_sides, second_distance?: expression, extent?: distance|through_all, operation?: new|join|cut|intersect, target_bodies?: [id,...], name?: string}",{},
     [](Session& s,const J& p){return create(s,p,"feature.extrude");},true},
     {"feature.revolve","Rivoluzione",{"Solido","Crea"},std::nullopt,
     "{sketch: id, profiles: [region_id|[entity_id,...],...], axis: X|Y|Z|sketch_line_id, type?: angle|full, angle?: expression, operation?: new|join|cut|intersect, target_bodies?: [id,...], name?: string}",{},
