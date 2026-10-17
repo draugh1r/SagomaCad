@@ -110,3 +110,7 @@ Aggiornare anche il budget delle larghezze per conservare il minimo del viewport
 Non calcolare la posizione del nuovo pannello nella shell. I dialoghi e le tavolozze
 contestuali già presenti conservano il comportamento precedente; `contextual` è
 riservato e vuoto. Evidenze e differenze visive: `docs/screenshots/layout/README.md`.
+
+## Identità visiva
+
+Riferimenti di comportamento: `docs/reference/` (privati). Aspetto: `docs/design/` e token del tema; SolidCraft è il riferimento autorizzato per la fase 9. Tema predefinito chiaro, accento verde pistacchio e densità compatta. Solo le schermate approvate esplicitamente dall’utente entrano in `docs/design/approvate/`.

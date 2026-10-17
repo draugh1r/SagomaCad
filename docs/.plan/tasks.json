@@ -199,7 +199,7 @@
       "id": 10,
       "phase": 9,
       "title": "9.1 Struttura dei riferimenti",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         9
@@ -214,7 +214,8 @@
       "validation": "git check-ignore docs/reference/README.md && test -f docs/design/README.md",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "completedAt": "2026-10-17T14:16:36.535836+00:00"
     },
     {
       "id": 11,
