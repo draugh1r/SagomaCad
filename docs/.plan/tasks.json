@@ -275,7 +275,7 @@
       "id": 13,
       "phase": 9,
       "title": "9.4 Mappa comandi, icone e accenti",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         12
@@ -290,7 +290,11 @@
       "validation": "python tools/update_parity.py --check",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:28:29.491172+00:00",
+      "completedAt": "2026-10-17T14:30:47.019207+00:00",
+      "note": "Mappa catalogo e accenti verificata da update_parity.py --check; build Release e 53/53 test.",
+      "commit": "3ad5e74b579ddf06c73b296ba9cb753e5187cbab"
     },
     {
       "id": 14,

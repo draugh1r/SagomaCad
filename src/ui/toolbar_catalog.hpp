@@ -1,5 +1,6 @@
 #pragma once
 #include "engine/command.hpp"
+#include "ui/icons.hpp"
 #include <cstddef>
 #include <span>
 #include <string>
@@ -10,6 +11,8 @@ struct ToolbarCommand {
     std::string_view id;
     std::string_view label;
     std::string_view icon;
+    std::string_view design_icon; // Empty explicitly means Lucide fallback.
+    IconAccent accent=IconAccent::Solid;
 };
 struct ToolbarGroup {
     std::string_view label;
