@@ -441,7 +441,8 @@
       "milestone": "M5.5",
       "startedAt": "2026-10-17T19:51:28.247619+00:00",
       "completedAt": "2026-10-17T19:52:37.728132+00:00",
-      "note": "Build Release locale build/agent-phase9, 57/57 ctest (40.94s), livelli, import, parita, frame_rule, UTF-8 e fuzz 260 casi/222 MCP passati. Tavole approvate presenti; screenshot Solido/Schizzo a 1440x900 e 1280x720 nei due temi, palette e DPI2 ispezionati."
+      "note": "Build Release locale build/agent-phase9, 57/57 ctest (40.94s), livelli, import, parita, frame_rule, UTF-8 e fuzz 260 casi/222 MCP passati. Tavole approvate presenti; screenshot Solido/Schizzo a 1440x900 e 1280x720 nei due temi, palette e DPI2 ispezionati.",
+      "commit": "09b1f52d5c3e255248f7e2efcb20abb9af6f861d"
     },
     {
       "id": 20,
