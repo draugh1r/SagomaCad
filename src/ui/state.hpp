@@ -74,6 +74,7 @@ struct State {
     bool previous_sketch_mode = false;
     bool palette_open = false;
     bool palette_focus = false;
+    std::array<float,4> palette_search{};
     bool parameters_open = false;
     bool file_dialog_open = false;
     bool primitive_editor_open = false;

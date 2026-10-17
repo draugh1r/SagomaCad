@@ -19,6 +19,7 @@ struct RibbonLayout {
 };
 struct ShellLayout {
     LayoutRect topbar, ribbon, browser, viewport, properties, timeline, contextual;
+    LayoutRect sketch_palette;
     LayoutRect header_separator, browser_separator, properties_separator, timeline_separator;
     std::array<RibbonLayout,8> groups{};
     size_t group_count=0;

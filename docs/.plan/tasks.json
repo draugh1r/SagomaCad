@@ -323,7 +323,7 @@
       "id": 15,
       "phase": 9,
       "title": "9.6 Fabbrica unica delle finestre",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         14
@@ -339,7 +339,11 @@
       "validation": "python tests/frame_rule.py && ctest --test-dir build --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:33:36.018899+00:00",
+      "completedAt": "2026-10-17T14:39:40.741772+00:00",
+      "note": "Fabbrica unica, pannelli Clay, limiti su due dimensioni/temi/DPI; 56/56 test. Test palette aggiornato al rettangolo reale del campo, senza ridurre controlli. Quattro screenshot ispezionati.",
+      "commit": "90ec922d141bc15edf94f7bd2580d1b65c58b388"
     },
     {
       "id": 16,

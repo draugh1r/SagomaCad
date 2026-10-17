@@ -69,7 +69,10 @@ int main() {
     shell.state().palette_open=true;
     shell.state().palette_focus=true;
     shell.render(); shell.render();
-    left(600,260,false); left(600,260,true); left(600,260,false);
+    const auto search=shell.state().palette_search;
+    require(search[2]>0 && search[3]>0);
+    const float search_x=search[0]+search[2]/2,search_y=search[1]+search[3]/2;
+    left(search_x,search_y,false); left(search_x,search_y,true); left(search_x,search_y,false);
     shell.render();
     require(ImGui::GetIO().WantTextInput);
     ImGui::GetIO().AddKeyEvent(ImGuiMod_Ctrl,true);

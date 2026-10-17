@@ -125,12 +125,18 @@ const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,
                 CLAY({.id=id("properties_separator"),.layout={.sizing={CLAY_SIZING_FIXED(horizontal_divider),CLAY_SIZING_GROW(0)}},.backgroundColor=color(t.border)}) {}
                 CLAY({.id=id("properties"),.layout={.sizing={CLAY_SIZING_FIXED(properties*fraction),CLAY_SIZING_GROW(0)}}}) {}
             }
-            if(s.model.open||s.surface.open) {
+            if(s.model.open||s.surface.open||s.primitive_create_open||s.primitive_editor_open) {
                 const float panel_top=std::min(t.model.top*z,std::max(0.f,h-header-timeline-divider*2-t.model.footer*z-t.model.row*z*2));
                 const float panel_height=((s.surface.open?(s.surface.command=="feature.hole"?t.selection.hole_height:t.selection.dialog_height):s.model.revolve?t.model.revolve_height:t.model.height)+t.model.row*((!s.model.revolve&&s.model.direction==2?1:0)+(s.model.operation!=3?1:0)))*z;
-                CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(std::min((s.surface.open?t.selection.dialog_width:t.model.width)*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(panel_height,std::max(0.f,h-header-timeline-divider*2-panel_top-t.padding*z)))}},
+                const float panel_width=s.primitive_create_open||s.primitive_editor_open?t.frame.dialog_max:s.surface.open?t.selection.dialog_width:t.model.width;
+                CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(std::min(panel_width*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(panel_height,std::max(0.f,h-header-timeline-divider*2-panel_top-t.padding*z)))}},
                     .floating={.offset={-t.padding*z,panel_top},.parentId=id("viewport").id,.zIndex=2,.attachPoints={.element=CLAY_ATTACH_POINT_RIGHT_TOP,.parent=CLAY_ATTACH_POINT_RIGHT_TOP},.attachTo=CLAY_ATTACH_TO_ELEMENT_WITH_ID}}) {}
             }else {CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(0),CLAY_SIZING_GROW(0)}}}) {}}
+            if(s.sketch_mode) {
+                const float palette_top=std::min(t.sketch.palette_y*z,std::max(0.f,h-header-timeline-t.frame.min_height*z));
+                CLAY({.id=id("sketch_palette"),.layout={.sizing={CLAY_SIZING_FIXED(std::min(t.sketch.palette_width*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(t.sketch.palette_height*z,std::max(0.f,h-header-timeline-palette_top-t.padding*z)))}},
+                    .floating={.offset={-t.padding*z,palette_top},.parentId=id("viewport").id,.zIndex=2,.attachPoints={.element=CLAY_ATTACH_POINT_RIGHT_TOP,.parent=CLAY_ATTACH_POINT_RIGHT_TOP},.attachTo=CLAY_ATTACH_TO_ELEMENT_WITH_ID}}) {}
+            }
         }
         if (s.timeline) {
             CLAY({.id=id("timeline_separator"),.layout={.sizing={CLAY_SIZING_GROW(0),CLAY_SIZING_FIXED(divider)}},.backgroundColor=color(t.border)}) {}
@@ -153,6 +159,7 @@ const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,
     candidate.topbar=rect("topbar"); candidate.ribbon=rect("ribbon"); candidate.browser=s.browser?rect("browser"):LayoutRect{};
     candidate.viewport=rect("viewport"); candidate.properties=s.properties?rect("properties"):LayoutRect{};
     candidate.timeline=s.timeline?rect("timeline"):LayoutRect{}; candidate.contextual=rect("contextual");
+    candidate.sketch_palette=s.sketch_mode?rect("sketch_palette"):LayoutRect{};
     candidate.header_separator=rect("header_separator"); candidate.browser_separator=s.browser?rect("browser_separator"):LayoutRect{};
     candidate.properties_separator=s.properties?rect("properties_separator"):LayoutRect{}; candidate.timeline_separator=s.timeline?rect("timeline_separator"):LayoutRect{};
     candidate.group_count=ribbon_visible?std::min(groups.size(),candidate.groups.size()):0;

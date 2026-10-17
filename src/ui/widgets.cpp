@@ -1,4 +1,5 @@
 #include "ui/widgets.hpp"
+#include "ui/frame.hpp"
 #include <imgui.h>
 #include <algorithm>
 #include <cfloat>
@@ -60,14 +61,13 @@ void popup_command(const ToolbarCommand& command,float width,const Theme& t,floa
 }
 bool splitter(const char* name,LayoutRect r,bool vertical,float& size,float initial,float minimum,float maximum,float z,const Theme& t) {
     if (!r.visible()) return false;
-    ImGui::SetNextWindowPos({r.x,r.y}); ImGui::SetNextWindowSize({r.width,r.height});
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,{0,0});
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize,{0,0});
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize,0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding,0);
     constexpr auto flags=ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoBackground|ImGuiWindowFlags_NoNav;
     bool changed=false;
-    if (ImGui::Begin(name,nullptr,flags)) {
+    if (frame::panel(name,r,flags)) {
         ImGui::InvisibleButton("splitter",{r.width,r.height});
         const bool hovered=ImGui::IsItemHovered(),active=ImGui::IsItemActive();
         if (hovered||active) {

@@ -7,6 +7,7 @@
 #include "ui/feature_editor.hpp"
 #include "ui/model_editor.hpp"
 #include "ui/widgets.hpp"
+#include "ui/frame.hpp"
 #include <fstream>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
@@ -60,13 +61,11 @@ void style(const ui::Theme& t, int scale) {
 }
 void panel(const char* name, const char* label, const ui::Theme& t, ui::LayoutRect r, auto contents, ImGuiWindowFlags extra = 0, bool* collapsed=nullptr, float z=1, bool collapse_right=false) {
     if (!r.visible()) return;
-    ImGui::SetNextWindowPos({r.x,r.y},ImGuiCond_Always);
-    ImGui::SetNextWindowSize({r.width,r.height},ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize,{0,0});
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding,0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize,0);
     constexpr auto fixed = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBringToFrontOnFocus;
-    if (ImGui::Begin(name, nullptr, fixed | extra)) {
+    if (ui::frame::panel(name,r,fixed | extra)) {
         if (collapsed) {
             const auto cursor=ImGui::GetCursorScreenPos();
             ImGui::SetCursorScreenPos({r.x+r.width-t.layout.collapse_button*z,r.y+t.padding*z});
@@ -75,7 +74,7 @@ void panel(const char* name, const char* label, const ui::Theme& t, ui::LayoutRe
             ImGui::SetCursorScreenPos(cursor);
         }
         if ((!collapsed || !*collapsed) && r.width>2*t.padding*z && r.height>2*t.padding*z) {
-            if (label) { ImGui::TextColored(vec(t.muted), "%s", label); ImGui::Separator(); }
+            if (label) { ui::frame::heading(label,t,z,false,collapsed?t.layout.collapse_button*z:0); }
             contents();
         }
     }
@@ -645,10 +644,8 @@ void Shell::draw_overlays(const ui::Theme& t) {
     const ImVec2 display=ImGui::GetIO().DisplaySize;
     if (!state_.status_message.empty() && !state_.file_dialog_open) {
         const auto& viewport=layout_.last().viewport;
-        ImGui::SetNextWindowPos({viewport.x+t.padding*z,viewport.y+viewport.height-t.padding*z},ImGuiCond_Always,{0,1});
-        ImGui::SetNextWindowSize({std::max(t.padding*z,std::min(t.file_dialog_width*z,viewport.width-2*t.padding*z)),0},ImGuiCond_Always);
         bool open=true;
-        if (ImGui::Begin("Errore##status",&open,ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings)) {
+        if (ui::frame::notice("Errore##status",&open,viewport,t,z)) {
             ImGui::PushStyleColor(ImGuiCol_Text,vec(t.error));
             ImGui::TextWrapped("%s",state_.status_message.c_str());
             ImGui::PopStyleColor();
@@ -659,12 +656,8 @@ void Shell::draw_overlays(const ui::Theme& t) {
     if ((state_.primitive_create_open || state_.primitive_editor_open) && engine_) {
         const bool creating=state_.primitive_create_open;
         bool* open=creating?&state_.primitive_create_open:&state_.primitive_editor_open;
-        const float panel_width=std::min(380*z,display.x*0.28f);
-        ImGui::SetNextWindowPos({std::max(t.padding*z,display.x-panel_width-2*t.padding*z),
-                                 std::max(t.toolbar_height*z+8*t.padding*z,
-                                          t.toolbar_height*z+t.cube.widget_size*z+3*t.padding*z)},ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize({panel_width,0},ImGuiCond_Appearing);
-        if (ImGui::Begin(creating?"Crea primitiva###primitive_panel":"Modifica feature###primitive_panel",open,ImGuiWindowFlags_AlwaysAutoResize)) {
+        const auto r=layout_.last().contextual;
+        if (ui::frame::dialog(creating?"Crea primitiva###primitive_panel":"Modifica feature###primitive_panel",open,r,t,z)) {
             const char* types[]={"Box","Cilindro","Sfera"};
             if (!creating) {
                 const auto found=engine_->session().document.features.find(state_.primitive_feature_id);
@@ -701,13 +694,13 @@ void Shell::draw_overlays(const ui::Theme& t) {
         ImGui::End();
     }
     if (state_.palette_open) {
-        ImGui::SetNextWindowPos({(display.x-t.palette_width*z)*0.5f,t.toolbar_height*z+24*z},ImGuiCond_Always);
-        ImGui::SetNextWindowSize({t.palette_width*z,t.palette_height*z},ImGuiCond_Always);
-        if (ImGui::Begin("Comandi##palette",&state_.palette_open,ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove)) {
+        if (ui::frame::window("Comandi##palette",&state_.palette_open,t,z,{t.palette_width*z,t.palette_height*z},false,ImGuiWindowFlags_NoResize)) {
             ImGui::TextColored(vec(t.muted),"COMANDI");
             ImGui::Separator();
             if (state_.palette_focus) { ImGui::SetKeyboardFocusHere(); state_.palette_focus=false; }
             ImGui::InputTextWithHint("##search","Cerca un comando...",state_.palette_query.data(),state_.palette_query.size());
+            const auto search_a=ImGui::GetItemRectMin(),search_b=ImGui::GetItemRectMax();
+            state_.palette_search={search_a.x,search_a.y,search_b.x-search_a.x,search_b.y-search_a.y};
             if (ImGui::IsKeyPressed(ImGuiKey_Escape)) state_.palette_open=false;
             ImGui::BeginChild("results",{0,0},false);
             if (engine_) for (const auto& spec:engine_->registry().specs()) {
@@ -728,10 +721,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
         ImGui::End();
     }
     if (state_.parameters_open) {
-        ImGui::SetNextWindowPos({(display.x-t.parameter_width*z)*0.5f,
-            std::max(t.toolbar_height*z+24*z,(display.y-t.parameter_height*z)*0.5f)},ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize({std::min(t.parameter_width*z,display.x-24*z),std::min(t.parameter_height*z,display.y-24*z)},ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("Cambia parametri##parameters",&state_.parameters_open)) {
+        if (ui::frame::window("Cambia parametri##parameters",&state_.parameters_open,t,z,{t.parameter_width*z,t.parameter_height*z},true)) {
             ImGui::TextColored(vec(t.muted),"%s",ui::labels.parameters);
             ImGui::Separator();
             if (ImGui::Button("+##add_parameter")) {
@@ -854,10 +844,8 @@ void Shell::draw_overlays(const ui::Theme& t) {
         ImGui::End();
     }
     if (state_.file_dialog_open) {
-        ImGui::SetNextWindowPos({(display.x-t.file_dialog_width*z)*0.5f,(display.y-160*z)*0.5f},ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize({t.file_dialog_width*z,160*z},ImGuiCond_Appearing);
         const char* dialog_title=state_.file_command=="export.stl"?"Esporta STL##file":"Percorso documento##file";
-        if (ImGui::Begin(dialog_title,&state_.file_dialog_open,ImGuiWindowFlags_NoResize)) {
+        if (ui::frame::window(dialog_title,&state_.file_dialog_open,t,z,{t.file_dialog_width*z,160*z},false,ImGuiWindowFlags_NoResize)) {
             ImGui::TextUnformatted(state_.file_command=="export.stl"?"Nome file .stl (salvato in export/)":"File .sagomacad");
             ImGui::InputText("##path",state_.file_path.data(),state_.file_path.size());
             if (ImGui::Button("Conferma") && engine_) {
@@ -881,6 +869,7 @@ bool Shell::glyphs_available() const {
 void Shell::render() {
     ImGui_ImplOpenGL3_NewFrame(); ImGui_ImplSDL3_NewFrame(); ImGui::NewFrame();
     style(ui::theme(state_.theme == "light"), scale_);
+    ui::frame::reset_records();
     draw();
     save_settings();
     ImGui::Render();
@@ -979,7 +968,9 @@ nlohmann::json Shell::inspect() const {
         {"header_separator",l.header_separator},{"browser_separator",l.browser_separator},{"properties_separator",l.properties_separator},{"timeline_separator",l.timeline_separator}})
         rectangles.push_back({{"id",name},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     auto items=nlohmann::json::array();for(const auto& r:state_.timeline_items)items.push_back({{"id",r.id},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
+    auto frames=nlohmann::json::array();for(const auto& r:ui::frame::records())frames.push_back({{"name",r.name},{"kind",r.kind},{"x",r.rect.x},{"y",r.rect.y},{"width",r.rect.width},{"height",r.rect.height},{"minimum",r.minimum},{"maximum",r.maximum}});
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
+        {"frames",frames},{"palette_search",state_.palette_search},
         {"timeline_items",items},{"timeline_marker",{{"x",state_.timeline_marker_x},{"y",state_.timeline_marker_y},{"index",engine_?engine_->session().document.rollback:0}}},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
