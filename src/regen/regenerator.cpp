@@ -2,6 +2,7 @@
 #include "doc/expression.hpp"
 #include "solver/sketch_solver.hpp"
 #include "regen/model_features.hpp"
+#include "kernel/topology.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -44,7 +45,8 @@ Regenerator::Cached build(const doc::Document& document,const doc::Feature& feat
         if (!shape) return {{},shape.error};
         auto moved=kernel::translate(*shape.value,x,y,z);
         if (!moved) return {{},moved.error};
-        return {std::move(moved.value),{}};
+        auto named=kernel::name_topology(*moved.value,feature.id);
+        return {std::move(named.value),named.error};
     } catch (const std::exception& e) { return {{},e.what()}; }
       catch (...) { return {{},"Errore imprevisto nella rigenerazione"}; }
 }
@@ -126,6 +128,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                     if(dest==snapshot_.bodies.end()||!dest->exact)throw std::runtime_error("Corpo di destinazione assente: "+target.get<std::string>());
                     auto combined=kernel::boolean_operation(*dest->exact,joined?*joined:*result.shape,operation);
                     if(!combined)throw std::runtime_error(combined.error);
+                    combined=kernel::name_topology(*combined.value,id);if(!combined)throw std::runtime_error(combined.error);
                     if(joined)joined=*combined.value;
                     pending.emplace_back(&*dest,*combined.value);
                 }
@@ -143,6 +146,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
                     return;
                 }
                 auto cut=kernel::subtract(*body->exact,*result.shape);
+                if(cut)cut=kernel::name_topology(*cut.value,id);
                 if (!cut) {
                     snapshot_.features.back().error=cut.error;
                     body->error=cut.error;

@@ -1,4 +1,5 @@
 #include "kernel/shape.hpp"
+#include "kernel/shape_impl.hpp"
 #include <BRepGProp.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepBndLib.hxx>
@@ -42,7 +43,6 @@
 #include <numbers>
 
 namespace sagomacad::kernel {
-struct Shape::Impl { TopoDS_Shape shape; };
 namespace {
 bool positive(double value) { return std::isfinite(value) && value>0.0 && value<=1.0e9; }
 std::string occt_message(const Standard_Failure& failure) {
@@ -56,14 +56,16 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
         auto world=[&](double x,double y){return s.plane=="XY"?gp_Pnt(x,y,0):s.plane=="XZ"?gp_Pnt(x,0,y):gp_Pnt(0,x,y);};
         auto point=[&](const std::string& id){for(const auto& p:s.points)if(p.id==id)return world(p.x,p.y);throw std::runtime_error("Punto del profilo mancante: "+id);};
         const gp_Dir normal=s.plane=="XY"?gp_Dir(0,0,1):s.plane=="XZ"?gp_Dir(0,-1,0):gp_Dir(1,0,0);
+        std::vector<NamedShape> names;
         auto wire=[&](const std::vector<std::string>& ids){
             BRepBuilderAPI_MakeWire builder;
             for(const auto& id:ids){
                 auto it=std::find_if(s.entities.begin(),s.entities.end(),[&](const auto& e){return e.id==id&&!e.construction;});
                 if(it==s.entities.end())throw std::runtime_error("Entità del profilo mancante: "+id);
                 const auto& e=*it;
-                if(e.kind=="line")builder.Add(BRepBuilderAPI_MakeEdge(point(e.points.at(0)),point(e.points.at(1))).Edge());
-                else if(e.kind=="circle")builder.Add(BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(point(e.points.at(0)),normal),e.radius)).Edge());
+                TopoDS_Edge edge;
+                if(e.kind=="line")edge=BRepBuilderAPI_MakeEdge(point(e.points.at(0)),point(e.points.at(1))).Edge();
+                else if(e.kind=="circle")edge=BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(point(e.points.at(0)),normal),e.radius)).Edge();
                 else if(e.kind=="arc"){
                     auto c=point(e.points.at(0)),a=point(e.points.at(1)),b=point(e.points.at(2));
                     auto local=[&](gp_Pnt p){return s.plane=="XY"?std::pair(p.X(),p.Y()):s.plane=="XZ"?std::pair(p.X(),p.Z()):std::pair(p.Y(),p.Z());};
@@ -71,8 +73,9 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
                     double u=std::atan2(ay-cy,ax-cx),v=std::atan2(by-cy,bx-cx);while(v<=u)v+=2*std::numbers::pi;
                     GC_MakeArcOfCircle arc(a,world(cx+e.radius*std::cos((u+v)/2),cy+e.radius*std::sin((u+v)/2)),b);
                     if(!arc.IsDone())throw std::runtime_error("Arco del profilo non valido");
-                    builder.Add(BRepBuilderAPI_MakeEdge(arc.Value()).Edge());
+                    edge=BRepBuilderAPI_MakeEdge(arc.Value()).Edge();
                 }else throw std::runtime_error("Entità non ammessa nel profilo");
+                builder.Add(edge);names.push_back({"entity("+id+")",edge});
                 if(!builder.IsDone())throw std::runtime_error("Contorno del profilo non connesso");
             }
             if(!builder.IsDone()||!builder.Wire().Closed())throw std::runtime_error("Il profilo non è chiuso");
@@ -81,13 +84,22 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
         BRepBuilderAPI_MakeFace outer(wire(boundary),true);if(!outer.IsDone())throw std::runtime_error("Faccia del profilo non valida");
         TopoDS_Shape face=outer.Face();
         for(const auto& h:holes){BRepBuilderAPI_MakeFace hole(wire(h),true);if(!hole.IsDone())throw std::runtime_error("Foro del profilo non valido");BRepAlgoAPI_Cut cut(face,hole.Face());cut.Build();if(!cut.IsDone())throw std::runtime_error("Foro del profilo fallito");face=cut.Shape();}
-        return Result<Shape>::success(Shape(std::make_shared<Shape::Impl>(face)));
+        return Result<Shape>::success(ShapeAccess::make(face,std::move(names)));
     }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}
     catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Creazione profilo fallita");}
 }
 Result<Shape> extrude(const Shape& face,Vec3 v) noexcept {
     if(!face.impl_||!std::isfinite(v.x)||!std::isfinite(v.y)||!std::isfinite(v.z)||!positive(std::hypot(v.x,v.y,v.z)))return Result<Shape>::failure("Vettore estrusione non valido");
-    try{BRepPrimAPI_MakePrism builder(face.impl_->shape,gp_Vec(v.x,v.y,v.z));builder.Build();if(!builder.IsDone())throw std::runtime_error("Estrusione fallita");auto shape=Shape(std::make_shared<Shape::Impl>(builder.Shape()));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);}
+    try{
+        BRepPrimAPI_MakePrism builder(face.impl_->shape,gp_Vec(v.x,v.y,v.z));builder.Build();if(!builder.IsDone())throw std::runtime_error("Estrusione fallita");
+        auto shape=ShapeAccess::make(builder.Shape());
+        for(TopExp_Explorer f(builder.FirstShape(),TopAbs_FACE);f.More();f.Next())shape.impl_->names.push_back({"cap_start",f.Current()});
+        for(TopExp_Explorer f(builder.LastShape(),TopAbs_FACE);f.More();f.Next())shape.impl_->names.push_back({"cap_end",f.Current()});
+        TopTools_IndexedMapOfShape inputs;TopExp::MapShapes(face.impl_->shape,inputs);
+        for(const auto& n:face.impl_->names)if(n.shape.ShapeType()==TopAbs_EDGE&&inputs.Contains(n.shape))for(const auto& generated:builder.Generated(n.shape))
+            if(generated.ShapeType()==TopAbs_FACE)shape.impl_->names.push_back({"side("+n.name+")",generated});
+        auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);
+    }
     catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Estrusione fallita");}
 }
 Result<Shape> revolve(const Shape& face,Vec3 origin,Vec3 direction,double radians) noexcept {
@@ -105,11 +117,11 @@ Result<Shape> boolean_operation(const Shape& a,const Shape& b,const std::string&
     if(op=="cut"||op=="subtract")return subtract(a,b);
     if(!a.impl_||!b.impl_)return Result<Shape>::failure("Corpo o utensile assente");
     try{
-        TopoDS_Shape result;
-        if(op=="join"){BRepAlgoAPI_Fuse operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Unione fallita");result=operation.Shape();}
-        else if(op=="intersect"){BRepAlgoAPI_Common operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Intersezione fallita");result=operation.Shape();}
+        auto output=ShapeAccess::make({});auto& named=*ShapeAccess::get(output);
+        if(op=="join"){BRepAlgoAPI_Fuse operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Unione fallita");named.shape=operation.Shape();propagate(operation,*a.impl_,named);propagate(operation,*b.impl_,named);}
+        else if(op=="intersect"){BRepAlgoAPI_Common operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Intersezione fallita");named.shape=operation.Shape();propagate(operation,*a.impl_,named);propagate(operation,*b.impl_,named);}
         else throw std::runtime_error("Operazione sconosciuta: "+op);
-        auto shape=Shape(std::make_shared<Shape::Impl>(result));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error("L'operazione ha prodotto un corpo vuoto");return Result<Shape>::success(shape);
+        auto shape=output;auto mass=mass_properties(shape);if(!mass)throw std::runtime_error("L'operazione ha prodotto un corpo vuoto");return Result<Shape>::success(shape);
     }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Operazione booleana fallita");}
 }
 Result<Shape> make_box(double width,double depth,double height) noexcept {
@@ -176,6 +188,7 @@ Result<Shape> subtract(const Shape& target,const Shape& cutter) noexcept {
         if (!operation.IsDone() || operation.Shape().IsNull())
             return Result<Shape>::failure("Sottrazione OpenCascade fallita");
         auto result=Shape(std::make_shared<Shape::Impl>(operation.Shape()));
+        propagate(operation,*target.impl_,*result.impl_);propagate(operation,*cutter.impl_,*result.impl_);
         if (!mass_properties(result)) return Result<Shape>::failure("La sottrazione ha prodotto un corpo vuoto");
         return Result<Shape>::success(std::move(result));
     } catch (const Standard_Failure& e) { return Result<Shape>::failure(occt_message(e)); }
@@ -194,7 +207,8 @@ Result<Shape> translate(const Shape& shape,double x,double y,double z) noexcept 
         BRepBuilderAPI_Transform builder(shape.impl_->shape,transform,true);
         const auto moved=builder.Shape();
         if (!builder.IsDone()) return Result<Shape>::failure("Traslazione fallita");
-        return Result<Shape>::success(Shape(std::make_shared<Shape::Impl>(moved)));
+        auto result=Shape(std::make_shared<Shape::Impl>(moved));propagate(builder,*shape.impl_,*result.impl_);
+        return Result<Shape>::success(result);
     } catch (const Standard_Failure& e) { return Result<Shape>::failure(occt_message(e)); }
       catch (const std::exception& e) { return Result<Shape>::failure(e.what()); }
       catch (...) { return Result<Shape>::failure("Errore imprevisto nella traslazione"); }

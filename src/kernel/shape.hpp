@@ -28,6 +28,7 @@ public:
     Shape() = default;
     bool valid() const { return static_cast<bool>(impl_); }
 private:
+    friend struct ShapeAccess;
     struct Impl;
     std::shared_ptr<Impl> impl_;
     explicit Shape(std::shared_ptr<Impl> impl) : impl_(std::move(impl)) {}

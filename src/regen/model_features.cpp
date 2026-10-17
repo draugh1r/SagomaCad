@@ -1,4 +1,5 @@
 #include "regen/model_features.hpp"
+#include "kernel/topology.hpp"
 #include "doc/expression.hpp"
 #include "solver/sketch_solver.hpp"
 #include "solver/profile_regions.hpp"
@@ -69,7 +70,7 @@ Regenerator::Cached build_model_feature(const doc::Document& d,const doc::Featur
             auto swept=checked(kernel::extrude(face,{normal.x*distance,normal.y*distance,normal.z*distance}));
             shape=shape?checked(kernel::boolean_operation(*shape,swept,"join")):swept;
         }
-        return {shape,{}};
+        auto named=kernel::name_topology(*shape,f.id);return {named.value,named.error};
     }catch(const std::exception& e){return {{},e.what()};}catch(...){return {{},"Valutazione della feature fallita"};}
 }
 }
