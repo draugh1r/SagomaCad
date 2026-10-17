@@ -14,6 +14,7 @@ Result<std::vector<TopologyEntity>> topology(const Shape&) noexcept;
 Result<TopologyEntity> resolve(const Shape&,const doc::TopologyRef&,const std::string& kind) noexcept;
 Result<Shape> face_shape(const Shape&,int id) noexcept;
 Result<FaceFrame> face_frame(const Shape&,int id) noexcept;
+Result<doc::Sketch> face_reference_geometry(const Shape&,int id) noexcept;
 Result<Shape> fillet(const Shape&,const std::vector<int>& edges,double radius,const std::string& origin) noexcept;
 Result<Shape> chamfer(const Shape&,const std::vector<int>& edges,double distance,const std::string& origin) noexcept;
 }

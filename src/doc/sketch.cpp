@@ -10,11 +10,19 @@ nlohmann::json sketch_json(const Sketch& s) {
     for(const auto& p:s.points) j["points"].push_back({{"id",p.id},{"x",p.x},{"y",p.y}});
     for(const auto& e:s.entities) j["entities"].push_back({{"id",e.id},{"kind",e.kind},{"points",e.points},{"radius",e.radius},{"construction",e.construction}});
     auto put=[&](const auto& cs,const char* key){for(const auto& c:cs)j[key].push_back({{"id",c.id},{"kind",c.kind},{"refs",c.refs},{"expression",c.expression},{"values",c.values}});};
+    for(size_t i=0;i<s.entities.size();++i)if(!s.entities[i].reference_name.empty())j["entities"][i]["reference_name"]=s.entities[i].reference_name;
+    if(s.support){j["support"]=*s.support;j["origin"]=s.origin;j["u"]=s.u;j["v"]=s.v;}
     put(s.constraints,"constraints");put(s.dimensions,"dimensions");if(s.visible)j["visible"]=*s.visible;return j;
 }
 Sketch read_sketch(const nlohmann::json& j) {
     if(!j.is_object())throw std::runtime_error("sketch.invalid: dati dello schizzo non validi");
     Sketch s;s.plane=j.value("plane",std::string("XY"));
+    if(j.contains("support")){
+        s.support=j.at("support").get<TopologyRef>();s.origin=j.value("origin",s.origin);s.u=j.value("u",s.u);s.v=j.value("v",s.v);
+        if(s.support->body.empty()||s.support->body.size()>256||s.support->name.empty()||s.support->name.size()>4096)throw std::runtime_error("sketch.support: riferimento non valido");
+        double uu=0,vv=0,uv=0;for(int i=0;i<3;++i){if(!std::isfinite(s.origin[i])||std::abs(s.origin[i])>1e9||!std::isfinite(s.u[i])||!std::isfinite(s.v[i]))throw std::runtime_error("sketch.frame: frame non finito");uu+=s.u[i]*s.u[i];vv+=s.v[i]*s.v[i];uv+=s.u[i]*s.v[i];}
+        if(std::abs(uu-1)>1e-7||std::abs(vv-1)>1e-7||std::abs(uv)>1e-7)throw std::runtime_error("sketch.frame: frame non ortonormale");
+    }
     if(j.contains("visible")&&!j["visible"].is_null())s.visible=j["visible"].get<bool>();
     if(s.plane!="XY"&&s.plane!="XZ"&&s.plane!="YZ")throw std::runtime_error("sketch.plane: piano non valido");
     for(const auto* key:{"points","entities","constraints","dimensions"})
@@ -25,6 +33,7 @@ Sketch read_sketch(const nlohmann::json& j) {
     for(const auto& p:j.value("points",nlohmann::json::array())){SketchPoint v{id(p),number(p.value("x",0.0)),number(p.value("y",0.0))};point_ids.insert(v.id);s.points.push_back(v);}
     for(const auto& e:j.value("entities",nlohmann::json::array())){
         SketchEntity v{id(e),e.value("kind",std::string("point")),e.value("points",std::vector<std::string>{}),number(e.value("radius",1.0)),e.value("construction",false)};
+        v.reference_name=e.value("reference_name",std::string());if(v.reference_name.size()>4096||(!v.reference_name.empty()&&!v.construction))throw std::runtime_error("sketch.reference: geometria proiettata non valida");
         const size_t count=v.kind=="point"||v.kind=="circle"?1:v.kind=="line"?2:v.kind=="arc"?3:0;
         if(!count||v.points.size()!=count||v.radius<=0)throw std::runtime_error("sketch.entity: entità non valida");
         for(const auto& p:v.points)if(!point_ids.contains(p))throw std::runtime_error("sketch.reference: punto inesistente: "+p);

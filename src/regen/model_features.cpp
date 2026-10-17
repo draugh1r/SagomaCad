@@ -1,5 +1,6 @@
 #include "regen/model_features.hpp"
 #include "kernel/topology.hpp"
+#include "regen/attached_sketch.hpp"
 #include "doc/expression.hpp"
 #include "solver/sketch_solver.hpp"
 #include "solver/profile_regions.hpp"
@@ -20,7 +21,7 @@ Regenerator::Cached build_model_feature(const doc::Document& d,const doc::Featur
         auto before=std::find_if(snapshot.features.begin(),snapshot.features.end(),[&](const auto& row){return row.id==id;});
         if(before==snapshot.features.end())throw std::runtime_error("Lo schizzo deve precedere la feature: "+id);
         if(!before->error.empty())throw std::runtime_error("Schizzo sorgente in errore: "+before->error);
-        auto solved=solver::solve(d,doc::read_sketch(found->second.data));if(!solved.error.empty())throw std::runtime_error(solved.error);
+        auto solved=solver::solve(d,evaluated_sketch(d,id));if(!solved.error.empty())throw std::runtime_error(solved.error);
         const auto regions=solver::profile_regions(solved.sketch,solved.profiles);
         const auto& selected=data.at("profiles");if(!selected.is_array()||selected.empty()||selected.size()>1024)throw std::runtime_error("Seleziona almeno un profilo");
         std::optional<kernel::Shape> shape;std::vector<std::string> used;
@@ -50,13 +51,14 @@ Regenerator::Cached build_model_feature(const doc::Document& d,const doc::Featur
             auto direction=data.value("direction",std::string("one_side"));auto extent=data.value("extent",std::string("distance"));
             if(direction!="one_side"&&direction!="symmetric"&&direction!="two_sides")throw std::runtime_error("Direzione non valida");
             if(extent!="distance"&&extent!="through_all")throw std::runtime_error("Estensione non valida");
-            const kernel::Vec3 normal=solved.sketch.plane=="XY"?kernel::Vec3{0,0,1}:solved.sketch.plane=="XZ"?kernel::Vec3{0,-1,0}:kernel::Vec3{1,0,0};
+            const auto& sk=solved.sketch;
+            const kernel::Vec3 normal=sk.support?kernel::Vec3{sk.u[1]*sk.v[2]-sk.u[2]*sk.v[1],sk.u[2]*sk.v[0]-sk.u[0]*sk.v[2],sk.u[0]*sk.v[1]-sk.u[1]*sk.v[0]}:solved.sketch.plane=="XY"?kernel::Vec3{0,0,1}:solved.sketch.plane=="XZ"?kernel::Vec3{0,-1,0}:kernel::Vec3{1,0,0};
             if(extent=="through_all"){
                 if(data.value("operation",std::string("new"))=="new")throw std::runtime_error("Attraverso tutto richiede corpi di destinazione");
                 double low=0,high=0;bool target=false;
                 for(const auto& body:snapshot.bodies)if(body.exact&&std::find(data.at("target_bodies").begin(),data.at("target_bodies").end(),body.id)!=data.at("target_bodies").end()){
                     auto mass=kernel::mass_properties(*body.exact);if(!mass)throw std::runtime_error(mass.error);target=true;
-                    auto projection=[&](kernel::Vec3 p){return p.x*normal.x+p.y*normal.y+p.z*normal.z;};
+                    auto projection=[&](kernel::Vec3 p){return (p.x-sk.origin[0])*normal.x+(p.y-sk.origin[1])*normal.y+(p.z-sk.origin[2])*normal.z;};
                     low=std::min({low,projection(mass.value->minimum),projection(mass.value->maximum)});high=std::max({high,projection(mass.value->minimum),projection(mass.value->maximum)});
                 }
                 if(!target)throw std::runtime_error("Nessun corpo di destinazione disponibile");

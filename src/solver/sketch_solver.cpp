@@ -41,6 +41,12 @@ struct System {
     V residual(const V& x){
         std::vector<double> r;blocks.clear();
         auto push=[&](P p){r.push_back(p.x());r.push_back(p.y());};
+        std::set<std::string> reference_points;
+        for(const auto& e:sketch.entities)if(!e.reference_name.empty()){
+            for(const auto& id:e.points)if(reference_points.insert(id).second){int index=points.at(id);r.push_back(x[index]-initial[index]);r.push_back(x[index+1]-initial[index+1]);}
+            if(radii.contains(e.id)){int index=radii.at(e.id);r.push_back(x[index]-initial[index]);}
+            blocks.push_back({"reference:"+e.id,static_cast<int>(r.size())});
+        }
         for(const auto& e:sketch.entities)if(e.kind=="arc"){
             const auto c=point(x,e.points[0]);r.push_back((point(x,e.points[1])-c).norm()-radius(x,e.id));
             r.push_back((point(x,e.points[2])-c).norm()-radius(x,e.id));blocks.push_back({"internal:"+e.id,static_cast<int>(r.size())});

@@ -53,9 +53,9 @@ std::string occt_message(const Standard_Failure& failure) {
 Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& boundary,const std::vector<std::vector<std::string>>& holes) noexcept {
     try {
         if(boundary.empty()||boundary.size()>4096||holes.size()>1024)throw std::runtime_error("Contorno del profilo non valido");
-        auto world=[&](double x,double y){return s.plane=="XY"?gp_Pnt(x,y,0):s.plane=="XZ"?gp_Pnt(x,0,y):gp_Pnt(0,x,y);};
+        auto world=[&](double x,double y){if(s.support)return gp_Pnt(s.origin[0]+x*s.u[0]+y*s.v[0],s.origin[1]+x*s.u[1]+y*s.v[1],s.origin[2]+x*s.u[2]+y*s.v[2]);return s.plane=="XY"?gp_Pnt(x,y,0):s.plane=="XZ"?gp_Pnt(x,0,y):gp_Pnt(0,x,y);};
         auto point=[&](const std::string& id){for(const auto& p:s.points)if(p.id==id)return world(p.x,p.y);throw std::runtime_error("Punto del profilo mancante: "+id);};
-        const gp_Dir normal=s.plane=="XY"?gp_Dir(0,0,1):s.plane=="XZ"?gp_Dir(0,-1,0):gp_Dir(1,0,0);
+        const gp_Dir normal=s.support?gp_Dir(gp_Vec(s.u[0],s.u[1],s.u[2]).Crossed(gp_Vec(s.v[0],s.v[1],s.v[2]))):s.plane=="XY"?gp_Dir(0,0,1):s.plane=="XZ"?gp_Dir(0,-1,0):gp_Dir(1,0,0);
         std::vector<NamedShape> names;
         auto wire=[&](const std::vector<std::string>& ids){
             BRepBuilderAPI_MakeWire builder;
@@ -68,7 +68,7 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
                 else if(e.kind=="circle")edge=BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(point(e.points.at(0)),normal),e.radius)).Edge();
                 else if(e.kind=="arc"){
                     auto c=point(e.points.at(0)),a=point(e.points.at(1)),b=point(e.points.at(2));
-                    auto local=[&](gp_Pnt p){return s.plane=="XY"?std::pair(p.X(),p.Y()):s.plane=="XZ"?std::pair(p.X(),p.Z()):std::pair(p.Y(),p.Z());};
+                    auto local=[&](gp_Pnt p){if(s.support){auto d=gp_Vec(gp_Pnt(s.origin[0],s.origin[1],s.origin[2]),p);return std::pair(d.Dot(gp_Vec(s.u[0],s.u[1],s.u[2])),d.Dot(gp_Vec(s.v[0],s.v[1],s.v[2])));}return s.plane=="XY"?std::pair(p.X(),p.Y()):s.plane=="XZ"?std::pair(p.X(),p.Z()):std::pair(p.Y(),p.Z());};
                     auto [cx,cy]=local(c);auto [ax,ay]=local(a);auto [bx,by]=local(b);
                     double u=std::atan2(ay-cy,ax-cx),v=std::atan2(by-cy,bx-cx);while(v<=u)v+=2*std::numbers::pi;
                     GC_MakeArcOfCircle arc(a,world(cx+e.radius*std::cos((u+v)/2),cy+e.radius*std::sin((u+v)/2)),b);

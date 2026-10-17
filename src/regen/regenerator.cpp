@@ -3,6 +3,7 @@
 #include "solver/sketch_solver.hpp"
 #include "regen/model_features.hpp"
 #include "kernel/topology.hpp"
+#include "regen/attached_sketch.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -103,7 +104,7 @@ const Snapshot& Regenerator::evaluate(const doc::Document& document) {
         if (it->second.suppressed) { snapshot_.features.push_back({id,{},false}); return; }
         if (it->second.type=="sketch") {
             try {
-                auto result=solver::solve(document,doc::read_sketch(it->second.data));
+                auto result=solver::solve(document,attached_sketch(doc::read_sketch(it->second.data),snapshot_));
                 snapshot_.features.push_back({id,result.error,false});
             } catch(const std::exception& e) { snapshot_.features.push_back({id,e.what(),false}); }
             return;

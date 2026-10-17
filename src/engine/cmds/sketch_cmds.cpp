@@ -3,6 +3,8 @@
 #include "solver/sketch_solver.hpp"
 #include "doc/expression.hpp"
 #include "regen/regenerator.hpp"
+#include "regen/attached_sketch.hpp"
+#include "kernel/topology.hpp"
 #include <algorithm>
 #include <cmath>
 #include <numbers>
@@ -31,17 +33,22 @@ CommandSpec spec(std::string id,std::string label,std::string help,std::function
 }
 std::vector<CommandSpec> sketch_specs(){
     std::vector<CommandSpec> specs;
-    specs.push_back(spec("sketch.create","Crea schizzo","{plane: XY|XZ|YZ, name?: string}",[](Session& s,const J& p){
-        only_keys(p,{"plane","name"});doc::Sketch sketch;sketch.plane=string_arg(p,"plane",true,2);sketch=doc::read_sketch(doc::sketch_json(sketch));
+    specs.push_back(spec("sketch.create","Crea schizzo","{plane?: XY|XZ|YZ, face?: {body,name,signature?}, name?: string}; scegli piano o faccia piana",[](Session& s,const J& p){
+        only_keys(p,{"plane","face","name"});doc::Sketch sketch;
+        if(p.contains("face")){
+            if(p.contains("plane"))throw std::runtime_error("Scegli plane oppure face");
+            auto ref=p.at("face").get<doc::TopologyRef>();regen::Regenerator r;auto snapshot=r.evaluate(s.document);
+            sketch.support=ref;sketch=regen::attached_sketch(sketch,snapshot);
+        }else{sketch.plane=string_arg(p,"plane",true,2);sketch=doc::read_sketch(doc::sketch_json(sketch));}
         size_t n=s.document.timeline.size()+1;std::string id;do{id="sketch-"+std::to_string(n++);}while(s.document.features.contains(id));
         doc::Feature f;f.id=id;f.name=p.contains("name")?string_arg(p,"name",true,128):"Schizzo "+std::to_string(n-1);f.type="sketch";f.data=doc::sketch_json(sketch);
         s.document.features[id]=f;s.document.timeline.insert(s.document.timeline.begin()+s.document.rollback,id);++s.document.rollback;s.active_sketch=id;return CommandResult{true,{{"sketch",id}},{}};
     }));
     specs.push_back(spec("sketch.finish","Fine schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto id=f.id;s.active_sketch.clear();s.document.rollback=s.document.timeline.size();return CommandResult{true,{{"sketch",id}},{}};},false));
     specs.push_back(spec("sketch.edit","Modifica schizzo","{sketch: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);s.active_sketch=f.id;return CommandResult{true,{{"sketch",f.id}},{}};},false));
-    specs.push_back(spec("sketch.inspect","Ispeziona schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto j=solver::inspect(solver::solve(s.document,doc::read_sketch(f.data)));j["sketch"]=f.id;regen::Regenerator regen;const auto& snapshot=regen.evaluate(s.document);j["visible"]=regen::sketch_visible(s.document,snapshot,f.id);j["visibility"]=f.data.value("visible",J());return CommandResult{true,j,{}};},false));
+    specs.push_back(spec("sketch.inspect","Ispeziona schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto j=solver::inspect(solver::solve(s.document,regen::evaluated_sketch(s.document,f.id)));j["sketch"]=f.id;regen::Regenerator regen;const auto& snapshot=regen.evaluate(s.document);j["visible"]=regen::sketch_visible(s.document,snapshot,f.id);j["visibility"]=f.data.value("visible",J());return CommandResult{true,j,{}};},false));
     specs.push_back(spec("sketch.rect","Rettangolo","{sketch?: id, x?: mm, y?: mm, width: expression, height: expression, centered?: bool, anchor?: bool, driving_width?: true, driving_height?: true}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x","y","width","height","centered","anchor","construction","flip_x","flip_y","driving_width","driving_height"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
+        only_keys(p,{"sketch","x","y","width","height","centered","anchor","construction","flip_x","flip_y","driving_width","driving_height"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);
         const auto w=string_arg(p,"width"),h=string_arg(p,"height");double width=expression(s.document,w),height=expression(s.document,h);if(width<=0||height<=0)throw std::runtime_error("Larghezza e altezza devono essere positive");
         bool centered=p.value("centered",false),anchor=p.value("anchor",true);double x=coordinate(p,"x"),y=coordinate(p,"y");
         if(centered&&(x!=0||y!=0))throw std::runtime_error("Il rettangolo centrato usa l'origine: ometti x e y");
@@ -53,7 +60,7 @@ std::vector<CommandSpec> sketch_specs(){
         if(p.value("driving_height",true))dimension(t,"length",{es[1]},h);return store(s,f,t,{{"entities",es},{"points",ps}});
     },true,"R"));
     specs.push_back(spec("sketch.line","Linea","{sketch?: id, x1,y1,x2,y2: mm, length?: expression, angle?: expression, anchor?: bool}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x1","y1","x2","y2","length","angle","anchor","construction"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
+        only_keys(p,{"sketch","x1","y1","x2","y2","length","angle","anchor","construction"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);
         for(const char* key:{"x1","y1","x2","y2"})if(!p.contains(key))throw std::runtime_error(std::string("Manca ")+key);
         double x=coordinate(p,"x1"),y=coordinate(p,"y1"),dx=coordinate(p,"x2")-x,dy=coordinate(p,"y2")-y;
         if(p.contains("length")||p.contains("angle")) {
@@ -72,13 +79,13 @@ std::vector<CommandSpec> sketch_specs(){
         return store(s,f,t,{{"entity",id},{"points",{a,b}}});
     },true,"L"));
     specs.push_back(spec("sketch.circle","Cerchio","{sketch?: id, x?: mm, y?: mm, diameter: expression, anchor?: bool, driving_diameter?: true}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x","y","diameter","anchor","construction","driving_diameter"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);
+        only_keys(p,{"sketch","x","y","diameter","anchor","construction","driving_diameter"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);
         double x=coordinate(p,"x"),y=coordinate(p,"y");auto expr=string_arg(p,"diameter");double radius=expression(s.document,expr)/2;if(radius<=0)throw std::runtime_error("Il diametro deve essere positivo");
         auto center=point(t,x,y),id=entity(t,"circle",{center},radius,p.value("construction",false));if(p.value("anchor",true))constraint(t,"fix",{center},{x,y});
         if(p.value("driving_diameter",true))dimension(t,"diameter",{id},expr);return store(s,f,t,{{"entity",id},{"center",center}});
     },true,"C"));
     specs.push_back(spec("sketch.arc","Arco","{sketch?: id, x?: mm, y?: mm, radius: expression, start_angle: expression, end_angle: expression, anchor?: bool, driving_radius?: true, driving_start_angle?: true, driving_end_angle?: true}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","x","y","radius","start_angle","end_angle","anchor","construction","driving_radius","driving_start_angle","driving_end_angle"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);double x=coordinate(p,"x"),y=coordinate(p,"y");
+        only_keys(p,{"sketch","x","y","radius","start_angle","end_angle","anchor","construction","driving_radius","driving_start_angle","driving_end_angle"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);double x=coordinate(p,"x"),y=coordinate(p,"y");
         auto re=string_arg(p,"radius"),a=string_arg(p,"start_angle"),b=string_arg(p,"end_angle");double r=expression(s.document,re),u=expression(s.document,a,true),v=expression(s.document,b,true);if(r<=0||std::abs(std::remainder(u-v,2*std::numbers::pi))<1e-8)throw std::runtime_error("Arco degenere");
         auto center=point(t,x,y),start=point(t,x+r*std::cos(u),y+r*std::sin(u)),end=point(t,x+r*std::cos(v),y+r*std::sin(v));auto id=entity(t,"arc",{center,start,end},r,p.value("construction",false));
         if(p.value("anchor",false))constraint(t,"fix",{center},{x,y});
@@ -88,7 +95,7 @@ std::vector<CommandSpec> sketch_specs(){
         return store(s,f,t,{{"entity",id},{"points",{center,start,end}}});
     }));
     specs.push_back(spec("sketch.constraint.add","Vincolo","{sketch?: id, kind: coincident|horizontal|vertical|parallel|perpendicular|tangent|equal|midpoint|fix, refs: [id,...]}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","kind","refs"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);auto kind=string_arg(p,"kind");const std::vector<std::string> kinds={"coincident","horizontal","vertical","parallel","perpendicular","tangent","equal","midpoint","fix"};
+        only_keys(p,{"sketch","kind","refs"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);auto kind=string_arg(p,"kind");const std::vector<std::string> kinds={"coincident","horizontal","vertical","parallel","perpendicular","tangent","equal","midpoint","fix"};
         if(std::find(kinds.begin(),kinds.end(),kind)==kinds.end())throw std::runtime_error("Tipo di vincolo sconosciuto");
         auto refs=p.at("refs").get<std::vector<std::string>>();if(refs.empty()||refs.size()>2)throw std::runtime_error("Sono richiesti uno o due riferimenti");
         std::vector<double> values;if(kind=="fix"){
@@ -98,14 +105,14 @@ std::vector<CommandSpec> sketch_specs(){
         }auto id=constraint(t,kind,refs,values);return store(s,f,t,{{"constraint",id}});
     }));
     specs.push_back(spec("sketch.dimension.add","Quota schizzo","{sketch?: id, kind: distance|length|diameter|radius|angle, refs: [id,...], expression: string}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","kind","refs","expression"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);auto kind=string_arg(p,"kind");const std::vector<std::string> kinds={"distance","length","diameter","radius","angle"};
+        only_keys(p,{"sketch","kind","refs","expression"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);auto kind=string_arg(p,"kind");const std::vector<std::string> kinds={"distance","length","diameter","radius","angle"};
         if(std::find(kinds.begin(),kinds.end(),kind)==kinds.end())throw std::runtime_error("Tipo di quota sconosciuto");auto refs=p.at("refs").get<std::vector<std::string>>();auto id=dimension(t,kind,refs,string_arg(p,"expression"));return store(s,f,t,{{"dimension",id}});
     },true,"D"));
     specs.push_back(spec("sketch.dimension.set","Modifica quota","{sketch?: id, dimension: id, expression: string}",[](Session& s,const J& p){
-        only_keys(p,{"sketch","dimension","expression"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);auto id=string_arg(p,"dimension");auto it=std::find_if(t.dimensions.begin(),t.dimensions.end(),[&](const auto& q){return q.id==id;});if(it==t.dimensions.end())throw std::runtime_error("Quota inesistente: "+id);it->expression=string_arg(p,"expression");return store(s,f,t);
+        only_keys(p,{"sketch","dimension","expression"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);auto id=string_arg(p,"dimension");auto it=std::find_if(t.dimensions.begin(),t.dimensions.end(),[&](const auto& q){return q.id==id;});if(it==t.dimensions.end())throw std::runtime_error("Quota inesistente: "+id);it->expression=string_arg(p,"expression");return store(s,f,t);
     }));
     specs.push_back(spec("sketch.point.move","Sposta punto","{sketch?: id, point: id, x: mm, y: mm} (coalesce per trascinamento)",[](Session& s,const J& p){
-        only_keys(p,{"sketch","point","x","y"});auto& f=feature(s,p);auto t=doc::read_sketch(f.data);auto id=string_arg(p,"point");if(!p.contains("x")||!p.contains("y"))throw std::runtime_error("Mancano le coordinate");
+        only_keys(p,{"sketch","point","x","y"});auto& f=feature(s,p);auto t=regen::evaluated_sketch(s.document,f.id);auto id=string_arg(p,"point");for(const auto& e:t.entities)if(!e.reference_name.empty()&&std::find(e.points.begin(),e.points.end(),id)!=e.points.end())throw std::runtime_error("Geometria di riferimento non modificabile");if(!p.contains("x")||!p.contains("y"))throw std::runtime_error("Mancano le coordinate");
         if(std::none_of(t.points.begin(),t.points.end(),[&](const auto& q){return q.id==id;}))throw std::runtime_error("Punto inesistente: "+id);
         auto r=solver::drag(s.document,t,id,coordinate(p,"x"),coordinate(p,"y"));return store(s,f,r.sketch);
     }));
