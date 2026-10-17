@@ -38,3 +38,13 @@ Via MCP: `design_board({"theme":"light"})` o `design_board({"theme":"dark"})` re
 ## Approvazione
 
 2026-10-17: l’utente conferma «ok ci siamo» dopo aver verificato l’app con sfondi bianchi e accento pistacchio. Tavole chiara e scura archiviate in `approvate/` come riferimento della fase 9.
+
+## Aggiungere un’icona o cambiare un colore
+
+1. Cercare prima un master o un alias in `assets/icons/solidcraft/`. Per aggiornare il riferimento, usare `tools/import_solidcraft_icons.py --source ../solidcraft-ref` e registrare il commit e le licenze in `ATTRIBUTION.md`; controllare con `--check`. I master importati restano identici alla sorgente.
+2. Per un master originale, creare `assets/icons/sagomacad/svg/model/sagoma_nome.svg` (eventuale variante ottica in `small/`). Griglia 64×64, stessa proiezione e spessori SolidCraft; usare soltanto gli identificatori dei ruoli di `palette.toml`. Il compilatore include questa cartella separata e rifiuta nomi che sovrascrivono un master o alias importato. Nessun asset commerciale.
+3. Associare ID e accento in `src/ui/toolbar_catalog.cpp`. `icon` identifica il fallback Lucide, `design_icon` il master per ruoli. Usare un `design_icon` vuoto soltanto per un fallback esplicito. Aggiornare `docs/parity.md` con `python tools/update_parity.py`, poi verificarlo con `--check`.
+4. Cambiare i colori dell’interfaccia solo in `src/ui/theme.hpp`; quelli delle icone soltanto nella palette. Una modifica locale alla palette importata va dichiarata e distinta dall’import originale nel controllo di provenienza. Non ricolorare i master SVG. Nel tema chiaro gli sfondi ordinari rimangono bianchi: verde solo per accenti e stati.
+5. Ricompilare Release e verificare `icons`, `icon_palette`, `theme_tokens` e `frame_rule`; poi generare una tavola e screenshot nei due temi e alle due dimensioni. Il renderer risolve i ruoli e rasterizza ai pixel effettivi, DPI incluso; cache per ID/accento/tema/pixel/stato disabilitato. `gap` è un ritaglio trasparente, non una tinta di sfondo.
+
+Solo l’utente approva un’immagine: presentare la proposta, attendere la conferma, copiare esattamente il PNG in `docs/design/approvate/` e annotare data e ambito. Non rigenerare o sovrascrivere schermate approvate dopo una modifica dei token senza nuova approvazione.

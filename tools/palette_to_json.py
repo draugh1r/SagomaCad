@@ -63,6 +63,14 @@ def compile_data(folder):
     for path in sorted((folder / 'svg').rglob('*.svg')):
         masters[path.relative_to(folder / 'svg').as_posix()] = knockouts(
             path.read_text(encoding='utf-8'), palette['roles']['gap']['source'])
+    # Original SagomaCad art lives separately, preserving byte-for-byte upstream checks.
+    owned = folder.parent / 'sagomacad/svg'
+    imported_ids = {Path(key).stem for key in masters} | aliases.keys()
+    for path in sorted(owned.rglob('*.svg')):
+        key = path.relative_to(owned).as_posix()
+        if path.stem in imported_ids or key in masters:
+            raise ValueError(f'Original icon shadows SolidCraft artwork or alias: {path}')
+        masters[key] = knockouts(path.read_text(encoding='utf-8'), palette['roles']['gap']['source'])
     return dict(palette=palette, aliases=aliases, masters=masters)
 
 if __name__ == '__main__':

@@ -33,6 +33,7 @@ with tempfile.TemporaryDirectory() as folder:
 folder = root / 'assets/icons/solidcraft'
 aliases = tomllib.loads((folder / 'aliases.toml').read_text(encoding='utf-8'))['alias']
 names = {p.stem for p in (folder / 'svg').rglob('*.svg')} | aliases.keys()
+names |= {p.stem for p in (root / 'assets/icons/sagomacad/svg').rglob('*.svg')}
 rows = []
 def add(area, entries):
     for command, label, icon, design_icon, accent in entries:

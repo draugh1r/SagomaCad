@@ -3,10 +3,28 @@ import sys
 import unittest
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import tempfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
-from palette_to_json import knockouts, NS
+from palette_to_json import knockouts, compile_data, NS
 
 class KnockoutTests(unittest.TestCase):
+    def test_original_icons_stay_separate_and_cannot_shadow_upstream(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            imported = Path(temporary) / 'solidcraft'
+            imported.mkdir()
+            (imported/'svg/model').mkdir(parents=True)
+            (imported/'palette.toml').write_text('[roles.gap]\nsource="#ffffff"\n', encoding='utf-8')
+            (imported/'aliases.toml').write_text('[alias]\n', encoding='utf-8')
+            svg = '<svg xmlns="http://www.w3.org/2000/svg"><path fill="#236ead"/></svg>'
+            (imported/'svg/model/box.svg').write_text(svg, encoding='utf-8')
+            owned = Path(temporary) / 'sagomacad/svg/model'
+            owned.mkdir(parents=True)
+            (owned/'sagoma_custom.svg').write_text(svg, encoding='utf-8')
+            self.assertIn('model/sagoma_custom.svg', compile_data(imported)['masters'])
+            (owned/'box.svg').write_text(svg, encoding='utf-8')
+            with self.assertRaises(ValueError):
+                compile_data(imported)
+
     def test_only_previous_artwork_is_masked(self):
         svg = '<svg xmlns="http://www.w3.org/2000/svg"><path id="before" fill="#328bd3"/><circle id="erase" fill="#ffffff"/><path id="after" fill="#236ead"/></svg>'
         root = ET.fromstring(knockouts(svg, '#ffffff'))

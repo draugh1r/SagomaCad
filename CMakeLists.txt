@@ -17,7 +17,7 @@ find_package(OpenCASCADE CONFIG REQUIRED)
 find_path(STB_INCLUDE_DIRS stb_image_write.h PATH_SUFFIXES stb REQUIRED)
 find_path(CLAY_INCLUDE_DIRS clay.h REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
-file(GLOB_RECURSE SAGOMACAD_ICON_INPUTS CONFIGURE_DEPENDS assets/icons/solidcraft/svg/*.svg)
+file(GLOB_RECURSE SAGOMACAD_ICON_INPUTS CONFIGURE_DEPENDS assets/icons/solidcraft/svg/*.svg assets/icons/sagomacad/svg/*.svg)
 set(SAGOMACAD_ICON_DATA ${CMAKE_BINARY_DIR}/assets/icons/solidcraft/icons.json)
 add_custom_command(OUTPUT ${SAGOMACAD_ICON_DATA}
   COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/palette_to_json.py --out ${SAGOMACAD_ICON_DATA}

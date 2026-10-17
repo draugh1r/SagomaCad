@@ -399,7 +399,7 @@
       "id": 18,
       "phase": 9,
       "title": "9.9 Documentazione",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         17
@@ -412,7 +412,11 @@
       "validation": "python tests/test_utf8.py",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T19:49:43.439687+00:00",
+      "completedAt": "2026-10-17T19:51:25.555819+00:00",
+      "note": "Documentata aggiunta master, ruoli, palette, approvazione e fabbrica finestre. Master originali separati da import SolidCraft, collisioni rifiutate con test. UTF-8, build Release e 57/57 ctest passati.",
+      "commit": "66c1877a5dfd91db3e06817ed81113bc8714ef47"
     },
     {
       "id": 19,
