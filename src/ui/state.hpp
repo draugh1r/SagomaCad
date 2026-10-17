@@ -7,10 +7,27 @@
 #include "ui/theme.hpp"
 #include <nlohmann/json_fwd.hpp>
 #include "engine/tools/sketch_tool.hpp"
+#include "engine/picking.hpp"
 
 namespace sagomacad::ui {
 struct State {
+    struct SurfaceEditor {
+        bool open=false,through=false,dragging=false;
+        int drag_dimension=-1;
+        std::string command,feature_id,error,preview_error;
+        nlohmann::json face=nullptr,position=nullptr,edges=nlohmann::json::array(),references=nlohmann::json::array();
+        std::array<char,4096> value{},diameter{},depth{};
+        std::array<std::array<char,4096>,2> offsets{};
+        float drag_x=0,drag_y=0,drag_px=0,drag_py=0,handle_x=0,handle_y=0,value_x=0,value_y=0;
+        double drag_amount=0;
+        std::map<std::string,std::array<float,4>> fields;
+    } surface;
+    engine::PickFilter pick_filter;
+    std::optional<engine::PickRef> hovered_entity;
+    bool selection_filters_open=false,show_topology_labels=false;
+    nlohmann::json topology_labels=nlohmann::json::array();
     struct ModelEditor {
+        nlohmann::json face=nullptr;
         bool open=false,revolve=false,pick_axis=false,dragging=false,operation_menu=false;
         std::string feature_id,sketch,axis,error,preview_error;
         std::vector<std::string> profiles,targets;
@@ -20,6 +37,7 @@ struct State {
         double drag_amount=0;
         std::map<std::string,std::array<float,4>> fields;
     } model;
+    bool model_profile_under_pointer=false;
     std::string selected_profile_sketch;
     std::vector<std::string> selected_profiles;
     struct SketchBrowserItem {std::array<float,4> row{},eye{};bool visible=false;};

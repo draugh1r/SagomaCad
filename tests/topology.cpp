@@ -29,7 +29,7 @@ int main(){try{
     }
     auto cutter=ok(name_topology(ok(translate(ok(make_box(40,40,10)),0,0,10)),"cut"));auto cut=ok(subtract(a,cutter));
     auto gone=resolve(cut,saved,"face");check(!gone&&gone.error.find("eliminata")!=std::string::npos,"deleted top must not attach to new top: "+gone.error);
-    auto fallback=saved;fallback.name="legacy/unknown";check(bool(resolve(a,fallback,"face")),"unique signature fallback");
+    auto fallback=saved;fallback.name="base/legacy_unknown";check(bool(resolve(a,fallback,"face")),"unique signature fallback");
     fallback.signature.center[2]+=1;check(!resolve(a,fallback,"face"),"unmatched fallback rejected");
     auto pocket=ok(name_topology(ok(translate(ok(make_box(5,5,25)),10,10,0)),"pocket"));auto holed=ok(subtract(a,pocket));
     check(ok(resolve(holed,saved,"face")).name==saved.name,"Modified history preserves top alias");

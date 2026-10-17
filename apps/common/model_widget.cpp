@@ -12,7 +12,7 @@ ImVec4 rgba(ui::Color c){return {c.r,c.g,c.b,c.a};}
 double segment(ImVec2 p,ImVec2 a,ImVec2 b){double dx=b.x-a.x,dy=b.y-a.y,den=dx*dx+dy*dy,t=den>0?std::clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/den,0.,1.):0;return std::hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
 }
 void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
-    if(!engine_||state_.sketch_mode)return;auto& s=state_;auto& m=s.model;auto& io=ImGui::GetIO();auto* dl=ImGui::GetWindowDrawList();const float z=float(scale_);const auto& token=t.model;
+    state_.model_profile_under_pointer=false;if(!engine_||state_.sketch_mode)return;auto& s=state_;auto& m=s.model;auto& io=ImGui::GetIO();auto* dl=ImGui::GetWindowDrawList();const float z=float(scale_);const auto& token=t.model;
     auto project=[&](kernel::Vec3 p){auto q=s.camera.project(p,current_viewport_);return ImVec2{float(q.x),float(q.y)};};
     auto inside=[&](float x,float y,float w,float h){return io.MousePos.x>=x&&io.MousePos.x<=x+w&&io.MousePos.y>=y&&io.MousePos.y<=y+h;};
     const auto panel=layout_.last().contextual;
@@ -23,11 +23,12 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
     for(const auto& [id,views]:model_profiles_){auto solved=sketch_solutions_.find(id);if(solved==sketch_solutions_.end())continue;
         if(std::none_of(snapshot.features.begin(),snapshot.features.end(),[&](const auto& f){return f.id==id&&f.error.empty();}))continue;
         if(!regen::sketch_visible(context,snapshot,id,m.open?m.sketch:""))continue;
-        engine::SketchXY cursor;const bool cursor_ok=hovered&&ui::sketch_cursor(s.camera,current_viewport_,solved->second.sketch.plane,io.MousePos.x,io.MousePos.y,cursor);
-        for(const auto& view:views){candidates.push_back({id,&view});if(cursor_ok&&solver::contains(view.region,cursor.x,cursor.y)){auto p=s.camera.project(ui::sketch_world(solved->second.sketch.plane,cursor),current_viewport_);if(p.depth<best-1e-6||(std::abs(p.depth-best)<=1e-6&&id==preferred&&hit_sketch!=preferred)){best=p.depth;hit_sketch=id;hit_region=view.region.id;}}}
+        engine::SketchXY cursor;const bool cursor_ok=hovered&&s.pick_filter.sketches&&ui::sketch_cursor(s.camera,current_viewport_,solved->second.sketch,io.MousePos.x,io.MousePos.y,cursor);
+        for(const auto& view:views){candidates.push_back({id,&view});if(cursor_ok&&solver::contains(view.region,cursor.x,cursor.y)){auto p=s.camera.project(ui::sketch_world(solved->second.sketch,cursor),current_viewport_);if(p.depth<best-1e-6||(std::abs(p.depth-best)<=1e-6&&id==preferred&&hit_sketch!=preferred)){best=p.depth;hit_sketch=id;hit_region=view.region.id;}}}
     }
+    s.model_profile_under_pointer=!hit_region.empty();
     bool handle_hover=false;
-    if(m.open&&!m.profiles.empty()&&model_preview_.surface&&(!m.revolve?m.extent==0:!model_preview_.angle_arc.empty())){
+    if(m.open&&(!m.profiles.empty()||m.face.is_object())&&model_preview_.surface&&(!m.revolve?m.extent==0:!model_preview_.angle_arc.empty())){
         auto start=model_preview_.handle,end=start,unit=start;
         if(!m.revolve){double factor=m.direction==1?.5:1;auto n=model_preview_.normal;end={start.x+n.x*model_preview_.amount*factor,start.y+n.y*model_preview_.amount*factor,start.z+n.z*model_preview_.amount*factor};unit={end.x+n.x*factor,end.y+n.y*factor,end.z+n.z*factor};}
         else {end=model_preview_.angle_arc.back();auto n=model_preview_.normal;unit={end.x+n.x,end.y+n.y,end.z+n.z};for(size_t i=1;i<model_preview_.angle_arc.size();++i)dl->AddLine(project(model_preview_.angle_arc[i-1]),project(model_preview_.angle_arc[i]),color(t.accent),t.sketch.line_width*z);start=model_preview_.angle_arc.front();}
@@ -54,7 +55,7 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
         if(hovered&&!axis_hit.empty()){ImGui::SetTooltip("Asse %s",axis_hit.c_str());if(ImGui::IsMouseClicked(0)){m.axis=axis_hit;m.pick_axis=false;m.error.clear();}}
     }else if(hovered&&!handle_hover&&!m.dragging&&ImGui::IsMouseClicked(0)&&!hit_region.empty()){
         auto& sketch=m.open?m.sketch:s.selected_profile_sketch;auto& selected=m.open?m.profiles:s.selected_profiles;
-        if(sketch!=hit_sketch){sketch=hit_sketch;selected.clear();}if(!m.open&&!io.KeyCtrl)selected.clear();
+        m.face=nullptr;if(sketch!=hit_sketch){sketch=hit_sketch;selected.clear();}if(!m.open&&!io.KeyCtrl)selected.clear();
         auto it=std::find(selected.begin(),selected.end(),hit_region);if(it==selected.end())selected.push_back(hit_region);else selected.erase(it);m.error.clear();
     }
     for(const auto& candidate:candidates){const auto& view=*candidate.profile;const auto& ids=m.open?m.profiles:s.selected_profiles;const bool selected=(m.open?m.sketch:s.selected_profile_sketch)==candidate.sketch&&std::find(ids.begin(),ids.end(),view.region.id)!=ids.end();
@@ -65,7 +66,7 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
         if(selected)for(const auto& edge:view.fill.edges)for(size_t i=1;i<edge.points.size();++i)dl->AddLine(project(edge.points[i-1]),project(edge.points[i]),color(t.accent),t.sketch.line_width*z);
     }
     if(m.open&&!m.axis.empty()&&!m.pick_axis&&m.revolve&&model_preview_.surface){auto o=model_preview_.axis_origin,n=model_preview_.axis_direction;double e=token.axis_extent;dl->AddLine(project({o.x-n.x*e,o.y-n.y*e,o.z-n.z*e}),project({o.x+n.x*e,o.y+n.y*e,o.z+n.z*e}),color(token.axis),t.sketch.line_width*z*1.5f);}
-    if(m.open&&!m.profiles.empty()&&model_preview_.surface&&(!m.revolve?m.extent==0:!model_preview_.angle_arc.empty())){
+    if(m.open&&(!m.profiles.empty()||m.face.is_object())&&model_preview_.surface&&(!m.revolve?m.extent==0:!model_preview_.angle_arc.empty())){
         ImGui::SetCursorScreenPos({m.value_x,m.value_y});ImGui::SetNextItemWidth(token.field_width*z);auto& field=m.revolve?m.angle:m.distance;
         if(ImGui::InputText("##model_value",field.data(),field.size(),ImGuiInputTextFlags_AutoSelectAll))m.error.clear();
         if(ImGui::IsItemActivated()&&m.revolve)m.type=0;
@@ -86,7 +87,7 @@ void Shell::draw_model_panel(const ui::Theme& t){
             ImGui::TableSetupColumn("label",ImGuiTableColumnFlags_WidthFixed,t.model.label_width*z);ImGui::TableSetupColumn("value",ImGuiTableColumnFlags_WidthStretch);
             auto row=[&](const char* label){ImGui::TableNextRow(ImGuiTableRowFlags_None,t.model.row*z);ImGui::TableSetColumnIndex(0);ImGui::AlignTextToFramePadding();ImGui::TextUnformatted(label);ImGui::TableSetColumnIndex(1);ImGui::SetNextItemWidth(-1);};
             if(!m.revolve){row("Tipo");ImGui::TextUnformatted("Solido");}
-            row("Profilo");auto profile_label=m.profiles.empty()?std::string("Seleziona"):std::to_string(m.profiles.size())+(m.profiles.size()==1?" selezionato":" selezionati");
+            row("Profilo");auto profile_label=(m.profiles.empty()&&!m.face.is_object())?std::string("Seleziona"):std::to_string((m.face.is_object()?size_t(1):m.profiles.size()))+((m.face.is_object()?size_t(1):m.profiles.size())==1?" selezionato":" selezionati");
             if(ImGui::Button((profile_label+"##profile").c_str(),{-t.model.row*z,0}))m.pick_axis=false;record("profile");ImGui::SameLine();if(ImGui::SmallButton("x##clear_profile"))m.profiles.clear();
             if(m.revolve){
                 row("Asse");const bool picking=m.pick_axis;if(picking)ImGui::PushStyleColor(ImGuiCol_Button,rgba(t.model.selected));
@@ -121,7 +122,7 @@ void Shell::draw_model_panel(const ui::Theme& t){
         }
         const auto error=m.error.empty()?m.preview_error:m.error;if(!error.empty()){ImGui::PushStyleColor(ImGuiCol_Text,rgba(t.error));ImGui::TextWrapped("%s",error.c_str());ImGui::PopStyleColor();}
         ImGui::EndChild();ImGui::Separator();
-        const bool disabled=!m.preview_error.empty()||m.profiles.empty()||(m.revolve&&m.axis.empty());
+        const bool disabled=!m.preview_error.empty()||(m.profiles.empty()&&!m.face.is_object())||(m.revolve&&m.axis.empty());
         ImGui::SetCursorPosX(std::max(t.padding*z,ImGui::GetWindowWidth()-ImGui::GetStyle().WindowPadding.x-t.model.row*z*4.5f-ImGui::GetStyle().ItemSpacing.x));
         ImGui::BeginDisabled(disabled);if(ImGui::Button("OK",{t.model.row*z*2,0}))ui::submit_model(state_,*engine_);record("ok");ImGui::EndDisabled();ImGui::SameLine();
         if(ImGui::Button("Annulla",{t.model.row*z*2.5f,0}))ui::cancel_model(state_);record("cancel");

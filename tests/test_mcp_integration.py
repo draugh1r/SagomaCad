@@ -165,6 +165,13 @@ def bridge(app, cli, root):
             client.ok("command_run", {"command": "primitive.add", "params": {
                 "kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}})
             assert len(client.ok("document_inspect")["document"]["bodies"]) == 1
+            top = client.ok("geometry_query", {"kind": "face", "normal": [0, 0, 1]})["entities"][0]["ref"]
+            client.ok("command_run", {"command": "selection.set", "params": {"refs": [top]}})
+            selected = client.ok("selection_get")["refs"]
+            assert len(selected) == 1 and selected[0]["name"] == top["name"]
+            labeled = client.call("render_view", {"view": "iso", "size": "640x480", "labels": True})
+            png(labeled, 640, 480)
+            assert top["name"] in labeled["structuredContent"]["entity_labels"]
             png(client.call("render_view", {"view": "iso", "size": "640x480"}), 640, 480)
             png(client.call("ui_screenshot"))
             def command(name, **params):

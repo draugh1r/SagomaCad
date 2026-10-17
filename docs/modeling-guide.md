@@ -1,4 +1,4 @@
-# Modellazione parametrica — M4
+# Modellazione parametrica — M4 e M5
 
 Questa guida è anche la risorsa MCP `sagomacad://docs/modeling-guide`.
 UI, CLI e MCP usano lo stesso registro. `commands_list` documenta i parametri;
@@ -9,8 +9,8 @@ di parametri. Un angolo senza unità è in gradi.
 
 ## Profili e comandi
 
-In M4 Estrudi usa profili chiusi di schizzo. La selezione di facce del solido,
-gli schizzi su faccia e i relativi riferimenti topologici appartengono a M5;
+Estrudi usa profili chiusi di schizzo oppure una faccia piana selezionata.
+M5 aggiunge schizzi su faccia, raccordi, smussi e fori con riferimenti stabili;
 il push/pull diretto appartiene a M6. Per cambiare una distanza già confermata,
 fare doppio clic sull'estrusione nella timeline e modificarne il valore.
 
@@ -231,6 +231,64 @@ command("param.set", name="larghezza", expression="80 mm")
 check_volume(bracket_body, 30000 - 160*math.pi)
 command("param.set", name="foro", expression="10 mm")
 check_volume(bracket_body, 30000 - 250*math.pi)
+```
+
+## Facce, spigoli e riferimenti stabili (M5)
+
+`geometry_query` restituisce `entities[].ref`: conservarlo intero, con firma,
+invece degli ID numerici di tassellazione. Filtri: `body`, `kind` (face/edge/vertex),
+`type` (plane/line/circle/cylinder), `parallel_to`, `normal`, `limit`.
+`measure {a,b}` restituisce distanza minima e angolo; l'angolo è null quando
+non definito. `selection_get {}` legge la selezione reale solo in modalità bridge.
+`render_view` accetta `labels: true` e restituisce anche i nomi disegnati.
+
+`sketch.create {face: ref}` crea proiezioni immutabili utilizzabili nei vincoli;
+`feature.extrude {face: ref, distance: expression, ...}` mantiene le opzioni delle
+estrusioni da schizzo. `feature.fillet {edges: [ref,...], radius: expression}`
+e `feature.chamfer {edges: [ref,...], distance: expression}` lavorano sul corpo
+degli spigoli. `feature.hole {face: ref, position: {x,y}, diameter: expression,
+through_all: true}` cattura due quote dai bordi. `feature_get.params.references`
+contiene i bordi, il lato e le distanze modificabili con `feature.edit.params`.
+Un riferimento eliminato o ambiguo genera un errore leggibile nella feature.
+
+Il flusso seguente esegue «raccorda con raggio 2 tutti gli spigoli verticali»,
+crea anche uno schizzo appoggiato e un foro quotato, poi cambia le misure a monte.
+Salva il documento precedente per poter continuare gli altri esempi.
+
+```python
+import base64
+
+tool("document_save", {"path": "m5-previous.sagomacad"})
+command("document.new")
+command("param.set", name="m5_larghezza", expression="40 mm")
+command("param.set", name="m5_altezza", expression="20 mm")
+m5_base = command("primitive.add", kind="box", dimensions={
+    "width": "m5_larghezza", "depth": "40 mm", "height": "m5_altezza"})
+m5_body = m5_base["body_id"]
+m5_top = tool("geometry_query", {"body": m5_body, "kind": "face", "normal": [0,0,1]})["entities"][0]["ref"]
+m5_sketch = command("sketch.create", face=m5_top)["sketch"]
+m5_circle = command("sketch.circle", x=20, y=20, diameter="10 mm")
+m5_region = region(m5_sketch, [m5_circle["entity"]])
+m5_cylinder = command("feature.extrude", sketch=m5_sketch, profiles=[m5_region], distance="6 mm")
+command("param.set", name="m5_altezza", expression="35 mm")
+assert abs(tool("mass_properties", {"body": m5_cylinder["body_id"]})["bbox_mm"]["min"]["z"] - 35) < 1e-5
+m5_edges = tool("geometry_query", {"body": m5_body, "kind": "edge", "type": "line", "parallel_to": [0,0,1]})["entities"]
+assert len(m5_edges) == 4
+m5_fillet = command("feature.fillet", edges=[e["ref"] for e in m5_edges], radius="2 mm")
+m5_top = tool("geometry_query", {"body": m5_body, "kind": "face", "normal": [0,0,1]})["entities"][0]["ref"]
+m5_hole = command("feature.hole", face=m5_top, position={"x":10,"y":10}, diameter="8 mm", through_all=True)
+command("param.set", name="m5_larghezza", expression="60 mm")
+command("param.set", name="m5_altezza", expression="50 mm")
+check_volume(m5_body, (2400 - (4-math.pi)*4 - 16*math.pi)*50)
+m5_wall = tool("geometry_query", {"body":m5_body,"kind":"face","type":"cylinder"})["entities"]
+assert any(abs(e["geometry"]["center"][0]-10)<1e-5 and abs(e["geometry"]["center"][1]-10)<1e-5 for e in m5_wall)
+m5_bottom = tool("geometry_query", {"body":m5_body,"kind":"face","normal":[0,0,-1]})["entities"][0]["ref"]
+assert abs(tool("measure", {"a":m5_top,"b":m5_bottom})["distance_mm"]-50)<1e-5
+m5_image = rpc("tools/call", {"name":"render_view","arguments":{"view":"iso","size":"960x720","labels":True}})
+assert m5_image["structuredContent"]["entity_labels"]
+(WORK / "m5-labels.png").write_bytes(base64.b64decode(next(c["data"] for c in m5_image["content"] if c["type"]=="image")))
+tool("document_save", {"path":"m5-acceptance.sagomacad"})
+tool("document_open", {"path":"m5-previous.sagomacad"})
 ```
 
 Chiudere il client:

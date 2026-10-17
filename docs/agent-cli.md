@@ -56,3 +56,18 @@ la soppressione. `feature.get {feature_id}` espone anche gli errori.
 Script CLI completo, flussi MCP equivalenti e volumi attesi sono in
 [Modellazione parametrica](modeling-guide.md). Il test esegue direttamente lo
 script pubblicato, oltre a creare e modificare una rivoluzione da CLI.
+
+
+## M5: interrogare riferimenti stabili
+
+Gli stessi comandi MCP sono disponibili dal registro CLI. Per esempio:
+
+```powershell
+sagomacad-cli call engine.execute '{"command":"geometry.query","params":{"kind":"edge","type":"line","parallel_to":[0,0,1]}}' --headless pezzo.sagomacad
+```
+
+Conservare entities[].ref intero e usarlo in feature.fillet/feature.chamfer,
+feature.hole, sketch.create o feature.extrude. inspect.measure accetta a e b
+come riferimenti e restituisce distance_mm e angle_degrees. selection.get
+richiede una connessione all'app; non inventa una selezione headless.
+La guida MCP incorporata contiene i flussi completi e i test ne eseguono gli esempi.

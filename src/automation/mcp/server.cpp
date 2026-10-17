@@ -46,7 +46,7 @@ Json tools_catalog() {
         entry("feature_get","Dati, stato e messaggio di errore di una feature",schema({{"feature_id",text_schema()}},{"feature_id"})),
         entry("document_open","Apre un documento in una radice consentita",schema({{"path",text_schema()}},{"path"})),
         entry("document_save","Salva un documento in una radice consentita",schema({{"path",text_schema()},{"overwrite",bool_schema()}})),
-        entry("render_view","Renderizza un PNG da vista iso, top, front o right",schema({{"view",{{"type","string"},{"enum",Json::array({"iso","top","front","right"})}}},{"size",text_schema()}},{"view"})),
+        entry("render_view","Renderizza un PNG da vista iso, top, front o right",schema({{"view",{{"type","string"},{"enum",Json::array({"iso","top","front","right"})}}},{"size",text_schema()},{"labels",bool_schema()}},{"view"})),
         entry("geometry_query","Facce, spigoli e vertici con nomi stabili, firme e filtri geometrici",schema({{"body",text_schema()},{"kind",text_schema()},{"type",text_schema()},{"parallel_to",{{"type","array"},{"minItems",3},{"maxItems",3},{"items",{{"type","number"}}}}},{"normal",{{"type","array"},{"minItems",3},{"maxItems",3},{"items",{{"type","number"}}}}},{"limit",{{"type","integer"}}}})),
         entry("measure","Distanza minima e angolo fra due entità stabili",schema({{"a",object_schema()},{"b",object_schema()}},{"a","b"})),
         entry("selection_get","Legge la selezione utente nell'app aperta (solo bridge)",schema()),

@@ -1,4 +1,5 @@
 #include "shell.hpp"
+#include "ui/surface_editor.hpp"
 #include "view_cube_widget.hpp"
 #include "ui/theme.hpp"
 #include "ui/toolbar_catalog.hpp"
@@ -256,6 +257,8 @@ void Shell::draw() {
     }
     if (input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Z)) invoke_command("edit.undo");
     if (input.KeyCtrl && !input.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Y)) invoke_command("edit.redo");
+    if(!input.WantTextInput&&!input.KeyCtrl&&!state_.palette_open&&!state_.sketch_mode&&ImGui::IsKeyPressed(ImGuiKey_F))invoke_command("feature.fillet");
+    if(!input.WantTextInput&&!input.KeyCtrl&&!state_.palette_open&&!state_.sketch_mode&&ImGui::IsKeyPressed(ImGuiKey_H))invoke_command("feature.hole");
     if(!input.WantTextInput&&!input.KeyCtrl&&!state_.palette_open&&ImGui::IsKeyPressed(ImGuiKey_E))invoke_command("feature.extrude");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_N)) invoke_command("document.new");
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) invoke_command("document.open");
@@ -478,13 +481,14 @@ void Shell::draw() {
                 const auto params=ui::model_params(state_);const auto revision=doc::to_json(engine_->session().document).dump()+params.dump()+state_.model.feature_id;
                 if(revision!=model_revision_){model_revision_=revision;model_preview_=engine::model_preview(engine_->session().document,state_.model.feature_id,state_.model.revolve?"feature.revolve":"feature.extrude",params);model_surfaces_.clear();if(model_preview_.surface)model_surfaces_.push_back(*model_preview_.surface);}
                 state_.model.preview_error=model_preview_.error;
+            }else if(state_.surface.open){preview=engine::model_context(engine_->session().document,state_.surface.feature_id);
             }else if(state_.sketch_mode){
                 auto at=std::find(preview.timeline.begin(),preview.timeline.end(),state_.sketch_view_id);if(at!=preview.timeline.end())preview.rollback=std::size_t(at-preview.timeline.begin())+1;
             }
             const auto& doc=preview;
             const std::string revision=doc::to_json(doc).dump();
             if (revision!=surface_revision_) {
-                surface_revision_=revision; surfaces_.clear();
+                surface_revision_=revision; surfaces_.clear();surface_bodies_.clear();
                 const auto& snap=regenerator_.evaluate(doc);
                 state_.primitive_preview_error.clear();
                 if (state_.primitive_editor_open) for (const auto& feature:snap.features)
@@ -494,7 +498,7 @@ void Shell::draw() {
                     const auto found=std::find_if(snap.bodies.begin(),snap.bodies.end(),[&](const auto& b){return b.id==body.id;});
                     if (found==snap.bodies.end() || !found->final) continue;
                     auto built=mesh::build(*found->final,0.2);
-                    if (built) surfaces_.push_back(std::move(*built.value));
+                    if (built) {surfaces_.push_back(std::move(*built.value));surface_bodies_.push_back(body.id);}
                     else state_.status_message=built.error;
                 }
                 if (!surfaces_.empty() && !camera_fitted_) {
@@ -519,11 +523,13 @@ void Shell::draw() {
                 line({-extent,i*step,0},{extent,i*step,0},i==0?t.axis_x:(i%5==0?t.grid_major:t.grid_minor));
             }
         }
-        draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
+        if(state_.surface.open&&surface_preview_.surface){auto display=surfaces_;for(size_t i=0;i<display.size()&&i<surface_bodies_.size();++i)if(surface_bodies_[i]==surface_preview_.source_body)display[i]=*surface_preview_.surface;draw_surfaces(dl,display,state_.camera,viewport,t,z);}
+        else draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
         if(state_.model.open&&!model_surfaces_.empty()){
             auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.model.preview;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
             draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);
         }
+        draw_geometry_canvas(t,canvas_hovered&&!over_navigation&&!over_cube);
         draw_sketch_canvas(t,canvas_hovered && !over_navigation && !over_cube);
         draw_model_canvas(t,canvas_hovered&&!over_navigation&&!over_cube);
         if (surfaces_.empty()) {
@@ -581,6 +587,7 @@ void Shell::fit_camera() {
 bool Shell::open_feature_editor(std::string_view feature_id) {
     if(engine_) {
         auto it=engine_->session().document.features.find(std::string(feature_id));
+        if(it!=engine_->session().document.features.end()&&(it->second.type=="feature.fillet"||it->second.type=="feature.chamfer"||it->second.type=="feature.hole")){ui::begin_surface(state_,*engine_,it->second.type,std::string(feature_id));return true;}
         if(it!=engine_->session().document.features.end()&&(it->second.type=="feature.extrude"||it->second.type=="feature.revolve")){
             ui::begin_model(state_,*engine_,it->second.type=="feature.revolve",std::string(feature_id));return true;
         }
@@ -593,6 +600,10 @@ bool Shell::open_feature_editor(std::string_view feature_id) {
     return engine_ && ui::begin_feature_edit(state_,engine_->session().document,feature_id);
 }
 void Shell::invoke_command(std::string_view id) {
+    if(id=="feature.fillet"||id=="feature.chamfer"||id=="feature.hole"){if(engine_)ui::begin_surface(state_,*engine_,std::string(id));return;}
+    if(id=="selection.set"){state_.selection_filters_open=true;return;}
+    if(id=="sketch.create"&&engine_){auto selected=engine_->execute("selection.get");if(selected.ok)for(const auto& ref:selected.value["refs"])if(ref.value("kind",std::string())=="face"){auto r=engine_->execute("sketch.create",{{"face",ref}});if(!r.ok)state_.status_message=r.error;else sync_sketch();return;}}
+
     if (!engine_) return;
     const auto availability=ui::command_availability(id,engine_);
     if (!availability.enabled) { state_.status_message=availability.reason; return; }
@@ -630,6 +641,7 @@ void Shell::invoke_command(std::string_view id) {
 void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);
     draw_model_panel(t);
+    draw_surface_panel(t);
     const ImVec2 display=ImGui::GetIO().DisplaySize;
     if (!state_.status_message.empty() && !state_.file_dialog_open) {
         const auto& viewport=layout_.last().viewport;
@@ -973,7 +985,7 @@ nlohmann::json Shell::inspect() const {
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
         {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
-        {"feature_edit_open",state_.primitive_editor_open||(!state_.model.feature_id.empty()&&state_.model.open)},{"feature_edit_id",state_.model.open?state_.model.feature_id:state_.primitive_feature_id},{"model",ui::model_state_json(state_)},
+        {"surface",{{"open",state_.surface.open},{"command",state_.surface.command},{"params",ui::surface_params(state_)},{"error",state_.surface.preview_error},{"fields",state_.surface.fields},{"handle",{{"x",state_.surface.handle_x},{"y",state_.surface.handle_y}}}}},{"topology_labels",state_.topology_labels},{"selection",engine_?engine_->session().selection:nlohmann::json::array()},{"feature_edit_open",state_.primitive_editor_open||(!state_.model.feature_id.empty()&&state_.model.open)},{"feature_edit_id",state_.model.open?state_.model.feature_id:state_.primitive_feature_id},{"model",ui::model_state_json(state_)},
         {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"error",state_.sketch_error}}},
         {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }

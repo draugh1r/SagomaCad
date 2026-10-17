@@ -11,12 +11,12 @@ std::optional<double> triangle_depth(const PickTriangle& t,double x,double y){
     auto [a,b,c]=t.points;double det=(b.y-c.y)*(a.x-c.x)+(c.x-b.x)*(a.y-c.y);
     if(std::abs(det)<1e-12)return {};
     double u=((b.y-c.y)*(x-c.x)+(c.x-b.x)*(y-c.y))/det,v=((c.y-a.y)*(x-c.x)+(a.x-c.x)*(y-c.y))/det,w=1-u-v;
-    if(u< -1e-9||v< -1e-9||w< -1e-9)return {};return u*a.depth+v*b.depth+w*c.depth;
+    if(u< -1e-9||v< -1e-9||w< -1e-9)return {};return a.depth>0&&b.depth>0&&c.depth>0?1/(u/a.depth+v/b.depth+w/c.depth):u*a.depth+v*b.depth+w*c.depth;
 }
 std::optional<double> segment_depth(const PickSegment& s,double x,double y,double r){
     auto [a,b]=s.points;double dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
     double u=len<1e-12?0:std::clamp(((x-a.x)*dx+(y-a.y)*dy)/len,0.,1.);
-    if(std::hypot(x-a.x-u*dx,y-a.y-u*dy)>r)return {};return a.depth+u*(b.depth-a.depth);
+    if(std::hypot(x-a.x-u*dx,y-a.y-u*dy)>r)return {};return a.depth>0&&b.depth>0?1/((1-u)/a.depth+u/b.depth):a.depth+u*(b.depth-a.depth);
 }
 }
 void IdBuffer::build(int width,int height,std::vector<PickTriangle> ts,std::vector<PickSegment> ss,PickFilter filter,double radius){
@@ -29,14 +29,15 @@ void IdBuffer::build(int width,int height,std::vector<PickTriangle> ts,std::vect
     auto raster=[&](const auto& primitive,double margin,auto depth){
         PickRef ref=primitive.ref;
         if(ref.kind==PickKind::Face&&!filter.faces&&filter.bodies){ref.kind=PickKind::Body;ref.topology_id=0;}
-        if(!enabled(ref.kind,filter))return;
-        refs_.push_back(ref);auto id=std::uint32_t(refs_.size()-1);
+        bool selectable=enabled(ref.kind,filter);
+        if(!selectable&&ref.kind!=PickKind::Face)return;
+        if(selectable)refs_.push_back(ref);auto id=selectable?std::uint32_t(refs_.size()-1):0;
         double xmin=width,ymin=height,xmax=0,ymax=0;
         for(auto p:primitive.points){xmin=std::min(xmin,p.x-margin);ymin=std::min(ymin,p.y-margin);xmax=std::max(xmax,p.x+margin);ymax=std::max(ymax,p.y+margin);}
         if(xmax<0||ymax<0||xmin>=width||ymin>=height)return;
         int left=int(std::max(0.,xmin)),top=int(std::max(0.,ymin)),right=int(std::min(double(width-1),xmax)),bottom=int(std::min(double(height-1),ymax));
         for(int y=top;y<=bottom;++y)for(int x=left;x<=right;++x)if(auto z=depth(primitive,x+.5,y+.5)){
-            auto i=std::size_t(y)*width+x;double epsilon=1e-6*std::max(1.,std::abs(*z));
+            auto i=std::size_t(y)*width+x;double epsilon=1e-6*std::max(1.,std::abs(*z))+margin*std::abs(*z)/(height*1.2071067811865475);
             if(*z<=depths_[i]+epsilon){depths_[i]=*z;ids_[i]=id;}
         }
     };

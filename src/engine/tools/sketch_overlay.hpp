@@ -2,7 +2,7 @@
 #include "solver/sketch_solver.hpp"
 namespace sagomacad::engine {
 struct SketchXY { double x=0,y=0; };
-struct SketchStroke {std::string id;std::vector<SketchXY> points;bool construction=false,fixed=false;};
+struct SketchStroke {std::string id;std::vector<SketchXY> points;bool construction=false,fixed=false,reference=false;};
 struct SketchLabel {std::string id,text,kind;SketchXY position;bool vertical=false;};
 struct SketchOverlay {
     std::vector<SketchStroke> strokes;

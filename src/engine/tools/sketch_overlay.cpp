@@ -7,7 +7,7 @@ namespace sagomacad::engine {
 SketchOverlay sketch_overlay(const solver::SketchResult& result){
     SketchOverlay out;std::map<std::string,SketchXY> points;std::map<std::string,const doc::SketchEntity*> entities;
     for(const auto& p:result.sketch.points)points[p.id]={p.x,p.y};
-    for(const auto& e:result.sketch.entities){entities[e.id]=&e;SketchStroke stroke;stroke.id=e.id;stroke.construction=e.construction;stroke.fixed=true;
+    for(const auto& e:result.sketch.entities){entities[e.id]=&e;SketchStroke stroke;stroke.id=e.id;stroke.construction=e.construction;stroke.reference=!e.reference_name.empty();stroke.fixed=true;
         for(const auto& p:e.points)if(!result.fixed_points.contains(p)||!result.fixed_points.at(p))stroke.fixed=false;
         if((e.kind=="circle"||e.kind=="arc")&&result.state!="constrained"){
             bool radius=false;for(const auto& d:result.sketch.dimensions)if(!d.refs.empty()&&d.refs[0]==e.id&&(d.kind=="radius"||d.kind=="diameter"))radius=true;

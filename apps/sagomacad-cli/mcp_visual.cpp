@@ -50,10 +50,10 @@ Json mcp_visual_tool(std::string_view name,const Json& a,const McpInvoke& comman
                      bool bridge,sagomacad::engine::Engine& local_engine) {
     if (name=="render_view") {
         if (!a.is_object() || !a.contains("view") || !a["view"].is_string() ||
-            (a.contains("size") && !a["size"].is_string()))
+            (a.contains("size") && !a["size"].is_string()) || (a.contains("labels")&&!a["labels"].is_boolean()))
             return failure("mcp.invalid_arguments","render_view richiede view e size stringa opzionale");
         for (auto it=a.begin();it!=a.end();++it)
-            if (it.key()!="view" && it.key()!="size") return failure("mcp.invalid_arguments","Argomento sconosciuto: "+it.key());
+            if (it.key()!="view" && it.key()!="size" && it.key()!="labels") return failure("mcp.invalid_arguments","Argomento sconosciuto: "+it.key());
         const auto view=a["view"].get<std::string>();
         if (view!="iso" && view!="top" && view!="front" && view!="right")
             return failure("mcp.invalid_view","Vista sconosciuta","Usa iso, top, front o right");
@@ -85,7 +85,7 @@ Json mcp_visual_tool(std::string_view name,const Json& a,const McpInvoke& comman
         }
         sagomacad::Shell shell(width+320,height+230,1,true,true);
         if (!shell.valid()) return failure("mcp.render_failed",shell.error());
-        shell.bind_engine(render_engine);
+        shell.bind_engine(render_engine);shell.state().show_topology_labels=a.value("labels",false);
         if (view=="top") shell.state().camera.look_from({0,0,1});
         else if (view=="front") shell.state().camera.look_from({0,-1,0});
         else if (view=="right") shell.state().camera.look_from({1,0,0});
@@ -93,7 +93,7 @@ Json mcp_visual_tool(std::string_view name,const Json& a,const McpInvoke& comman
         const auto path=temporary_png();
         std::string error;
         if (!shell.screenshot(path.string(),error,true,width,height)) return failure("mcp.render_failed",error);
-        auto result=image_result(path,{{"view",view},{"width",width},{"height",height}});
+        auto result=image_result(path,{{"view",view},{"width",width},{"height",height},{"labels",a.value("labels",false)},{"entity_labels",shell.state().topology_labels}});
         std::error_code ignored; fs::remove(path,ignored);
         return result;
     }

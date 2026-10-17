@@ -1,5 +1,6 @@
 #include "shell.hpp"
 #include "ui/sketch_view.hpp"
+#include "regen/attached_sketch.hpp"
 #include "engine/tools/sketch_overlay.hpp"
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -21,7 +22,7 @@ void Shell::sync_sketch(){
     if(state_.sketch_view_id!=session.active_sketch){
         state_.sketch_mode=!session.active_sketch.empty();state_.sketch_view_id=session.active_sketch;state_.sketch_selection.clear();state_.sketch_tool.begin("select");state_.sketch_error.clear();
         if(state_.sketch_mode){state_.model.open=false;state_.selected_profile_sketch.clear();state_.selected_profiles.clear();state_.sketch_plane_picker=false;state_.navigation_mode=-1;state_.primitive_create_open=false;state_.primitive_editor_open=false;
-            const auto& f=session.document.features.at(session.active_sketch);const auto plane=f.data.value("plane",std::string("XY"));auto destination=ui::sketch_camera(state_.camera,plane);
+            const auto& f=session.document.features.at(session.active_sketch);const auto plane=f.data.value("plane",std::string("XY"));auto destination=ui::sketch_camera(state_.camera,regen::evaluated_sketch(session.document,f.id));
             state_.view_transition.begin(state_.camera,destination,ui::theme(state_.theme=="light").cube.transition_duration);
         }
     }
@@ -31,12 +32,13 @@ void Shell::sync_sketch(){
         if(!state_.model.feature_id.empty()&&!session.document.features.contains(state_.model.feature_id))state_.model.open=false;
         model_profiles_.clear();
         state_.sketch_error.clear();for(const auto& [id,f]:session.document.features)if(f.type=="sketch"&&!f.suppressed){
-        try{sketch_solutions_[id]=solver::solve(session.document,doc::read_sketch(f.data));model_profiles_[id]=engine::model_profiles(sketch_solutions_[id]);}catch(const std::exception& e){solver::SketchResult r;r.state="error";r.error=e.what();sketch_solutions_[id]=r;}
+        try{sketch_solutions_[id]=solver::solve(session.document,regen::evaluated_sketch(session.document,id));model_profiles_[id]=engine::model_profiles(sketch_solutions_[id]);}catch(const std::exception& e){solver::SketchResult r;r.state="error";r.error=e.what();sketch_solutions_[id]=r;}
     }}
 }
 void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     if(!engine_)return;auto& s=state_;auto& tool=s.sketch_tool;const float z=float(scale_);auto* dl=ImGui::GetWindowDrawList();auto& io=ImGui::GetIO();const auto v=current_viewport_;
-    auto project=[&](std::string_view plane,engine::SketchXY p){auto q=s.camera.project(ui::sketch_world(plane,p),v);return ImVec2{float(q.x),float(q.y)};};
+    const doc::Sketch* frame_sketch=nullptr;
+    auto project=[&](std::string_view plane,engine::SketchXY p){auto q=s.camera.project(frame_sketch?ui::sketch_world(*frame_sketch,p):ui::sketch_world(plane,p),v);return ImVec2{float(q.x),float(q.y)};};
     if(s.sketch_plane_picker){
         const double extent=t.sketch.plane_extent;const auto selected=hovered?ui::pick_sketch_plane(s.camera,v,io.MousePos.x,io.MousePos.y,extent):"";
         for(auto plane:{"YZ","XZ","XY"}){ImVec2 quad[4]={project(plane,{0,0}),project(plane,{extent,0}),project(plane,{extent,extent}),project(plane,{0,extent})};dl->AddConvexPolyFilled(quad,4,color(selected==plane?t.sketch.plane_hover:t.sketch.plane));dl->AddPolyline(quad,4,color(t.border),ImDrawFlags_Closed,t.sketch.line_width*z);auto label=project(plane,{extent*.65,extent*.65});dl->AddText(label,color(t.text),plane);}
@@ -47,6 +49,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     }
     std::string plane="XY";const solver::SketchResult* active=nullptr;
     if(s.sketch_mode&&sketch_solutions_.contains(s.sketch_view_id)){active=&sketch_solutions_.at(s.sketch_view_id);plane=active->sketch.plane;}
+    frame_sketch=active?&active->sketch:nullptr;
     const float palette_left=float(v.x+v.width)-t.sketch.palette_width*z-t.padding*z;
     const bool over_palette=s.sketch_mode&&io.MousePos.x>=palette_left&&io.MousePos.y>=v.y+t.sketch.palette_y*z;
     hovered=hovered&&!over_palette;
@@ -62,11 +65,13 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     }
     struct DimensionHit {std::string id,expression,kind;ImVec2 a,b;};std::vector<DimensionHit> dimension_hits;
     auto draw=[&](const solver::SketchResult& result,bool preview,bool editing){
+        const auto* previous_frame=frame_sketch;frame_sketch=&result.sketch;
         const auto overlay=engine::sketch_overlay(result);const auto& pl=result.sketch.plane;
         if(s.sketch_profiles&&editing)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
         for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
+            if(stroke.reference)c=t.selection.reference;
             if(preview||(editing&&std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end()))c=t.accent;
-            for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),t.sketch.line_width*z);}
+            for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),t.sketch.line_width*z);}
         }
         if(s.sketch_points)for(const auto& p:result.sketch.points){bool fixed=result.fixed_points.contains(p.id)&&result.fixed_points.at(p.id);auto c=result.state=="conflict"?t.error:fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;dl->AddCircleFilled(project(pl,{p.x,p.y}),t.sketch.point_radius*z,color(c));}
         if(!preview&&editing&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto q=project(pl,label.position);auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=t.sketch.dimension_offset*z;
@@ -74,6 +79,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
             ImVec2 end{q.x+size.x+t.spacing*z,q.y+size.y+t.spacing*z};dl->AddRectFilled({q.x-t.spacing*z/2,q.y-t.spacing*z/2},end,color(t.panel));dl->AddText(q,color(result.state=="conflict"?t.error:t.text),text.c_str());dimension_hits.push_back({label.id,label.text,label.kind,{q.x-t.spacing*z/2,q.y-t.spacing*z/2},end});
         }
         if(!preview&&editing&&s.sketch_constraints)for(const auto& label:overlay.constraints){auto q=project(pl,label.position);dl->AddText(ImGui::GetFont(),t.sketch.constraint_size*z,{q.x+t.spacing*z,q.y+t.spacing*z},color(t.muted),label.text.c_str());}
+        frame_sketch=previous_frame;
     };
     auto context=engine::model_context(engine_->session().document,s.model.open?s.model.feature_id:"");
     if(s.sketch_mode){auto at=std::find(context.timeline.begin(),context.timeline.end(),s.sketch_view_id);if(at!=context.timeline.end())context.rollback=std::min(context.rollback,std::size_t(at-context.timeline.begin())+1);}
@@ -81,7 +87,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     for(const auto& [id,result]:sketch_solutions_)if(regen::sketch_visible(context,evaluated,id,s.sketch_mode?s.sketch_view_id:s.model.open?s.model.sketch:""))draw(result,false,s.sketch_mode&&id==s.sketch_view_id);
     if(!active||!s.sketch_mode)return;
     if(!active->error.empty())s.sketch_error=active->error;
-    engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,plane,io.MousePos.x,io.MousePos.y,cursor);
+    engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,active->sketch,io.MousePos.x,io.MousePos.y,cursor);
     if(cursor_ok&&s.sketch_snap){double threshold=t.sketch.hit_radius*z*s.camera.distance/(v.height*1.2071067811865475);if(std::hypot(cursor.x,cursor.y)<threshold)cursor={};else for(const auto& p:active->sketch.points)if(std::hypot(cursor.x-p.x,cursor.y-p.y)<threshold){cursor={p.x,p.y};break;}}
     if(hovered&&cursor_ok)tool.move(cursor.x,cursor.y);
     auto new_dimension=[&](){

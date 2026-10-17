@@ -89,7 +89,7 @@ int main(int argc,char** argv){try{
     auto solid=e.execute("feature.extrude",{{"sketch",id},{"profiles",nlohmann::json::array({profile.value["regions"][0]["id"]})},{"distance","10 mm"}});check(solid.ok,"estrudi primo rettangolo");
     frame();shell.state().view_transition.cancel();shell.state().camera=ui::sketch_camera(shell.state().camera,"XY");shell.state().camera.distance=140;frame();
     auto solid_visible=[&](bool expected=true){
-        frame();frame();std::string error;
+        ImGui::GetIO().AddMousePosEvent(-1000,-1000);frame();frame();std::string error;
         auto path=std::filesystem::temp_directory_path()/("sagomacad-solid-visibility-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".png");
         check(shell.screenshot(path.string(),error),error.c_str());
         int w=0,h=0,channels=0;auto* pixels=stbi_load(path.string().c_str(),&w,&h,&channels,4);check(pixels,"screenshot solido leggibile");

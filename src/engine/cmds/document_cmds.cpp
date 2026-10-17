@@ -33,7 +33,7 @@ std::vector<CommandSpec> document_specs() {
              session.document = std::move(fresh);
              session.path.clear();
              session.history.clear();
-             session.active_sketch.clear();
+             session.active_sketch.clear();session.selection=nlohmann::json::array();
              return {true, {{"name", session.document.name}}, {}};
          }, false},
         {"document.open", "Apri documento", {"File"}, std::string("Ctrl+O"),
@@ -47,7 +47,7 @@ std::vector<CommandSpec> document_specs() {
              session.document = std::move(loaded);
              session.path = std::filesystem::absolute(path);
              session.history.clear();
-             session.active_sketch.clear();
+             session.active_sketch.clear();session.selection=nlohmann::json::array();
              return {true, {{"path", to_utf8(session.path)}}, {}};
          }, false},
         {"document.save", "Salva", {"File"}, std::string("Ctrl+S"),

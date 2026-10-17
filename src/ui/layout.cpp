@@ -125,10 +125,10 @@ const ShellLayout& LayoutEngine::compute(float w,float h,float z,const State& s,
                 CLAY({.id=id("properties_separator"),.layout={.sizing={CLAY_SIZING_FIXED(horizontal_divider),CLAY_SIZING_GROW(0)}},.backgroundColor=color(t.border)}) {}
                 CLAY({.id=id("properties"),.layout={.sizing={CLAY_SIZING_FIXED(properties*fraction),CLAY_SIZING_GROW(0)}}}) {}
             }
-            if(s.model.open) {
+            if(s.model.open||s.surface.open) {
                 const float panel_top=std::min(t.model.top*z,std::max(0.f,h-header-timeline-divider*2-t.model.footer*z-t.model.row*z*2));
-                const float panel_height=((s.model.revolve?t.model.revolve_height:t.model.height)+t.model.row*((!s.model.revolve&&s.model.direction==2?1:0)+(s.model.operation!=3?1:0)))*z;
-                CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(std::min(t.model.width*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(panel_height,std::max(0.f,h-header-timeline-divider*2-panel_top-t.padding*z)))}},
+                const float panel_height=((s.surface.open?(s.surface.command=="feature.hole"?t.selection.hole_height:t.selection.dialog_height):s.model.revolve?t.model.revolve_height:t.model.height)+t.model.row*((!s.model.revolve&&s.model.direction==2?1:0)+(s.model.operation!=3?1:0)))*z;
+                CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(std::min((s.surface.open?t.selection.dialog_width:t.model.width)*z,std::max(0.f,w-browser*fraction-2*t.padding*z))),CLAY_SIZING_FIXED(std::min(panel_height,std::max(0.f,h-header-timeline-divider*2-panel_top-t.padding*z)))}},
                     .floating={.offset={-t.padding*z,panel_top},.parentId=id("viewport").id,.zIndex=2,.attachPoints={.element=CLAY_ATTACH_POINT_RIGHT_TOP,.parent=CLAY_ATTACH_POINT_RIGHT_TOP},.attachTo=CLAY_ATTACH_TO_ELEMENT_WITH_ID}}) {}
             }else {CLAY({.id=id("contextual"),.layout={.sizing={CLAY_SIZING_FIXED(0),CLAY_SIZING_GROW(0)}}}) {}}
         }

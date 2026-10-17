@@ -77,3 +77,16 @@ Poi aggiungi una voce breve in `log/devlog.md`: cosa è stato fatto, numeri misu
 - Nuovi comandi in un file nuovo `engine/cmds/<area>_cmds.cpp` con una funzione `specs()`, invece di far crescere file condivisi.
 - File condivisi (registro comandi, `ui/state.hpp`, `CMakeLists.txt` principale): modifiche piccole e mirate, rileggi prima di modificare.
 - Se la build è rotta da una modifica altrui in corso, aspetta e riprova: non correggere file di altri.
+
+
+## 7. Facce e spigoli (M5)
+
+Usa geometry_query (registro: geometry.query) e conserva ref con nome e firma,
+mai gli indici della mesh. Per gli spigoli verticali: kind=edge, type=line,
+parallel_to=[0,0,1]; passali a feature.fillet con radius="2 mm". Usa measure
+per distanza/angolo e render_view con labels=true per verificare i nomi.
+selection_get è solo bridge. Schizzi, estrusioni e fori accettano face:ref;
+le quote del foro sono in feature_get.params.references. La guida eseguibile
+in modeling-guide.md e tests/test_topology_agents.py coprono CLI e MCP.
+Non aggiornare riferimenti eliminati scegliendo la faccia più vicina: errore
+leggibile nella timeline e prosecuzione della regen.

@@ -15,7 +15,7 @@ evidence = Path(sys.argv[2]).resolve()
 evidence.mkdir(parents=True, exist_ok=True)
 guide = (root / "docs/modeling-guide.md").read_text(encoding="utf-8")
 blocks = re.findall(r"```python\n(.*?)\n```", guide, re.S)
-assert len(blocks) == 5
+assert len(blocks) == 6
 with tempfile.TemporaryDirectory() as temporary:
     work = Path(temporary)
     scope = {"CLI": cli, "WORK": work}
@@ -33,6 +33,8 @@ with tempfile.TemporaryDirectory() as temporary:
         assert {"feature.extrude", "feature.revolve", "feature.edit", "feature.suppress", "timeline.rollback", "feature.get"} <= commands
         for index, code in enumerate(blocks[1:-1]):
             exec(compile(code, f"modeling-guide-flow-{index}", "exec"), scope)
+        for artifact in ("m5-acceptance.sagomacad", "m5-labels.png"):
+            shutil.copyfile(work / artifact, evidence / artifact)
         body = scope["bracket_body"]
         scope["check_volume"](body, 30000 - 250*math.pi)
         tool("document_open", {"path": "staffa-L.sagomacad"})

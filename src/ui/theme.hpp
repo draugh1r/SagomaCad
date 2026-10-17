@@ -78,6 +78,10 @@ struct Theme {
         float handle_hit=12,arrow_width=8,arrow_length=12,axis_extent=60,arc_radius=5,value_gap=12;
         Color selected{.12f,.45f,1.f,.40f},preview{.12f,.45f,1.f,.26f},cut{.95f,.18f,.16f,.32f},axis{1.f,.58f,.08f,1.f};
     } model;
+    struct SelectionTokens {
+        Color face_hover{1,1,1,.15f},edge_hover{.96f,.97f,.99f,1},reference{.65f,.25f,.85f,1};
+        float edge_width=3,face_width=1.4f,edge_hit=4,hold_seconds=.45f,label_size=9,filter_width=220,dialog_width=360,dialog_height=340,hole_height=430;
+    } selection;
 };
 inline constexpr Theme dark {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},

@@ -1,11 +1,11 @@
-# MCP di SagomaCad (M1.5–M4)
+# MCP di SagomaCad (M1.5–M5)
 
 Il server locale è `sagomacad-cli mcp`. Usa JSON-RPC 2.0 su stdio, una richiesta JSON per riga; stdout contiene solo risposte MCP. Cerca automaticamente il canale di controllo dell'app aperta e si autentica con il token del file di sessione. Se l'app non è raggiungibile, avvia una sessione headless in memoria. `--headless` forza la sessione senza finestra; `--headless file.sagomacad` carica quel documento. Le modifiche headless restano in memoria finché non si usa `document_save`.
 
 Binario Windows di questa build:
 
 ```text
-C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe
+C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m5\apps\sagomacad-cli\sagomacad-cli.exe
 ```
 
 Per forzare il bridge, avvia l'app e passa `--bridge PORT --token-file PERCORSO`. L'app scrive porta e percorso del token nel suo `.sagomacad/session.json`; si può usare anche `--session-file PERCORSO`. La ricerca automatica controlla la directory corrente e la directory dell'app accanto alla CLI. I file MCP sono limitati alla radice del progetto; `--allow-root CARTELLA` sostituisce la radice predefinita. Gli input dei tool file sono relativi alla prima radice consentita: percorsi assoluti, `..` e symlink che escono dalla radice sono rifiutati. `export` scrive solo in `export/` del progetto se tale cartella appartiene a una radice consentita, e richiede `overwrite: true` per sostituire un file. `document_open` e `document_save` accettano solo `.sagomacad` e richiedono `overwrite: true` se il file esiste. I comandi file invocati tramite `command_run` sono bloccati: usare i tool dedicati.
@@ -18,7 +18,7 @@ Apri `%APPDATA%\Claude\claude_desktop_config.json` e aggiungi la voce a `mcpServ
 {
   "mcpServers": {
     "sagomacad": {
-      "command": "C:\\Users\\User\\Desktop\\sviluppo\\SagomaCad\\build\\agent-m3\\apps\\sagomacad-cli\\sagomacad-cli.exe",
+      "command": "C:\\Users\\User\\Desktop\\sviluppo\\SagomaCad\\build\\agent-m5\\apps\\sagomacad-cli\\sagomacad-cli.exe",
       "args": ["mcp"]
     }
   }
@@ -30,7 +30,7 @@ Apri `%APPDATA%\Claude\claude_desktop_config.json` e aggiungi la voce a `mcpServ
 Da PowerShell, esegui:
 
 ```powershell
-claude mcp add --transport stdio --scope user sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe" mcp
+claude mcp add --transport stdio --scope user sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m5\apps\sagomacad-cli\sagomacad-cli.exe" mcp
 claude mcp list
 ```
 
@@ -42,12 +42,12 @@ Aggiungi in `%USERPROFILE%\.codex\config.toml`:
 
 ```toml
 [mcp_servers.sagomacad]
-command = 'C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe'
+command = 'C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m5\apps\sagomacad-cli\sagomacad-cli.exe'
 args = ['mcp']
 cwd = 'C:\Users\User\Desktop\sviluppo\SagomaCad'
 ```
 
-Oppure usa `codex mcp add sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m4\apps\sagomacad-cli\sagomacad-cli.exe" mcp`, poi `codex mcp list`. La sintassi e la configurazione condivisa tra CLI ed estensione sono nella [documentazione ufficiale Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+Oppure usa `codex mcp add sagomacad -- "C:\Users\User\Desktop\sviluppo\SagomaCad\build\agent-m5\apps\sagomacad-cli\sagomacad-cli.exe" mcp`, poi `codex mcp list`. La sintassi e la configurazione condivisa tra CLI ed estensione sono nella [documentazione ufficiale Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
 ## Tool e risorse
 
@@ -87,3 +87,19 @@ con due fori. Il test `modeling_agents` esegue tutti i blocchi MCP e CLI, verifi
 che la risorsa coincida con il file e misura la staffa: **21997,345175 mm³**.
 Il test del bridge verifica anche estrusione, rivoluzione, modifica, rollback,
 soppressione e `feature_get` nell'app in esecuzione.
+
+
+## Facce e spigoli (M5)
+
+`geometry_query` filtra per corpo, kind (face/edge/vertex), type, parallel_to,
+normal e limit. Ogni entità restituisce ref con nome stabile e firma geometrica,
+una descrizione e i bordi della faccia. `measure {a,b}` misura distanza minima e
+angolo fra due ref; `selection_get {}` richiede il bridge e legge la selezione
+reale della finestra. `render_view {view,size,labels:true}` disegna i nomi stabili
+con richiami e restituisce anche entity_labels. Gli alias compatti sono derivati
+dai nomi semantici; non dipendono dagli indici di tassellazione.
+
+Per «raccorda R2 tutti gli spigoli verticali», interrogare kind=edge, type=line,
+parallel_to=[0,0,1], poi passare gli entities[].ref a feature.fillet attraverso
+command_run. Esempi completi eseguibili, inclusi schizzo su faccia, foro a 10 mm
+dai bordi e cambi a monte: [guida di modellazione](modeling-guide.md).

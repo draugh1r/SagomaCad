@@ -5,7 +5,7 @@
 namespace sagomacad::ui {
 namespace {void copy(auto& buffer,const std::string& value){std::snprintf(buffer.data(),buffer.size(),"%s",value.c_str());}}
 void begin_model(State& s,engine::Engine& e,bool revolve,const std::string& editing){
-    s.model={};auto& m=s.model;m.open=true;m.revolve=revolve;m.feature_id=editing;
+    s.surface.open=false;s.model={};auto& m=s.model;m.open=true;m.revolve=revolve;m.feature_id=editing;
     copy(m.distance,"10 mm");copy(m.second_distance,"10 mm");copy(m.angle,"360 deg");
     m.sketch=e.session().active_sketch.empty()?s.selected_profile_sketch:e.session().active_sketch;
     if(m.sketch==s.selected_profile_sketch)m.profiles=s.selected_profiles;
@@ -18,6 +18,9 @@ void begin_model(State& s,engine::Engine& e,bool revolve,const std::string& edit
             if(m.profiles.empty()&&regions.size()==1)m.profiles.push_back(regions[0]["id"].get<std::string>());
         }else m.profiles.clear();
     }
+    if(!revolve&&m.profiles.empty()&&e.session().active_sketch.empty()){
+        auto selection=e.execute("selection.get");if(selection.ok)for(const auto& ref:selection.value["refs"])if(ref.value("kind",std::string())=="face"){m.face=ref;break;}
+    }
     if(!e.session().active_sketch.empty())e.execute("sketch.finish");
     s.sketch_mode=false;s.sketch_plane_picker=false;s.primitive_editor_open=false;s.primitive_create_open=false;s.navigation_mode=-1;
     const auto forward=s.camera.forward();
@@ -25,8 +28,8 @@ void begin_model(State& s,engine::Engine& e,bool revolve,const std::string& edit
     if(!editing.empty()){
         auto f=e.session().document.features.find(editing);if(f==e.session().document.features.end()){m.error="Feature mancante";return;}
         try {
-        const auto& p=f->second.data;m.sketch=p.value("sketch",std::string());m.profiles.clear();
-        for(const auto& ref:p.at("profiles")){if(ref.is_string())m.profiles.push_back(ref.get<std::string>());else {auto ids=ref.get<std::vector<std::string>>();std::sort(ids.begin(),ids.end());m.profiles.push_back("region:"+nlohmann::json(ids).dump());}}
+        const auto& p=f->second.data;m.face=p.value("face",nlohmann::json());m.sketch=p.value("sketch",std::string());m.profiles.clear();
+        for(const auto& ref:p.value("profiles",nlohmann::json::array())){if(ref.is_string())m.profiles.push_back(ref.get<std::string>());else {auto ids=ref.get<std::vector<std::string>>();std::sort(ids.begin(),ids.end());m.profiles.push_back("region:"+nlohmann::json(ids).dump());}}
         m.targets=p.value("target_bodies",std::vector<std::string>{});
         auto index=[](std::string v,std::initializer_list<const char*> values){int i=0;for(auto x:values){if(v==x)return i;++i;}return 0;};
         m.operation=index(p.value("operation",std::string("new")),{"join","cut","intersect","new"});
@@ -38,6 +41,7 @@ void begin_model(State& s,engine::Engine& e,bool revolve,const std::string& edit
 nlohmann::json model_params(const State& s){
     const auto& m=s.model;const char* ops[]={"join","cut","intersect","new"};
     nlohmann::json p={{"sketch",m.sketch},{"profiles",m.profiles},{"operation",ops[std::clamp(m.operation,0,3)]},{"target_bodies",m.operation==3?std::vector<std::string>{}:m.targets}};
+    if(m.face.is_object()&&!m.revolve){p.erase("sketch");p.erase("profiles");p["face"]=m.face;}
     if(m.revolve){p["axis"]=m.axis;p["type"]=m.type==1?"full":"angle";p["angle"]=m.angle.data();}
     else {const char* dirs[]={"one_side","symmetric","two_sides"};p["distance"]=m.distance.data();p["second_distance"]=m.second_distance.data();p["direction"]=dirs[std::clamp(m.direction,0,2)];p["extent"]=m.extent==1?"through_all":"distance";}
     return p;

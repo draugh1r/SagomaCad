@@ -42,7 +42,7 @@ std::vector<CommandSpec> sketch_specs(){
         }else{sketch.plane=string_arg(p,"plane",true,2);sketch=doc::read_sketch(doc::sketch_json(sketch));}
         size_t n=s.document.timeline.size()+1;std::string id;do{id="sketch-"+std::to_string(n++);}while(s.document.features.contains(id));
         doc::Feature f;f.id=id;f.name=p.contains("name")?string_arg(p,"name",true,128):"Schizzo "+std::to_string(n-1);f.type="sketch";f.data=doc::sketch_json(sketch);
-        s.document.features[id]=f;s.document.timeline.insert(s.document.timeline.begin()+s.document.rollback,id);++s.document.rollback;s.active_sketch=id;return CommandResult{true,{{"sketch",id}},{}};
+        s.document.features[id]=f;s.document.timeline.insert(s.document.timeline.begin()+s.document.rollback,id);++s.document.rollback;s.active_sketch=id;s.selection=J::array();return CommandResult{true,{{"sketch",id}},{}};
     }));
     specs.push_back(spec("sketch.finish","Fine schizzo","{sketch?: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);auto id=f.id;s.active_sketch.clear();s.document.rollback=s.document.timeline.size();return CommandResult{true,{{"sketch",id}},{}};},false));
     specs.push_back(spec("sketch.edit","Modifica schizzo","{sketch: id}",[](Session& s,const J& p){only_keys(p,{"sketch"});auto& f=feature(s,p);s.active_sketch=f.id;return CommandResult{true,{{"sketch",f.id}},{}};},false));

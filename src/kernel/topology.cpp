@@ -13,6 +13,7 @@
 #include <cmath>
 #include <map>
 #include <sstream>
+#include <cstdint>
 
 namespace sagomacad::kernel {
 namespace {
@@ -40,7 +41,7 @@ std::string axis_name(const doc::GeometrySignature& s){
     for(int i=0;i<3;++i)if(std::abs(s.direction[i])>1-1e-8)return std::string(1,"xyz"[i])+(s.direction[i]>0?"_max":"_min");
     std::ostringstream out;out<<"plane("<<s.direction[0]<<","<<s.direction[1]<<","<<s.direction[2]<<")";return out.str();
 }
-std::string existing(const auto& impl,const TopoDS_Shape& shape){for(const auto& n:impl.names)if(n.shape.IsSame(shape))return n.name;return {};}
+std::string existing(const auto& impl,const TopoDS_Shape& shape){std::string fallback;for(const auto& n:impl.names)if(n.shape.IsSame(shape)){if(n.name.size()<=48)return n.name;if(fallback.empty())fallback=n.name;}return fallback;}
 bool close(double a,double b){return std::isfinite(a)&&std::isfinite(b)&&std::abs(a-b)<=1e-7*std::max({1.,std::abs(a),std::abs(b)});}
 bool same(const doc::GeometrySignature& a,const doc::GeometrySignature& b){
     if(a.kind!=b.kind||a.type!=b.type||!close(a.measure,b.measure))return false;
@@ -52,7 +53,7 @@ Result<Shape> name_topology(const Shape& source,const std::string& origin)noexce
         const auto& p=ShapeAccess::get(source);if(!p||origin.empty()||origin.size()>256)throw std::runtime_error("Origine topologica non valida");
         auto result=ShapeAccess::make(p->shape,p->names,p->deleted);auto& out=*ShapeAccess::get(result);
         // Existing semantic names (caps/sides/history) acquire their feature origin.
-        for(auto& n:out.names)if(n.name.find('/')==std::string::npos)n.name=origin+"/"+n.name;
+        for(auto& n:out.names)if(n.name.find('/')==std::string::npos||n.name.rfind("side(",0)==0)n.name=origin+"/"+n.name;
         for(auto kind:{TopAbs_FACE,TopAbs_EDGE,TopAbs_VERTEX}){
             TopTools_IndexedMapOfShape map;TopExp::MapShapes(out.shape,kind,map);
             std::map<std::string,int> occurrences;
@@ -71,6 +72,8 @@ Result<Shape> name_topology(const Shape& source,const std::string& origin)noexce
                 out.names.push_back({label,shape});
             }
         }
+        const auto verbose=out.names;
+        for(const auto& named:verbose)if(named.name.size()>48){std::uint64_t hash=14695981039346656037ULL;for(unsigned char c:named.name){hash^=c;hash*=1099511628211ULL;}std::ostringstream suffix;suffix<<std::hex<<hash;auto slash=named.name.find('/');auto source=named.name.substr(0,slash);auto role=named.shape.ShapeType()==TopAbs_FACE?"f":named.shape.ShapeType()==TopAbs_EDGE?"e":"v";auto alias=source+"/"+role+"-"+suffix.str();if(std::none_of(out.names.begin(),out.names.end(),[&](const auto& n){return n.name==alias&&n.shape.IsSame(named.shape);}))out.names.push_back({alias,named.shape});}
         return Result<Shape>::success(result);
     }catch(const Standard_Failure& e){return Result<Shape>::failure(e.GetMessageString()?e.GetMessageString():"Nomi topologici falliti");}
     catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Nomi topologici falliti");}
@@ -97,6 +100,7 @@ Result<TopologyEntity> resolve(const Shape& source,const doc::TopologyRef& ref,c
         for(const auto& n:p->names)if(n.name==ref.name&&n.shape.ShapeType()==shape_type(kind)){int i=map.FindIndex(n.shape);if(i)matches.insert(i);}
         if(matches.size()>1)throw std::runtime_error("Riferimento ambiguo dopo divisione: "+ref.name);
         if(matches.empty()&&p->deleted.contains(ref.name))throw std::runtime_error("Entità eliminata: "+ref.name);
+        if(matches.empty()){auto slash=ref.name.find('/');if(slash!=std::string::npos){auto origin=ref.name.substr(0,slash+1);if(std::none_of(p->names.begin(),p->names.end(),[&](const auto& n){return n.name.rfind(origin,0)==0;}))throw std::runtime_error("Origine del riferimento non disponibile: "+ref.name);}}
         auto rows=topology(source);if(!rows)throw std::runtime_error(rows.error);
         if(matches.empty())for(const auto& r:*rows.value)if(r.signature.kind==kind&&same(r.signature,ref.signature))matches.insert(r.id);
         if(matches.size()!=1)throw std::runtime_error((matches.empty()?"Riferimento non risolto: ":"Firma geometrica ambigua: ")+ref.name);

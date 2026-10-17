@@ -15,5 +15,12 @@ int main(){try{
     run(e,"feature.fillet",{{"edges",refs},{"radius","2 mm"}});check(run(e,"geometry.query",{{"kind","face"}})["entities"].size()==10,"agent fillets all vertical edges");
     auto limited=run(e,"geometry.query",{{"limit",2}});check(limited["entities"].size()==2&&limited["truncated"]==true,"query allocation limit");
     check(!e.execute("geometry.query",{{"parallel_to",{0,0,0}}}).ok,"invalid direction rejected");
+    engine::Engine swept;run(swept,"param.set",{{"name","width"},{"expression","10 mm"}});auto sk=run(swept,"sketch.create",{{"plane","XZ"}})["sketch"];auto rect=run(swept,"sketch.rect",{{"x",5},{"width","width"},{"height","20 mm"}});
+    auto revolved=run(swept,"feature.revolve",{{"sketch",sk},{"profiles",J::array({rect["entities"]})},{"axis","Z"},{"type","full"}});
+    auto cylinders=run(swept,"geometry.query",{{"body",revolved["body_id"]},{"kind","face"},{"type","cylinder"}})["entities"];check(cylinders.size()==2,"inner and outer revolving faces");
+    J cylinder_refs=J::array();for(const auto& row:cylinders){check(row["ambiguous"]==false,"revolve side identities are unique");cylinder_refs.push_back(row["ref"]);}
+    run(swept,"selection.set",{{"refs",cylinder_refs}});run(swept,"param.set",{{"name","width"},{"expression","15 mm"}});run(swept,"selection.set",{{"refs",cylinder_refs}});
+    engine::Engine prism;auto ps=run(prism,"sketch.create",{{"plane","XY"}})["sketch"];auto pr=run(prism,"sketch.rect",{{"width","10 mm"},{"height","20 mm"}});auto pf=run(prism,"feature.extrude",{{"sketch",ps},{"profiles",J::array({pr["entities"]})},{"distance","5 mm"}});
+    auto prism_faces=run(prism,"geometry.query",{{"kind","face"}})["entities"];int sides=0;for(const auto& row:prism_faces)if(row["name"].get<std::string>().find("/side(entity(")!=std::string::npos)++sides;check(sides==4,"all four prism sides preserve sketch entity identity");
     std::cout<<"Geometry query, filters, exact distance/angle, bridge selection and agent workflow OK\n";
 }catch(const std::exception& e){std::cerr<<e.what();return 1;}}

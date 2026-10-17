@@ -7,6 +7,7 @@
 #include "mesh/surface.hpp"
 #include "solver/sketch_solver.hpp"
 #include "engine/tools/model_preview.hpp"
+#include "engine/tools/surface_preview.hpp"
 #include <SDL3/SDL_video.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -30,7 +31,7 @@ public:
     nlohmann::json inspect() const;
     void set_settings_file(const std::string& path);
     ui::State& state() { return state_; }
-    void bind_engine(engine::Engine* engine) { engine_ = engine; }
+    void bind_engine(engine::Engine* engine) { engine_ = engine; if(engine_)engine_->session().native_view=true; }
     bool open_feature_editor(std::string_view feature_id);
 private:
     SDL_Window* window_ = nullptr;
@@ -41,6 +42,15 @@ private:
     regen::Regenerator regenerator_;
     std::string surface_revision_;
     std::vector<mesh::Surface> surfaces_;
+    std::vector<std::string> surface_bodies_;
+    engine::IdBuffer pick_buffer_;
+    std::string pick_revision_,topology_revision_,surface_tool_revision_;
+    nlohmann::json topology_entities_=nlohmann::json::array();
+    engine::SurfacePreview surface_preview_;
+    bool pick_pending_=false,pick_other_=false;
+    float pick_x_=0,pick_y_=0;
+    double pick_time_=0;
+    std::vector<engine::PickHit> pick_candidates_;
     bool camera_fitted_ = false;
     std::string sketch_revision_;
     std::map<std::string,solver::SketchResult> sketch_solutions_;
@@ -67,5 +77,7 @@ private:
     void draw_timeline(const ui::Theme&);
     void draw_model_canvas(const ui::Theme&,bool hovered);
     void draw_model_panel(const ui::Theme&);
+    void draw_geometry_canvas(const ui::Theme&,bool hovered);
+    void draw_surface_panel(const ui::Theme&);
 };
 }

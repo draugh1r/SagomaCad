@@ -79,6 +79,15 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
                 if(!builder.IsDone())throw std::runtime_error("Contorno del profilo non connesso");
             }
             if(!builder.IsDone()||!builder.Wire().Closed())throw std::runtime_error("Il profilo non è chiuso");
+            // MakeWire may replace vertices and therefore edge TShapes. Retain
+            // sketch identity by the shared OCCT curve and exact parameter range.
+            TopTools_IndexedMapOfShape wire_edges;TopExp::MapShapes(builder.Wire(),TopAbs_EDGE,wire_edges);
+            for(auto& named:names)if(!wire_edges.Contains(named.shape)){
+                double a=0,b=0;TopLoc_Location location;auto curve=BRep_Tool::Curve(TopoDS::Edge(named.shape),location,a,b);
+                if(curve.IsNull())continue;
+                for(int i=1;i<=wire_edges.Extent();++i){double u=0,v=0;TopLoc_Location other;auto candidate=BRep_Tool::Curve(TopoDS::Edge(wire_edges(i)),other,u,v);
+                    if(candidate==curve&&location.IsEqual(other)&&std::abs(a-u)<1e-12&&std::abs(b-v)<1e-12){named.shape=wire_edges(i);break;}}
+            }
             return builder.Wire();
         };
         BRepBuilderAPI_MakeFace outer(wire(boundary),true);if(!outer.IsDone())throw std::runtime_error("Faccia del profilo non valida");
@@ -110,7 +119,13 @@ Result<Shape> revolve(const Shape& face,Vec3 origin,Vec3 direction,double radian
     try{
         BRepPrimAPI_MakeRevol builder(face.impl_->shape,gp_Ax1(gp_Pnt(origin.x,origin.y,origin.z),gp_Dir(direction.x,direction.y,direction.z)),radians,true);
         builder.Build();if(!builder.IsDone())throw std::runtime_error("Rivoluzione fallita");
-        auto shape=Shape(std::make_shared<Shape::Impl>(builder.Shape()));auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);
+        auto shape=Shape(std::make_shared<Shape::Impl>(builder.Shape()));
+        TopTools_IndexedMapOfShape inputs,present;TopExp::MapShapes(face.impl_->shape,inputs);TopExp::MapShapes(shape.impl_->shape,present);
+        for(const auto& named:face.impl_->names)if(named.shape.ShapeType()==TopAbs_EDGE&&inputs.Contains(named.shape))for(const auto& generated:builder.Generated(named.shape))
+            if(generated.ShapeType()==TopAbs_FACE&&present.Contains(generated))shape.impl_->names.push_back({"side("+named.name+")",generated});
+        auto cap=[&](const TopoDS_Shape& end,const char* name){if(end.IsNull())return;for(TopExp_Explorer f(end,TopAbs_FACE);f.More();f.Next())if(present.Contains(f.Current()))shape.impl_->names.push_back({name,f.Current()});};
+        cap(builder.FirstShape(),"cap_start");cap(builder.LastShape(),"cap_end");
+        auto mass=mass_properties(shape);if(!mass)throw std::runtime_error(mass.error);return Result<Shape>::success(shape);
     }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Rivoluzione fallita");}
 }
 Result<Shape> boolean_operation(const Shape& a,const Shape& b,const std::string& op) noexcept {
