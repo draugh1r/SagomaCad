@@ -1,8 +1,69 @@
 #pragma once
 #include <array>
+#include <string_view>
 
 namespace sagomacad::ui {
 struct Color { float r, g, b, a = 1.0f; };
+constexpr Color rgb(unsigned value,float alpha=1) {
+    return {float((value>>16)&255)/255,float((value>>8)&255)/255,float(value&255)/255,alpha};
+}
+// Name, light, dark, opacity. One list drives both themes, the board and validation.
+#define SAGOMACAD_VISUAL_COLORS(X) \
+    X(app_bar,0xf4f6ef,0x191f1b,1) \
+    X(toolbar,0xf6f8f1,0x202821,1) \
+    X(panel_header,0xe8eddf,0x2b352c,1) \
+    X(hover,0xe6eed9,0x35442d,1) \
+    X(accent_soft,0xe1edce,0x34472a,1) \
+    X(text_on_accent,0x243019,0x243019,1) \
+    X(sel_face,0x91b65d,0xb5d18b,.42f) \
+    X(sel_edge,0x54752d,0xb5d18b,1) \
+    X(sel_edge_rim,0xc0d49e,0x617e43,1) \
+    X(hover_edge,0x2a3622,0xe7efdc,1) \
+    X(hover_edge_halo,0xd4dfc7,0x53624a,.8f) \
+    X(hover_face,0xffffff,0xffffff,.16f) \
+    X(sel_profile,0x91b65d,0xb5d18b,.34f) \
+    X(sel_profile_edge,0x54752d,0xb5d18b,1) \
+    X(hover_profile,0xb1cc8e,0x94ba68,.22f) \
+    X(hover_profile_edge,0x6d9145,0xc4df9b,1) \
+    X(sel_vertex,0x54752d,0xc4df9b,1) \
+    X(origin_plane,0xe7ba7c,0xd8a569,.20f) \
+    X(origin_plane_edge,0x9f702c,0xe5b77b,.75f) \
+    X(origin_plane_hover,0xc2d6a4,0xa4c478,.45f) \
+    X(origin_point,0x626b58,0xcbd5bf,1) \
+    X(construction_plane,0xe7ba7c,0xd8a569,.16f) \
+    X(preview_add,0x5b9bc9,0x79b4dd,.35f) \
+    X(preview_new,0x9fc472,0xb5d18b,.35f) \
+    X(preview_cut,0xd86550,0xef8873,.35f) \
+    X(preview_sketch,0x679249,0xa5c980,.45f) \
+    X(viewport_top,0xf9fbf5,0x202820,1) \
+    X(viewport_bottom,0xe8eddf,0x151c17,1) \
+    X(body_selected,0xa6c77d,0xb2cc8e,1) \
+    X(dimension,0x303b2b,0xe3ecd9,1) \
+    X(dimension_driven,0x616c58,0xa4b297,1) \
+    X(sketch_projected,0x8852ad,0xbf8de1,1) \
+    X(sketch_lost,0xb24759,0xf08b9a,1) \
+    X(sketch_construction,0xac702b,0xe4af67,1) \
+    X(sketch_centerline,0xa06b36,0xd8a36a,1) \
+    X(constraint,0xb34d42,0xe38c7e,1) \
+    X(glyph_bg,0xf9fbf5,0x242d24,.94f) \
+    X(glyph_edge,0xd9b4a9,0x80574a,1) \
+    X(box_window,0x4f86ad,0x82bbdd,.30f) \
+    X(box_crossing,0x70994d,0xa5cb79,.30f) \
+    X(timeline_item,0xffffff,0x303b2e,1) \
+    X(timeline_error,0xf9dfd8,0x5c332d,1) \
+    X(timeline_marker,0x4d603c,0xb8d48f,1) \
+    X(dialog_bg,0xfafcf7,0x242e25,1) \
+    X(dialog_border,0xc9d2bf,0x4e5d46,1) \
+    X(heading_bg,0xe1e8d7,0x35412f,1) \
+    X(subheading_bg,0xedf1e6,0x2c3728,1) \
+    X(field,0xffffff,0x1c251d,1) \
+    X(overlay,0xfafcf7,0x242e25,.94f) \
+    X(warning,0xa06a1d,0xe5b15c,1)
+struct VisualTokens {
+#define SAGOMA_FIELD(name,l,d,a) Color name{};
+    SAGOMACAD_VISUAL_COLORS(SAGOMA_FIELD)
+#undef SAGOMA_FIELD
+};
 struct SectionLabels {
     const char* browser;
     const char* document;
@@ -82,8 +143,17 @@ struct Theme {
         Color face_hover{1,1,1,.15f},edge_hover{.96f,.97f,.99f,1},reference{.65f,.25f,.85f,1};
         float edge_width=3,face_width=1.4f,edge_hit=4,hold_seconds=.45f,label_size=9,filter_width=220,dialog_width=360,dialog_height=340,hole_height=430;
     } selection;
+    VisualTokens visual;
+    struct FrameTokens {
+        float dialog_min=244,dialog_max=380,window_max=500,window_wide_max=800;
+        float heading_height=24,min_height=80,margin=12;
+    } frame;
+    struct BoardTokens {
+        float margin=24,heading=25,row=32,icon_row=58,swatch=20;
+        float columns=4,example_height=200;
+    } board;
 };
-inline constexpr Theme dark {
+inline constexpr Theme dark_base {
     {0.055f,0.065f,0.080f}, {0.090f,0.105f,0.125f}, {0.115f,0.135f,0.160f},
     {0.075f,0.095f,0.120f}, {0.93f,0.95f,0.97f}, {0.56f,0.61f,0.66f},
     {0.19f,0.22f,0.26f}, {0.25f,0.58f,0.91f}, {0.87f,0.30f,0.28f},
@@ -94,7 +164,7 @@ inline constexpr Theme dark {
     25.0f, 0.52f, 68.0f, 224.0f, 30.0f, 180.0f, 124.0f,
     480.0f, 320.0f, 800.0f, 420.0f, 480.0f
 };
-inline constexpr Theme light {
+inline constexpr Theme light_base {
     {0.95f,0.96f,0.97f}, {0.985f,0.988f,0.992f}, {0.94f,0.95f,0.96f},
     {0.995f,0.997f,1.0f}, {0.17f,0.20f,0.23f}, {0.40f,0.44f,0.48f},
     {0.78f,0.80f,0.82f}, {0.08f,0.40f,0.73f}, {0.82f,0.33f,0.32f},
@@ -105,5 +175,42 @@ inline constexpr Theme light {
     25.0f, 0.52f, 68.0f, 224.0f, 30.0f, 180.0f, 124.0f,
     480.0f, 320.0f, 800.0f, 420.0f, 480.0f
 };
+constexpr Theme make_theme(Theme t,bool light) {
+#define SAGOMA_VALUE(name,l,d,a) t.visual.name=rgb(light?l:d,a);
+    SAGOMACAD_VISUAL_COLORS(SAGOMA_VALUE)
+#undef SAGOMA_VALUE
+    t.accent=rgb(light?0x719849:0xb1ce8a);
+    t.background=rgb(light?0xf2f5ed:0x192119);
+    t.panel=t.visual.dialog_bg;t.panel_alt=t.visual.subheading_bg;
+    t.viewport=t.visual.viewport_top;t.border=t.visual.dialog_border;
+    t.text=rgb(light?0x293322:0xe6eddd);t.muted=rgb(light?0x5e6b52:0xa7b59a);
+    t.table_header=t.visual.heading_bg;t.table_header_text=t.text;
+    t.sketch.constrained=t.text;t.sketch.finish=t.accent;
+    t.sketch.free=rgb(light?0x3478bd:0x88b8ee);
+    t.sketch.plane=t.visual.origin_plane;t.sketch.plane_hover=t.visual.origin_plane_hover;
+    t.model.selected=t.visual.sel_face;t.model.preview=t.visual.preview_new;t.model.cut=t.visual.preview_cut;
+    t.selection.face_hover=t.visual.hover_face;t.selection.edge_hover=t.visual.hover_edge;
+    t.selection.reference=t.visual.sketch_projected;
+    t.toolbar_height=156;t.layout.group_spacer=8;
+    return t;
+}
+inline constexpr Theme light=make_theme(light_base,true),dark=make_theme(dark_base,false);
 inline constexpr const Theme& theme(bool is_light) { return is_light ? light : dark; }
+struct NamedColor {std::string_view name;Color value;};
+inline auto theme_colors(const Theme& t) {
+    return std::array{
+        NamedColor{"background",t.background},NamedColor{"panel",t.panel},NamedColor{"panel_alt",t.panel_alt},
+        NamedColor{"viewport",t.viewport},NamedColor{"text",t.text},NamedColor{"muted",t.muted},NamedColor{"border",t.border},NamedColor{"accent",t.accent},
+        NamedColor{"axis_x",t.axis_x},NamedColor{"axis_y",t.axis_y},NamedColor{"axis_z",t.cube.axis_z},
+        NamedColor{"grid_major",t.grid_major},NamedColor{"grid_minor",t.grid_minor},
+        NamedColor{"table_header",t.table_header},NamedColor{"table_header_text",t.table_header_text},
+        NamedColor{"error",t.error},NamedColor{"error_cell",t.error_cell},NamedColor{"solid",t.solid},NamedColor{"solid_edge",t.solid_edge},
+        NamedColor{"cube_face",t.cube_face},NamedColor{"cube_edge",t.cube_edge},NamedColor{"cube_hover",t.cube.hover},
+        NamedColor{"sketch_free",t.sketch.free},NamedColor{"sketch_constrained",t.sketch.constrained},NamedColor{"sketch_profile",t.sketch.profile},
+        NamedColor{"sketch_finish",t.sketch.finish},NamedColor{"model_axis",t.model.axis},
+#define SAGOMA_NAMED(name,l,d,a) NamedColor{#name,t.visual.name},
+        SAGOMACAD_VISUAL_COLORS(SAGOMA_NAMED)
+#undef SAGOMA_NAMED
+    };
+}
 }

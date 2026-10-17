@@ -1,4 +1,5 @@
 #include "ui/icons.hpp"
+#include "ui/theme.hpp"
 #include <lunasvg.h>
 #include <fstream>
 #include <iostream>
@@ -100,8 +101,10 @@ IconBitmap Icons::raster(std::string_view id,IconAccent accent,bool light,unsign
     } catch(const std::exception& e) {std::cerr<<"Icon "<<id<<": "<<e.what()<<'\n';}
     result.fallback=true;result.rgba.assign(pixels*pixels*4,0);
     // Even absent/corrupt palette data has a visible placeholder, using a neutral mask.
+    const auto color=theme(light).muted;
     for(unsigned y=0;y<pixels;++y)for(unsigned x=0;x<pixels;++x)if(x==y||x+y==pixels-1) {
-        auto* p=result.rgba.data()+(y*pixels+x)*4;p[0]=p[1]=p[2]=light?64:220;p[3]=255;
+        auto* p=result.rgba.data()+(y*pixels+x)*4;
+        p[0]=std::uint8_t(color.r*255);p[1]=std::uint8_t(color.g*255);p[2]=std::uint8_t(color.b*255);p[3]=std::uint8_t(color.a*255);
     }
     return result;
 }

@@ -42,11 +42,11 @@ void style(const ui::Theme& t, int scale) {
     c[ImGuiCol_PopupBg] = vec(t.panel); c[ImGuiCol_Text] = vec(t.text);
     c[ImGuiCol_TextDisabled] = vec(t.muted); c[ImGuiCol_Border] = vec(t.border);
     c[ImGuiCol_FrameBg] = vec(t.panel_alt); c[ImGuiCol_FrameBgHovered] = vec(t.border);
-    c[ImGuiCol_FrameBgActive] = vec(t.accent); c[ImGuiCol_TitleBg] = vec(t.panel);
+    c[ImGuiCol_FrameBgActive] = vec(t.visual.accent_soft); c[ImGuiCol_TitleBg] = vec(t.panel);
     c[ImGuiCol_TitleBgActive] = vec(t.panel); c[ImGuiCol_MenuBarBg] = vec(t.panel);
     c[ImGuiCol_Button] = vec(t.panel_alt); c[ImGuiCol_ButtonHovered] = vec(t.border);
-    c[ImGuiCol_ButtonActive] = vec(t.accent); c[ImGuiCol_Header] = vec(t.panel_alt);
-    c[ImGuiCol_HeaderHovered] = vec(t.border); c[ImGuiCol_HeaderActive] = vec(t.accent);
+    c[ImGuiCol_ButtonActive] = vec(t.visual.accent_soft); c[ImGuiCol_Header] = vec(t.panel_alt);
+    c[ImGuiCol_HeaderHovered] = vec(t.border); c[ImGuiCol_HeaderActive] = vec(t.visual.accent_soft);
     c[ImGuiCol_Tab] = vec(t.panel); c[ImGuiCol_TabHovered] = vec(t.border);
     c[ImGuiCol_TabSelected] = vec(t.panel_alt); c[ImGuiCol_DockingPreview] = vec(t.accent);
     c[ImGuiCol_TabDimmed] = vec(t.panel); c[ImGuiCol_TabDimmedSelected] = vec(t.panel_alt);

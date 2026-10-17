@@ -300,7 +300,7 @@
       "id": 14,
       "phase": 9,
       "title": "9.5 Token del tema ampliati",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         13
@@ -313,7 +313,11 @@
       "validation": "ctest --test-dir build -R theme_tokens --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-17T14:30:49.643330+00:00",
+      "completedAt": "2026-10-17T14:33:33.423114+00:00",
+      "note": "77 token; contrasto testo 12.78/11.74 e secondario 5.49/6.51. Screenshot ispezionati nei due temi a 1440x900 e 1280x720. Build Release, 54/54 ctest.",
+      "commit": "b1d6ba202ebe07373dbfeba9fc05103200243368"
     },
     {
       "id": 15,
