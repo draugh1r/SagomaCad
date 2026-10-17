@@ -349,7 +349,7 @@
       "id": 16,
       "phase": 9,
       "title": "9.7 Tavola di design e approvazione (bloccante)",
-      "status": "blocked",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         15
@@ -367,8 +367,9 @@
       "isTest": false,
       "milestone": "M5.5",
       "startedAt": "2026-10-17T14:39:43.434176+00:00",
-      "note": "Tavole CLI/MCP pronte; su richiesta dell’utente il tema chiaro usa sfondi #ffffff in tutta l’app, testi/bordi neutri e pistacchio solo negli accenti. Tavola chiara rigenerata e ispezionata, screenshot a 1440x900/1280x720 nei due temi verificati. Resta in attesa di approvazione esplicita delle tavole (PRP 9.7); nessuna copia in approvate/.",
-      "blockedAt": "2026-10-17T14:47:19.711662+00:00"
+      "note": "Approvazione utente: ok ci siamo, 2026-10-17; tavole archiviate in approvate/.",
+      "blockedAt": "2026-10-17T14:47:19.711662+00:00",
+      "completedAt": "2026-10-17T19:44:38.314256+00:00"
     },
     {
       "id": 17,

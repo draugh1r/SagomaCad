@@ -34,3 +34,7 @@ Accento UI: `#93c572` nel tema chiaro, `#b1ce8a` nello scuro, con testo scuro su
 L’approvazione riguarda colori, densità, dimensioni e campioni. La copia in `approvate/` avviene soltanto dopo la conferma esplicita dell’utente; il passaggio successivo applica le icone a ribbon, browser, timeline e menu.
 
 Via MCP: `design_board({"theme":"light"})` o `design_board({"theme":"dark"})` restituisce direttamente un’immagine PNG e i metadati, senza modificare il modello.
+
+## Approvazione
+
+2026-10-17: l’utente conferma «ok ci siamo» dopo aver verificato l’app con sfondi bianchi e accento pistacchio. Tavole chiara e scura archiviate in `approvate/` come riferimento della fase 9.
