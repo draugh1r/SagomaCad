@@ -399,3 +399,7 @@ L’utente conferma «ok ci siamo» sull’app con sfondi bianchi: tavole chiara
 Documentata la procedura per master originali in `assets/icons/sagomacad/svg/`, separati dall’import immutato SolidCraft: il compilatore include la cartella e rifiuta collisioni con master/alias importati, con test. Colori solo da palette/token, approvazione esplicita delle immagini e fabbrica unica delle finestre documentati.
 
 Verifica di uscita Windows: build Release in `build/agent-phase9`; **57/57 ctest passati in 40.94 s**, livelli, import byte per byte, parità, regola finestre, UTF-8 e fuzz verdi (260 casi comandi, 222 MCP). Otto screenshot Solido/Schizzo a 1440×900 e 1280×720 nei due temi, palette dei comandi e ribbon a DPI 2 ispezionati contro le tavole approvate. Nessuna golden preesistente modificata. Lavoro della fase 9 concluso; la fase 10 richiede il proprio PRP e i relativi prerequisiti.
+
+## 2026-10-18 — Correzioni M5, visibilità
+
+Registrata fase 9.5 prima della 10. Schizzi visibili per default; preferenza locale opzionale, comandi preferences.get/set e checkbox File → Preferenze. Occultamento nello stesso undo della feature. Test rettangolo/cerchio separati, riuso, persistenza e MCP; test preesistenti di occultamento ora attivano esplicitamente la preferenza e il reset visibilità verifica il nuovo default. Build Release, livelli e 58/58 ctest verdi (40.62 s). Restano operazione automatica e quote sui tratti nella stessa fase.

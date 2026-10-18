@@ -11,6 +11,7 @@ double volume(engine::Engine& e,const J& body){return run(e,"model.mass_properti
 void close(double a,double b){check(std::abs(a-b)<1e-4,"volume errato: "+std::to_string(a));}
 int main(){try{
     engine::Engine e;ui::State state;
+    run(e,"preferences.set",{{"hide_sketch_after_feature",true}});
     run(e,"param.set",{{"name","larghezza"},{"expression","40 mm"}});
     auto first=run(e,"sketch.create",{{"plane","XY"}})["sketch"].get<std::string>();
     auto rectangle=run(e,"sketch.rect",{{"width","larghezza"},{"height","20 mm"}});
@@ -37,8 +38,8 @@ int main(){try{
     auto cut=run(e,"feature.extrude",{{"sketch",second},{"profiles",J::array({cutter})},{"operation","cut"},{"target_bodies",J::array({plate["body_id"]})},{"extent","through_all"}});
     close(volume(e,plate["body_id"]),18000-60*std::acos(-1.));
     run(e,"sketch.visibility",{{"sketch",first},{"visible",nullptr}});
-    check(!run(e,"sketch.inspect",{{"sketch",first}})["visible"].get<bool>(),"ripristino visibilità automatica");
-    run(e,"edit.undo");check(run(e,"sketch.inspect",{{"sketch",first}})["visible"].get<bool>(),"undo visibilità");run(e,"edit.redo");
+    check(run(e,"sketch.inspect",{{"sketch",first}})["visible"].get<bool>(),"visibilità non impostata torna visibile");
+    run(e,"edit.undo");check(!run(e,"sketch.inspect",{{"sketch",first}})["visible"].get<bool>(),"undo ripristina occultamento della feature");run(e,"edit.redo");
     run(e,"sketch.visibility",{{"sketch",second},{"visible",false}});close(volume(e,plate["body_id"]),18000-60*std::acos(-1.));
     auto serialized=doc::to_json(e.session().document);doc::Document restored;std::string error;check(doc::from_json(serialized,restored,error),error);check(restored==e.session().document&&restored.features.at(second).data["visible"]==false,"salvataggio riapertura con visibilità manuale");
     for(auto bad:{J{{"sketch",first},{"visible","yes"}},J{{"sketch","missing"},{"visible",true}},J{{"sketch",first}}}){const auto before=e.session().document;check(!e.execute("sketch.visibility",bad).ok,"input visibilità rifiutato");check(e.session().document==before,"errore atomico");}

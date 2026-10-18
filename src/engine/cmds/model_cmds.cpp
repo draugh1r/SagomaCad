@@ -43,6 +43,7 @@ CommandResult create(Session& s,const J& p,const std::string& type){
     regen::Regenerator regen;const auto& result=regen.evaluate(s.document);
     auto row=std::find_if(result.features.begin(),result.features.end(),[&](const auto& r){return r.id==id;});
     if(row==result.features.end()||!row->error.empty())return CommandResult::failure(row==result.features.end()?"Feature non valutata":row->error);
+    if(s.hide_sketch_after_feature&&data.contains("sketch"))s.document.features.at(data.at("sketch").get<std::string>()).data["visible"]=false;
     s.active_sketch.clear();return {true,{{"feature_id",id},{"body_id",data["body_id"]}}, {}};
 }
 }

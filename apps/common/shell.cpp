@@ -295,6 +295,7 @@ void Shell::draw() {
         icon(dl,icon_texture("chevron-down"),{file_pos.x+57*z,file_pos.y+6*z},12*z,packed(t.muted));
         if (ImGui::BeginPopup("file_commands")) {
             for (const auto& command:ui::file_menu_commands()) popup_command(command,190);
+            if(ImGui::MenuItem("Preferenze"))state_.preferences_open=true;
             ImGui::EndPopup();
         }
         float action_x=file_pos.x+88*z;
@@ -577,6 +578,12 @@ void Shell::draw() {
     ui::splitter("timeline_separator",layout.timeline_separator,false,state_.timeline_height,t.timeline_height,t.layout.timeline_min,t.layout.timeline_max,z,t);
     draw_overlays(t);
     draw_sketch_panels(t);
+    if(state_.preferences_open&&engine_){
+        ui::frame::window("Preferenze",&state_.preferences_open,t,z,{t.file_dialog_width*z,0},false,ImGuiWindowFlags_AlwaysAutoResize);
+        bool hide=engine_->session().hide_sketch_after_feature;
+        if(ImGui::Checkbox("Nascondi lo schizzo dopo la creazione di una feature",&hide))engine_->execute("preferences.set",{{"hide_sketch_after_feature",hide}});
+        ImGui::End();
+    }
 }
 void Shell::fit_camera() {
     if (surfaces_.empty()) return;
@@ -950,9 +957,11 @@ void Shell::set_settings_file(const std::string& path) {
         const auto json=nlohmann::json::parse(input,nullptr,false);
         ui::restore_layout_state(state_,json);
     }
+    if(engine_)engine_->session().hide_sketch_after_feature=state_.hide_sketch_after_feature;
     settings_cache_=ui::layout_state_json(state_).dump();
 }
 void Shell::save_settings() {
+    if(engine_)state_.hide_sketch_after_feature=engine_->session().hide_sketch_after_feature;
     if (settings_file_.empty()) return;
     const auto value=ui::layout_state_json(state_).dump();
     if (value==settings_cache_) return;

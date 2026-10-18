@@ -12,6 +12,9 @@ client = Client([cli, "mcp", "--headless"])
 try:
     def command(command_id, **args):
         return client.ok("command_run", {"command": command_id, "params": args})
+    assert command("preferences.get")["hide_sketch_after_feature"] is False
+    assert command("preferences.set", hide_sketch_after_feature=True)["hide_sketch_after_feature"] is True
+    assert command("preferences.set", hide_sketch_after_feature=False)["hide_sketch_after_feature"] is False
     command("param.set", name="foro", expression="10 mm")
     sketch = command("sketch.create", plane="XY")["sketch"]
     rectangle = command("sketch.rect", width="60 mm", height="40 mm", centered=True)

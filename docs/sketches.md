@@ -80,3 +80,7 @@ Salva come `sketch-session.json`:
 ```
 
 Estrusioni e tagli da profili appartengono a M4.
+
+## Visibilità dopo una feature
+
+Lo schizzo resta visibile per default: i profili non usati restano selezionabili per altre estrusioni. File → Preferenze offre “Nascondi lo schizzo dopo la creazione di una feature”, disattivata al primo avvio e salvata nelle impostazioni locali. `preferences.get` e `preferences.set` (`hide_sketch_after_feature`: booleano) sono disponibili da registro, CLI e MCP `command_run`. L’occultamento, se attivato, fa parte dello stesso undo della feature; mostrare/nascondere dal browser resta possibile. `sketch.visibility` con `visible: null` rimuove la scelta esplicita e torna visibile. La preferenza non cambia retroattivamente i documenti.

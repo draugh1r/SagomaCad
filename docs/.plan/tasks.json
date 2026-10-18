@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T13:41:41Z",
+    "updatedAt": "2026-10-18T13:47:24Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 9.5
@@ -2050,7 +2050,7 @@
       "id": 98,
       "phase": 9.5,
       "title": "9.5.1 Preferenza di visibilità dello schizzo e riuso dei profili",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         97
@@ -2065,13 +2065,15 @@
       ],
       "isTest": false,
       "milestone": "M5",
-      "startedAt": "2026-10-18T13:41:41.654163+00:00"
+      "startedAt": "2026-10-18T13:41:41.654163+00:00",
+      "completedAt": "2026-10-18T13:47:24.631510+00:00",
+      "note": "58/58 ctest, build Release, livelli; riuso rettangolo/cerchio, persistenza, undo, CLI/MCP. Screenshot model_interaction nei due temi e dimensioni."
     },
     {
       "id": 99,
       "phase": 9.5,
       "title": "9.5.2 Operazione automatica di estrusione e scelta manuale persistente",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "dependencies": [
         98
@@ -2085,7 +2087,8 @@
         "Operazione automatica di estrusione e scelta manuale persistente"
       ],
       "isTest": false,
-      "milestone": "M5"
+      "milestone": "M5",
+      "startedAt": "2026-10-18T13:47:24.631524+00:00"
     },
     {
       "id": 100,

@@ -61,7 +61,7 @@ bool sketch_visible(const doc::Document& document,const Snapshot& snapshot,const
     if(id==editing)return true;
     const auto& data=f->second.data;
     if(data.contains("visible")&&data["visible"].is_boolean())return data["visible"].get<bool>();
-    return std::find(snapshot.hidden_sketches.begin(),snapshot.hidden_sketches.end(),id)==snapshot.hidden_sketches.end();
+    return true;
 }
 const Snapshot& Regenerator::evaluate(const doc::Document& document) {
     snapshot_={};

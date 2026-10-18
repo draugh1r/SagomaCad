@@ -53,6 +53,7 @@ target_link_libraries(sagomacad_mesh PUBLIC sagomacad_core sagomacad_doc sagomac
 add_library(sagomacad_engine STATIC src/engine/registry.cpp src/engine/picking.cpp src/engine/tools/surface_preview.cpp src/engine/tools/model_preview.cpp src/engine/tools/sketch_tool.cpp src/engine/tools/sketch_overlay.cpp src/engine/cmds/document_cmds.cpp
     src/engine/cmds/param_cmds.cpp src/engine/cmds/edit_cmds.cpp src/engine/cmds/primitive_cmds.cpp src/engine/cmds/export_cmds.cpp src/engine/cmds/body_cmds.cpp src/engine/cmds/feature_cmds.cpp src/engine/cmds/measure_cmds.cpp src/engine/cmds/sketch_cmds.cpp src/engine/cmds/sketch_visibility_cmds.cpp src/engine/cmds/model_cmds.cpp src/engine/cmds/surface_cmds.cpp src/engine/cmds/hole_cmds.cpp src/engine/cmds/geometry_cmds.cpp)
 target_include_directories(sagomacad_engine PUBLIC ${PROJECT_SOURCE_DIR}/src)
+target_sources(sagomacad_engine PRIVATE src/engine/cmds/preference_cmds.cpp)
 target_compile_definitions(sagomacad_engine PRIVATE SAGOMACAD_EXPORT_DIR="${PROJECT_SOURCE_DIR}/export")
 target_link_libraries(sagomacad_engine PUBLIC sagomacad_core sagomacad_doc sagomacad_solver sagomacad_kernel sagomacad_regen sagomacad_mesh)
 add_library(sagomacad_automation STATIC src/automation/dispatch.cpp src/automation/mcp/server.cpp
@@ -243,3 +244,7 @@ add_test(NAME geometry_query COMMAND geometry_query_test)
 add_executable(m5_interaction_test tests/m5_interaction.cpp)
 target_link_libraries(m5_interaction_test PRIVATE sagomacad_shell)
 add_test(NAME m5_interaction COMMAND m5_interaction_test ${CMAKE_BINARY_DIR}/m5-evidence)
+
+add_executable(m5_visibility_test tests/m5_visibility.cpp)
+target_link_libraries(m5_visibility_test PRIVATE sagomacad_shell)
+add_test(NAME m5_visibility COMMAND m5_visibility_test)

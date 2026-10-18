@@ -32,7 +32,7 @@ public:
     nlohmann::json inspect() const;
     void set_settings_file(const std::string& path);
     ui::State& state() { return state_; }
-    void bind_engine(engine::Engine* engine) { engine_ = engine; if(engine_)engine_->session().native_view=true; }
+    void bind_engine(engine::Engine* engine) { engine_ = engine; if(engine_){engine_->session().native_view=true;engine_->session().hide_sketch_after_feature=state_.hide_sketch_after_feature;} }
     bool open_feature_editor(std::string_view feature_id);
 private:
     SDL_Window* window_ = nullptr;

@@ -86,6 +86,7 @@ int main(int argc,char** argv){try{
     check(e.execute("timeline.rollback",{{"index",0}}).ok,"rollback prima degli schizzi");previous_sketch_visible(false);
     check(e.execute("timeline.rollback",{{"index",e.session().document.timeline.size()}}).ok,"ripristina timeline");previous_sketch_visible();
     auto profile=e.execute("sketch.inspect",{{"sketch",id}});check(profile.ok,"profilo per estrusione");
+    check(e.execute("preferences.set",{{"hide_sketch_after_feature",true}}).ok,"preferenza esplicita per verifica occultamento");
     auto solid=e.execute("feature.extrude",{{"sketch",id},{"profiles",nlohmann::json::array({profile.value["regions"][0]["id"]})},{"distance","10 mm"}});check(solid.ok,"estrudi primo rettangolo");
     frame();shell.state().view_transition.cancel();shell.state().camera=ui::sketch_camera(shell.state().camera,"XY");shell.state().camera.distance=140;frame();
     auto solid_visible=[&](bool expected=true){
