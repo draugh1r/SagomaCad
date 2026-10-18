@@ -5,7 +5,7 @@
 
 namespace sagomacad::ui {
 nlohmann::json layout_state_json(const State& s) {
-    return {{"select_faces",s.pick_filter.faces},{"select_edges",s.pick_filter.edges},{"select_bodies",s.pick_filter.bodies},{"select_sketches",s.pick_filter.sketches},{"version",1},{"browser",s.browser},{"properties",s.properties},{"timeline",s.timeline},
+    return {{"hide_sketch_after_feature",s.hide_sketch_after_feature},{"select_faces",s.pick_filter.faces},{"select_edges",s.pick_filter.edges},{"select_bodies",s.pick_filter.bodies},{"select_sketches",s.pick_filter.sketches},{"version",1},{"browser",s.browser},{"properties",s.properties},{"timeline",s.timeline},
         {"browser_collapsed",s.browser_collapsed},{"properties_collapsed",s.properties_collapsed},
         {"browser_width",s.browser_width},{"properties_width",s.properties_width},{"timeline_height",s.timeline_height}};
 }
@@ -24,6 +24,7 @@ void restore_layout_state(State& s,const nlohmann::json& j) {
     number("timeline_height",s.timeline_height,t.layout.timeline_min,t.layout.timeline_max);
     flag("select_faces",s.pick_filter.faces);flag("select_edges",s.pick_filter.edges);flag("select_bodies",s.pick_filter.bodies);flag("select_sketches",s.pick_filter.sketches);
     flag("browser",s.browser); flag("properties",s.properties); flag("timeline",s.timeline);
+    flag("hide_sketch_after_feature",s.hide_sketch_after_feature);
     flag("browser_collapsed",s.browser_collapsed); flag("properties_collapsed",s.properties_collapsed);
 }
 }

@@ -54,4 +54,4 @@ Schizzo è contestuale. I comandi di disegno aprono strumenti, le quote e i vinc
 
 ## Altri comandi disponibili da CLI/MCP e palette
 
-`body.visibility`, `document.inspect`, `feature.delete`, `feature.edit`, `feature.get`, `feature.suppress`, `geometry.query`, `model.mass_properties`, `param.delete`, `param.set`, `primitive.edit`, `selection.get`, `sketch.edit`, `sketch.visibility`, `timeline.rollback`
+`body.visibility`, `document.inspect`, `feature.delete`, `feature.edit`, `feature.extrude.suggest`, `feature.get`, `feature.suppress`, `geometry.query`, `model.mass_properties`, `param.delete`, `param.set`, `preferences.get`, `preferences.set`, `primitive.edit`, `selection.get`, `sketch.edit`, `sketch.visibility`, `timeline.rollback`

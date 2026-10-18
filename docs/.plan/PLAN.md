@@ -575,3 +575,5 @@ Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo sl
 - 2026-10-17: su richiesta dell'utente, per la fase 9 SolidCraft (`../solidcraft-ref`) sostituisce gli screenshot di ispirazione. Tema chiaro predefinito, accento verde pistacchio, densita compatta come Fusion.
 
 - 2026-10-17: precisazione dell’utente sul tema chiaro: background bianco in tutta l’app; verde pistacchio esclusivamente come accento, senza dominante verde negli sfondi.
+
+- 2026-10-18: su richiesta esplicita, fase correttiva 9.5 (M5) prima della 10: schizzo visibile per default con preferenza di occultamento; operazione estrusione geometrica automatica fino a scelta manuale; quote separate ancorate ai tratti e modifica in loco. Criteri e regressioni nel PRP phase-9.5-correzioni-m5.md.

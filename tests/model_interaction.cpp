@@ -17,6 +17,7 @@ int main(int argc,char** argv){try{
     for(bool light:{true,false})for(auto size:{std::pair{1440,900},std::pair{1280,720}}){
         engine::Engine e;auto sk=run(e,"sketch.create",{{"plane","XY"}})["sketch"];run(e,"sketch.rect",{{"width","60 mm"},{"height","40 mm"},{"centered",true}});run(e,"sketch.circle",{{"diameter","20 mm"}});run(e,"sketch.finish");
         Shell shell(size.first,size.second,1,true,light);check(shell.valid(),shell.error());shell.bind_engine(&e);shell.state().camera.home();shell.state().camera.distance=180;shell.render();shell.render();
+        run(e,"preferences.set",{{"hide_sketch_after_feature",true}});
         auto mouse=[&](float x,float y,bool down){auto& io=ImGui::GetIO();io.AddMousePosEvent(x,y);io.AddMouseButtonEvent(0,down);shell.render();};
         auto click=[&](float x,float y){mouse(x,y,false);mouse(x,y,true);mouse(x,y,false);shell.render();};
         auto field=[&](const char* key){check(shell.state().model.fields.contains(key),std::string("Campo assente: ")+key);auto r=shell.state().model.fields.at(key);click(r[0]+r[2]/2,r[1]+r[3]/2);};
@@ -36,12 +37,12 @@ int main(int argc,char** argv){try{
         auto feature=e.session().document.timeline[1];const auto item=shell.state().timeline_items.at(1);click(item.x+item.width/2,item.y+item.height/2);click(item.x+item.width/2,item.y+item.height/2);check(m.open&&m.feature_id==feature,"doppio clic riapre il dialogo");field("cancel");
         const auto source=sk.get<std::string>();check(!shell.state().sketch_browser.at(source).visible,"occhio indica sorgente nascosta dopo estrusione");
         auto eye=shell.state().sketch_browser.at(source).eye;click(eye[0]+eye[2]/2,eye[1]+eye[3]/2);shell.render();check(shell.state().sketch_browser.at(source).visible,"occhio mostra di nuovo lo schizzo");
-        world_click({-20,0,0});key(ImGuiKey_E);check(m.sketch==source&&m.profiles.size()==1&&m.preview_error.empty(),"profilo consumato di nuovo selezionabile");capture("audit-riuso-profilo-");
+        world_click({-20,0,0});key(ImGuiKey_E);field("operation");field("op0");check(m.sketch==source&&m.profiles.size()==1&&m.preview_error.empty(),"profilo consumato di nuovo selezionabile");capture("audit-riuso-profilo-");
         const auto before_reuse=e.session().document;field("operation");field("op0");std::snprintf(m.distance.data(),m.distance.size(),"15 mm");shell.render();field("ok");
         check(!m.open,"seconda estrusione dello stesso profilo confermata");check(std::abs(run(e,"model.mass_properties")["volume_mm3"].get<double>()-expected*1.5)<1e-4,"seconda estrusione Unisci sullo stesso solido");
-        run(e,"edit.undo");check(e.session().document==before_reuse,"undo seconda estrusione ripristina modello");run(e,"sketch.visibility",{{"sketch",source},{"visible",nullptr}});shell.render();
+        run(e,"edit.undo");check(e.session().document==before_reuse,"undo seconda estrusione ripristina modello");run(e,"sketch.visibility",{{"sketch",source},{"visible",false}});shell.render();
         const auto row=shell.state().sketch_browser.at(source).row;click(row[0]+row[2]/2,row[1]+row[3]/2);key(ImGuiKey_E);
-        check(m.sketch==source&&m.profiles.empty(),"browser permette riuso schizzo nascosto con più regioni");world_click({-20,0,0});check(m.profiles.size()==1&&m.preview_error.empty(),"selezione regione da schizzo nascosto nel dialogo");
+        check(m.sketch==source&&m.profiles.empty(),"browser permette riuso schizzo nascosto con più regioni");world_click({-20,0,0});field("operation");field("op0");check(m.profiles.size()==1&&m.preview_error.empty(),"selezione regione da schizzo nascosto nel dialogo");
         field("cancel");check(!shell.state().sketch_browser.at(source).visible&&shell.state().selected_profile_sketch.empty(),"annulla ripristina nascondimento senza selezioni fantasma");
         // A second sketch provides a real red cut preview and target body field.
         run(e,"primitive.add",{{"kind","box"},{"position",{{"x","-60 mm"},{"y","-10 mm"}}},{"dimensions",{{"width","20 mm"},{"depth","20 mm"},{"height","10 mm"}}}});

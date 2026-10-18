@@ -4,7 +4,7 @@
 namespace sagomacad::engine::cmds {
 std::vector<CommandSpec> sketch_visibility_specs(){return {{
     "sketch.visibility","Visibilità schizzo",{"Browser","Schizzi"},std::nullopt,
-    "{sketch: id, visible: bool|null}; null ripristina il nascondimento automatico",{},
+    "{sketch: id, visible: bool|null}; null ripristina la visibilità predefinita",{},
     [](Session& s,const nlohmann::json& p)->CommandResult{
         only_keys(p,{"sketch","visible"});const auto id=string_arg(p,"sketch",true,256);
         auto f=s.document.features.find(id);if(f==s.document.features.end()||f->second.type!="sketch")return CommandResult::failure("Schizzo inesistente: "+id);

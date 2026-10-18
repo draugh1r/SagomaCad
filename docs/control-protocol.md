@@ -43,3 +43,9 @@ non necessariamente coincidono con i pixel del framebuffer su display Retina.
 L’esempio abbrevia `shell_rects`; la risposta reale contiene tutti gli ID.
 Il test `control` verifica i nuovi campi sul canale autenticato; `layout_interaction`
 verifica trascinamento, doppio clic, compressione, riavvio e ridimensionamento.
+
+## Preferenze e quote M5
+
+`engine.execute` espone `preferences.get`, `preferences.set` (`hide_sketch_after_feature`: booleano, default false) e `feature.extrude.suggest` (sorgente/distanza/direzione → `operation`, `target_bodies`, senza mutazioni). Sono gli stessi comandi raggiungibili da CLI e MCP `command_run`. Le preferenze native vengono salvate localmente; la visibilità applicata dalla feature si salva nel documento e nel suo undo.
+
+`ui.inspect.sketch` include `active_field` e le mappe di rettangoli `live_fields` (indice campo) e `dimension_rects` (ID quota), più `dimension_edit_rect` per il campo aperto dal doppio clic. Coordinate logiche `[x,y,width,height]`, proiettate nel viewport; consentono verifiche senza coordinate fisse.

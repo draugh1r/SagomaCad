@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdio>
 #include <numbers>
+#include <cctype>
 
 namespace sagomacad {
 namespace {
@@ -16,6 +17,22 @@ ImU32 color(ui::Color c){return ImGui::ColorConvertFloat4ToU32({c.r,c.g,c.b,c.a}
 ImVec4 rgba(ui::Color c){return {c.r,c.g,c.b,c.a};}
 double distance(ImVec2 a,ImVec2 b){return std::hypot(a.x-b.x,a.y-b.y);}
 double segment_distance(ImVec2 p,ImVec2 a,ImVec2 b){double dx=b.x-a.x,dy=b.y-a.y,den=dx*dx+dy*dy,t=den>0?std::clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/den,0.,1.):0;return std::hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
+struct ScreenMeasure {ImVec2 anchor,a,b,normal;float offset=0;};
+ScreenMeasure measure_position(const ui::Camera& camera,ui::Viewport viewport,const doc::Sketch& sketch,const engine::SketchMeasure& m,float offset,float reserve){
+    auto project=[&](engine::SketchXY p){auto q=camera.project(ui::sketch_world(sketch,p),viewport);return ImVec2{float(q.x),float(q.y)};};
+    auto p=project(m.position),q=project({m.position.x+m.outward.x,m.position.y+m.outward.y});
+    float dx=q.x-p.x,dy=q.y-p.y,length=std::hypot(dx,dy);ImVec2 n=length>0?ImVec2{dx/length,dy/length}:ImVec2{0,1};
+    offset+=std::abs(n.x)*reserve;
+    return {{p.x+n.x*offset,p.y+n.y*offset},project(m.a),project(m.b),n,offset};
+}
+void dimension_guide(ImDrawList* dl,const ScreenMeasure& m,ui::Color tint,const ui::Theme& t,float z){
+    const float offset=m.offset;ImVec2 a{m.a.x+m.normal.x*offset,m.a.y+m.normal.y*offset},b{m.b.x+m.normal.x*offset,m.b.y+m.normal.y*offset};
+    dl->AddLine(m.a,a,color(tint),z);dl->AddLine(m.b,b,color(tint),z);dl->AddLine(a,b,color(tint),z);
+    const float length=std::hypot(b.x-a.x,b.y-a.y);if(length<t.sketch.dimension_arrow*z*2)return;
+    float dx=(b.x-a.x)/length,dy=(b.y-a.y)/length,r=t.sketch.dimension_arrow*z;
+    auto arrow=[&](ImVec2 p,float sign){dl->AddTriangleFilled(p,{p.x+sign*dx*r-dy*r*.5f,p.y+sign*dy*r+dx*r*.5f},{p.x+sign*dx*r+dy*r*.5f,p.y+sign*dy*r-dx*r*.5f},color(tint));};
+    arrow(a,1);arrow(b,-1);
+}
 }
 void Shell::sync_sketch(){
     if(!engine_)return;auto& session=engine_->session();
@@ -64,20 +81,27 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
             if(i%5==0&&i!=0){char label[32];std::snprintf(label,sizeof(label),"%g",a);auto x=project(plane,{a,0}),y=project(plane,{0,a});dl->AddText({x.x+t.spacing*z,x.y+t.spacing*z},color(t.muted),label);dl->AddText({y.x+t.spacing*z,y.y+t.spacing*z},color(t.muted),label);}
         }
     }
+    s.sketch_dimension_rects.clear();s.sketch_measures.clear();
     struct DimensionHit {std::string id,expression,kind;ImVec2 a,b;};std::vector<DimensionHit> dimension_hits;
     auto draw=[&](const solver::SketchResult& result,bool preview,bool editing){
         const auto* previous_frame=frame_sketch;frame_sketch=&result.sketch;
         const auto overlay=engine::sketch_overlay(result);const auto& pl=result.sketch.plane;
         if(s.sketch_profiles&&editing)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
-        for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
+        for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;
+            if(preview&&active&&std::any_of(active->sketch.entities.begin(),active->sketch.entities.end(),[&](const auto& e){return e.id==stroke.id;}))continue;
+            auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
             if(stroke.reference)c=t.selection.reference;
-            if(preview||(editing&&std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end()))c=t.accent;
-            for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),t.sketch.line_width*z);}
+            bool measured=false;
+            if(preview)for(const auto& m:s.sketch_measures)if(m.field==tool.active_field&&std::find(m.refs.begin(),m.refs.end(),stroke.id)!=m.refs.end())measured=true;
+            if(editing&&s.sketch_dimension_open)for(const auto& label:overlay.dimensions)if(label.id==s.sketch_dimension_id&&std::find(label.measure.refs.begin(),label.measure.refs.end(),stroke.id)!=label.measure.refs.end())measured=true;
+            if(measured||(editing&&std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end()))c=t.accent;
+            for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),(measured?t.sketch.active_line_width:t.sketch.line_width)*z);}
         }
         if(s.sketch_points)for(const auto& p:result.sketch.points){bool fixed=result.fixed_points.contains(p.id)&&result.fixed_points.at(p.id);auto c=result.state=="conflict"?t.error:fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;dl->AddCircleFilled(project(pl,{p.x,p.y}),t.sketch.point_radius*z,color(c));}
-        if(!preview&&editing&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto q=project(pl,label.position);auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=t.sketch.dimension_offset*z;
-            if(label.vertical){q.x+=t.sketch.dimension_offset*z+size.x/2;q.y+=t.sketch.dimension_offset*z;}
+        if(!preview&&editing&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto placement=measure_position(s.camera,v,result.sketch,label.measure,t.sketch.dimension_offset*z,(t.sketch.field_width/2+t.padding)*z);dimension_guide(dl,placement,t.muted,t,z);auto q=placement.anchor;auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=size.y/2;
             ImVec2 end{q.x+size.x+t.spacing*z,q.y+size.y+t.spacing*z};dl->AddRectFilled({q.x-t.spacing*z/2,q.y-t.spacing*z/2},end,color(t.panel));dl->AddText(q,color(result.state=="conflict"?t.error:t.text),text.c_str());dimension_hits.push_back({label.id,label.text,label.kind,{q.x-t.spacing*z/2,q.y-t.spacing*z/2},end});
+            s.sketch_dimension_rects[label.id]={q.x-t.spacing*z/2,q.y-t.spacing*z/2,end.x-q.x+t.spacing*z/2,end.y-q.y+t.spacing*z/2};
+            if(s.sketch_dimension_open&&s.sketch_dimension_id==label.id)s.sketch_dimension_anchor={q.x,q.y};
         }
         if(!preview&&editing&&s.sketch_constraints)for(const auto& label:overlay.constraints){auto q=project(pl,label.position);dl->AddText(ImGui::GetFont(),t.sketch.constraint_size*z,{q.x+t.spacing*z,q.y+t.spacing*z},color(t.muted),label.text.c_str());}
         frame_sketch=previous_frame;
@@ -99,7 +123,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
             if(s.sketch_selection.size()>1&&e.id==s.sketch_selection[1])second_line=e.kind=="line";
         }
         if(first_line&&second_line)s.sketch_dimension_kind="angle";
-        if(!s.sketch_selection.empty()&&(s.sketch_dimension_kind!="distance"||s.sketch_selection.size()==2))s.sketch_dimension_open=true;
+        if(!s.sketch_selection.empty()&&(s.sketch_dimension_kind!="distance"||s.sketch_selection.size()==2)){s.sketch_dimension_open=true;s.sketch_dimension_focus=true;s.sketch_dimension_anchor={io.MousePos.x,io.MousePos.y};}
     };
     if(!io.WantTextInput&&!s.palette_open&&!s.sketch_dimension_open&&!io.KeyCtrl){
         if(ImGui::IsKeyPressed(ImGuiKey_L))tool.begin("line");if(ImGui::IsKeyPressed(ImGuiKey_R))tool.begin("rect");if(ImGui::IsKeyPressed(ImGuiKey_C))tool.begin("circle");if(ImGui::IsKeyPressed(ImGuiKey_D)){tool.begin("dimension");new_dimension();}
@@ -107,7 +131,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     if(ImGui::IsKeyPressed(ImGuiKey_Escape)){tool.escape();s.sketch_dimension_open=false;s.sketch_constraint_open=false;s.sketch_field_focus=false;}
     bool dimension_click=false;
     if(hovered&&!tool.started)for(const auto& hit:dimension_hits)if(io.MousePos.x>=hit.a.x&&io.MousePos.x<=hit.b.x&&io.MousePos.y>=hit.a.y&&io.MousePos.y<=hit.b.y){
-        dimension_click=true;if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)){s.sketch_dimension_id=hit.id;s.sketch_dimension_kind=hit.kind;std::snprintf(s.sketch_dimension_expression.data(),s.sketch_dimension_expression.size(),"%s",hit.expression.c_str());s.sketch_dimension_open=true;}
+        dimension_click=true;if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)){s.sketch_dimension_id=hit.id;s.sketch_dimension_kind=hit.kind;std::snprintf(s.sketch_dimension_expression.data(),s.sketch_dimension_expression.size(),"%s",hit.expression.c_str());s.sketch_dimension_open=true;s.sketch_dimension_focus=true;s.sketch_dimension_anchor={hit.a.x,hit.a.y};}
     }
     if(hovered&&cursor_ok&&!dimension_click&&ImGui::IsMouseClicked(ImGuiMouseButton_Left)){
         if(tool.kind!="select"&&tool.kind!="dimension"){
@@ -132,7 +156,10 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
         engine::Engine preview;preview.session().document=engine_->session().document;preview.session().active_sketch=s.sketch_view_id;
         const auto command=tool.preview_command();
         auto result=preview.execute(command["command"].get<std::string>(),command["params"]);
-        if(result.ok){auto solved=solver::solve(preview.session().document,doc::read_sketch(preview.session().document.features.at(s.sketch_view_id).data));draw(solved,true,true);}
+        if(result.ok){auto solved=solver::solve(preview.session().document,regen::evaluated_sketch(preview.session().document,s.sketch_view_id));s.sketch_measures=tool.measurements(solved);draw(solved,true,true);
+            for(const auto& m:s.sketch_measures)dimension_guide(dl,measure_position(s.camera,v,solved.sketch,m,t.sketch.dimension_offset*z,(t.sketch.field_width/2+t.padding)*z),m.field==tool.active_field?t.accent:t.muted,t,z);
+        }
+        else s.sketch_measures=tool.measurements({});
     }
     if(hovered&&!io.WantTextInput){auto pos=io.MousePos;auto hint=tool.hint();auto size=ImGui::CalcTextSize(hint.c_str());pos.x+=t.sketch.dimension_offset*z;pos.y+=t.sketch.dimension_offset*z;
         if(pos.x+size.x>palette_left-t.padding*z)pos.x=std::max(float(v.x)+t.padding*z,io.MousePos.x-size.x-t.sketch.dimension_offset*z);
@@ -149,42 +176,55 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
     if(!result.redundant.empty()){ImGui::TextWrapped("Vincoli ridondanti:");for(const auto& id:result.redundant)ImGui::TextUnformatted(id.c_str());}
     if(!s.sketch_error.empty()){ImGui::PushStyleColor(ImGuiCol_Text,rgba(t.error));ImGui::TextWrapped("%s",s.sketch_error.c_str());ImGui::PopStyleColor();}
     ImGui::EndChild();ImGui::Separator();ImGui::PushStyleColor(ImGuiCol_Button,rgba(t.sketch.finish));if(ImGui::Button(t.sketch.finish_label))invoke_command("sketch.finish");ImGui::PopStyleColor();ImGui::End();
+    s.sketch_live_fields.clear();
     if(tool.started){
-        auto projection=s.camera.project(ui::sketch_world(result.sketch.plane,{tool.cursor_x,tool.cursor_y}),v);
-        float left=std::clamp(float(projection.x)+t.sketch.dimension_offset*z,float(v.x)+t.padding*z,float(v.x+v.width)-t.sketch.palette_width*z-t.sketch.field_width*z-t.padding*z*3);
-        float top=std::clamp(float(projection.y)+t.sketch.dimension_offset*z,float(v.y)+t.padding*z,float(v.y+v.height)-t.sketch.field_height*z*5);
-        ui::frame::overlay("##sketch_live_dimensions",{left,top,t.sketch.field_width*z+t.padding*z*2,0},ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoMouseInputs);
-        const char* labels[2]={tool.kind=="rect"?"Larghezza":tool.kind=="circle"?"Diametro":tool.kind=="arc"?"Raggio":"Lunghezza",tool.kind=="rect"?"Altezza":"Angolo"};
-        int count=tool.kind=="circle"?1:2;bool confirm=false;int focus=s.sketch_field_focus?tool.active_field:-1;s.sketch_field_focus=false;
+        bool confirm=false;int focus=s.sketch_field_focus?tool.active_field:-1;if(!s.sketch_measures.empty())s.sketch_field_focus=false;
         const auto live=tool.live_values();
-        for(int i=0;i<count;++i){ImGui::PushID(i);ImGui::TextColored(rgba(i==tool.active_field?t.accent:t.muted),"%s%s",labels[i],tool.locked[i]?"  ·":"");
-            if(!tool.locked[i]) {
+        for(const auto& measure:s.sketch_measures){
+            const int i=measure.field;
+            const auto placement=measure_position(s.camera,v,result.sketch,measure,t.sketch.dimension_offset*z,(t.sketch.field_width/2+t.padding)*z);
+            const float width=t.sketch.field_width*z,height=ImGui::GetFrameHeight()+t.padding*z*2;
+            float left=std::clamp(placement.anchor.x-width/2-t.padding*z,float(v.x)+t.padding*z,float(v.x+v.width)-t.sketch.palette_width*z-width-t.padding*z*3);
+            float top=std::clamp(placement.anchor.y-height/2,float(v.y)+t.padding*z,float(v.y+v.height)-height-t.padding*z);
+            const std::string name="##sketch_measure_"+std::to_string(i);
+            ui::frame::overlay(name.c_str(),{left,top,width+t.padding*z*2,height},ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoMouseInputs|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::PushID(i);
+            if(!tool.locked[i]){
                 std::snprintf(s.sketch_fields[i].data(),s.sketch_fields[i].size(),"%s",live[i].c_str());
-                // ImGui retains the active text buffer. Reload live measurements
-                // and select them so the first typed character replaces the value.
                 if(auto* input=ImGui::GetInputTextState(ImGui::GetID("##measure")))input->ReloadUserBufAndSelectAll();
             }
-            if(focus==i)ImGui::SetKeyboardFocusHere();ImGui::SetNextItemWidth(t.sketch.field_width*z);
+            if(focus==i)ImGui::SetKeyboardFocusHere();ImGui::SetNextItemWidth(width-ImGui::CalcTextSize(measure.unit.c_str()).x-t.spacing*z);
+            ImGui::PushStyleColor(ImGuiCol_Border,rgba(i==tool.active_field?t.accent:t.border));
             auto callback=[](ImGuiInputTextCallbackData* data)->int{auto* state=static_cast<ui::State*>(data->UserData);state->sketch_tool.tab();state->sketch_field_focus=true;return 0;};
             bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_AutoSelectAll,callback,&s);
+            auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();s.sketch_live_fields[std::to_string(i)]={a.x,a.y,b.x-a.x,b.y-a.y};
+            ImGui::PopStyleColor();
             if(ImGui::IsItemEdited()){tool.fields[i]=s.sketch_fields[i].data();tool.locked[i]=!tool.fields[i].empty();}
             if(ImGui::IsItemActive()&&!s.sketch_field_focus)tool.active_field=i;
-            if(entered)confirm=true;ImGui::PopID();
+            const auto& value=s.sketch_fields[i];bool has_unit=std::any_of(value.begin(),value.begin()+std::char_traits<char>::length(value.data()),[](unsigned char c){return std::isalpha(c)!=0;});
+            ImGui::SameLine();if(!has_unit)ImGui::TextDisabled("%s",measure.unit.c_str());
+            confirm|=entered;ImGui::PopID();ImGui::End();
         }
-        if(!tool.error.empty()){ImGui::TextColored(rgba(t.error),"%s",tool.error.c_str());}
-        ImGui::End();if(confirm){auto r=tool.confirm(*engine_);if(r.ok&&r.value.value("preview",false)){std::snprintf(s.sketch_fields[0].data(),s.sketch_fields[0].size(),"%s",tool.fields[0].c_str());tool.active_field=1;s.sketch_field_focus=true;}if(!tool.error.empty())s.sketch_error=tool.error;}
+        if(confirm){auto r=tool.confirm(*engine_);if(r.ok&&r.value.value("preview",false)){std::snprintf(s.sketch_fields[0].data(),s.sketch_fields[0].size(),"%s",tool.fields[0].c_str());tool.active_field=1;s.sketch_field_focus=true;}if(!tool.error.empty())s.sketch_error=tool.error;}
     }
     if(s.sketch_dimension_open){
-        ui::frame::window("Quota schizzo",&s.sketch_dimension_open,t,z,{t.file_dialog_width*z,0},false,ImGuiWindowFlags_AlwaysAutoResize);
+        const float width=t.sketch.field_width*z+t.padding*z*2;
+        float left=std::clamp(s.sketch_dimension_anchor[0]-t.padding*z,float(v.x)+t.padding*z,float(v.x+v.width)-width-t.padding*z);
+        float top=std::clamp(s.sketch_dimension_anchor[1]-t.padding*z,float(v.y)+t.padding*z,float(v.y+v.height)-t.sketch.field_height*z*4);
+        ui::frame::overlay("Quota schizzo",{left,top,width,0},ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings);
         if(s.sketch_dimension_id.empty()) {
             const std::array<std::string,5> kinds={"length","distance","diameter","radius","angle"};
             int kind=int(std::find(kinds.begin(),kinds.end(),s.sketch_dimension_kind)-kinds.begin());
             if(ImGui::Combo("Tipo",&kind,"Lunghezza\0Distanza\0Diametro\0Raggio\0Angolo\0"))s.sketch_dimension_kind=kinds[kind];
-        }else ImGui::Text("Tipo: %s",s.sketch_dimension_kind.c_str());
-        bool enter=ImGui::InputText("Espressione",s.sketch_dimension_expression.data(),s.sketch_dimension_expression.size(),ImGuiInputTextFlags_EnterReturnsTrue);
-        if(enter||ImGui::Button("OK")){nlohmann::json p={{"expression",s.sketch_dimension_expression.data()}};std::string id="sketch.dimension.set";if(s.sketch_dimension_id.empty()){id="sketch.dimension.add";p["kind"]=s.sketch_dimension_kind;p["refs"]=s.sketch_selection;}else p["dimension"]=s.sketch_dimension_id;
+        }
+        if(s.sketch_dimension_focus){ImGui::SetKeyboardFocusHere();s.sketch_dimension_focus=false;}
+        ImGui::SetNextItemWidth(t.sketch.field_width*z);
+        bool enter=ImGui::InputText("##expression",s.sketch_dimension_expression.data(),s.sketch_dimension_expression.size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
+        auto input_a=ImGui::GetItemRectMin(),input_b=ImGui::GetItemRectMax();s.sketch_dimension_edit_rect={input_a.x,input_a.y,input_b.x-input_a.x,input_b.y-input_a.y};
+        if(enter){nlohmann::json p={{"expression",s.sketch_dimension_expression.data()}};std::string id="sketch.dimension.set";if(s.sketch_dimension_id.empty()){id="sketch.dimension.add";p["kind"]=s.sketch_dimension_kind;p["refs"]=s.sketch_selection;}else p["dimension"]=s.sketch_dimension_id;
             auto r=engine_->execute(id,p);s.sketch_error=r.ok?r.value["solver"].value("error",std::string{}):r.error;if(r.ok)s.sketch_dimension_open=false;
-        }ImGui::SameLine();if(ImGui::Button("Annulla"))s.sketch_dimension_open=false;
+        }
+        if(ImGui::IsKeyPressed(ImGuiKey_Escape))s.sketch_dimension_open=false;
         if(!s.sketch_error.empty())ImGui::TextColored(rgba(t.error),"%s",s.sketch_error.c_str());ImGui::End();
     }
     if(s.sketch_constraint_open){

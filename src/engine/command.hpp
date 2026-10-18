@@ -45,6 +45,7 @@ struct Session {
     std::string active_sketch; // editing state, not document geometry
     nlohmann::json selection=nlohmann::json::array();
     bool native_view=false;
+    bool hide_sketch_after_feature=false;
 };
 
 struct CommandSpec {
@@ -94,6 +95,7 @@ std::vector<CommandSpec> feature_specs();
 std::vector<CommandSpec> measure_specs();
 std::vector<CommandSpec> sketch_specs();
 std::vector<CommandSpec> sketch_visibility_specs();
+std::vector<CommandSpec> preference_specs();
 std::vector<CommandSpec> model_specs();
 std::vector<CommandSpec> surface_specs();
 std::vector<CommandSpec> hole_specs();

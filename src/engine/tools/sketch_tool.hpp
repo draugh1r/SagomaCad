@@ -1,5 +1,6 @@
 #pragma once
 #include "engine/command.hpp"
+#include "engine/tools/sketch_overlay.hpp"
 #include <array>
 namespace sagomacad::engine {
 struct SketchTool {
@@ -20,6 +21,8 @@ struct SketchTool {
     std::string hint() const;
     nlohmann::json parameters() const;
     std::array<std::string,2> live_values() const;
+    std::vector<SketchMeasure> measurements(const solver::SketchResult&) const;
+    int field_count() const {return kind=="circle"||(kind=="arc"&&arc_stage==0)?1:2;}
     nlohmann::json preview_command() const;
     CommandResult confirm(Engine& engine);
 };

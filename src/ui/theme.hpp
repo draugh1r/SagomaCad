@@ -127,7 +127,7 @@ struct Theme {
     } layout;
     struct SketchTokens {
         Color free{0.12f,0.40f,0.90f}, constrained{0.05f,0.05f,0.06f},profile{0.25f,0.70f,0.90f,0.14f},plane{0.65f,0.64f,0.60f,0.20f},plane_hover{0.98f,0.66f,0.12f,0.55f},finish{0.12f,0.65f,0.29f};
-        float palette_width=244,palette_y=180,palette_height=340,field_width=132,field_height=26,field_gap=8,point_radius=3,hit_radius=10,line_width=1.6f,constraint_size=12,dimension_offset=24,plane_extent=18,grid_pixel_step=28;
+        float palette_width=244,palette_y=180,palette_height=340,field_width=132,field_height=26,field_gap=8,point_radius=3,hit_radius=10,line_width=1.6f,active_line_width=2.6f,constraint_size=12,dimension_offset=32,dimension_arrow=4,plane_extent=18,grid_pixel_step=28;
         const char* palette="TAVOLOZZA DELLO SCHIZZO";
         const char* finish_label="Fine schizzo";
         const char* select_plane="Seleziona un piano";

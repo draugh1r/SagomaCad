@@ -12,7 +12,7 @@ int main(){try{
     engine::Engine e;auto base=run(e,"primitive.add",{{"kind","box"},{"dimensions",{{"width","2 mm"},{"depth","2 mm"},{"height","2 mm"}}}})["feature_id"];
     run(e,"param.set",{{"name","larghezza"},{"expression","40 mm"}});
     auto sk=run(e,"sketch.create",{{"plane","XY"}})["sketch"];auto rect=run(e,"sketch.rect",{{"width","larghezza"},{"height","40 mm"}});
-    auto f=run(e,"feature.extrude",{{"sketch",sk},{"profiles",J::array({rect["entities"]})},{"distance","10 mm"}})["feature_id"];
+    auto f=run(e,"feature.extrude",{{"sketch",sk},{"profiles",J::array({rect["entities"]})},{"distance","10 mm"},{"operation","new"}})["feature_id"];
     auto last=run(e,"primitive.add",{{"kind","sphere"},{"dimensions",{{"radius","2 mm"}}}})["feature_id"];
     regen::Regenerator regen;auto snapshot=regen.evaluate(e.session().document);check(snapshot.cache_hits==0,"prima valutazione");close(vol(snapshot,1),16000);
     snapshot=regen.evaluate(e.session().document);check(snapshot.cache_hits==4,"tutto in cache");check(snapshot.hidden_sketches==std::vector<std::string>{sk},"schizzo consumato nascosto");

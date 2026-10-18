@@ -10,11 +10,11 @@ steps = [
     ("primitive.add", {"kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}),
     ("sketch.create", {"face": {"body": "body-1", "name": "primitive-1/z_max"}}),
     ("sketch.circle", {"x": 10, "y": 10, "diameter": "10 mm"}),
-    ("feature.extrude", {"sketch": "sketch-2", "profiles": [["e1"]], "distance": "6 mm"}),
+    ("feature.extrude", {"sketch": "sketch-2", "profiles": [["e1"]], "distance": "6 mm", "operation": "new"}),
     ("feature.edit", {"feature_id": "primitive-1", "dimensions": {"height": "35 mm"}}),
     ("sketch.inspect", {"sketch": "sketch-2"}),
     ("model.mass_properties", {"body": "body-3"}),
-    ("feature.extrude", {"face": {"body": "body-1", "name": "primitive-1/z_max"}, "distance": "4 mm"}),
+    ("feature.extrude", {"face": {"body": "body-1", "name": "primitive-1/z_max"}, "distance": "4 mm", "operation": "new"}),
     ("feature.edit", {"feature_id": "primitive-1", "dimensions": {"height": "40 mm"}}),
     ("model.mass_properties", {"body": "body-4"}),
 ]
@@ -102,3 +102,26 @@ assert completed.returncode == 0, completed.stderr + completed.stdout
 reply = json.loads(completed.stdout)["results"]
 assert len(reply[1]["result"]["entities"]) == 4 and abs(reply[2]["result"]["distance_mm"] - 20) < 1e-6
 print("Geometry query, measure, headless selection refusal and all-vertical-edge agent workflow OK")
+
+# Automatic extrusion is shared by headless MCP and CLI command dispatch.
+auto_steps = [
+    ("primitive.add", {"kind": "box", "dimensions": {"width": "10 mm", "depth": "20 mm", "height": "30 mm"}}),
+    ("feature.extrude.suggest", {"face": {"body": "body-1", "name": "primitive-1/x_max"}, "distance": "7 mm"}),
+    ("feature.extrude", {"face": {"body": "body-1", "name": "primitive-1/x_max"}, "distance": "7 mm"}),
+    ("model.mass_properties", {"body": "body-1"}),
+]
+client = Client([cli, "mcp", "--headless"])
+try:
+    for command, params in auto_steps:
+        result = client.ok("command_run", {"command": command, "params": params})
+        if command.endswith("suggest"):
+            assert result == {"operation": "join", "target_bodies": ["body-1"]}, result
+        if command == "feature.extrude":
+            assert result["body_id"] == "body-1", result
+    assert abs(result["volume_mm3"] - 10200) < 1e-5, result
+    assert abs(result["area_mm2"] - 2900) < 1e-5, result
+finally:
+    client.close()
+reply = subprocess.run([cli, "run", "--script", json.dumps([["engine.execute", {"command": c, "params": p}] for c, p in auto_steps])], capture_output=True, text=True, encoding="utf-8", timeout=60)
+assert reply.returncode == 0, reply.stderr + reply.stdout
+assert abs(json.loads(reply.stdout)["results"][-1]["result"]["volume_mm3"] - 10200) < 1e-5

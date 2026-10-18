@@ -80,3 +80,11 @@ Salva come `sketch-session.json`:
 ```
 
 Estrusioni e tagli da profili appartengono a M4.
+
+## Visibilità dopo una feature
+
+Lo schizzo resta visibile per default: i profili non usati restano selezionabili per altre estrusioni. File → Preferenze offre “Nascondi lo schizzo dopo la creazione di una feature”, disattivata al primo avvio e salvata nelle impostazioni locali. `preferences.get` e `preferences.set` (`hide_sketch_after_feature`: booleano) sono disponibili da registro, CLI e MCP `command_run`. L’occultamento, se attivato, fa parte dello stesso undo della feature; mostrare/nascondere dal browser resta possibile. `sketch.visibility` con `visible: null` rimuove la scelta esplicita e torna visibile. La preferenza non cambia retroattivamente i documenti.
+
+## Operazione automatica di estrusione
+
+Se `feature.extrude` omette `operation`, il motore misura il contatto esatto dei profili sorgente con i corpi (tolleranza 1e-7 mm) e la sovrapposizione volumetrica della spazzata: entrando nel materiale propone Taglia; a contatto verso l’esterno Unisci; senza contatto Nuovo corpo. Le normali orientate delle facce determinano l’interno anche sulle facce minime e laterali. Le destinazioni comprendono solo i corpi coinvolti. `feature.extrude.suggest` espone la stessa decisione in sola lettura tramite registro, CLI e MCP. Un `operation` esplicito prevale sempre. Nel dialogo, cambiando distanza/direzione la scelta si aggiorna finché l’utente non sceglie dal menu Operazione; da quel momento resta manuale. Riaprire una feature conserva la sua operazione.

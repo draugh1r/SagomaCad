@@ -1,4 +1,6 @@
 #include "ui/model_editor.hpp"
+#include "engine/tools/extrusion_defaults.hpp"
+#include "engine/tools/model_preview.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cmath>
@@ -33,10 +35,22 @@ void begin_model(State& s,engine::Engine& e,bool revolve,const std::string& edit
         m.targets=p.value("target_bodies",std::vector<std::string>{});
         auto index=[](std::string v,std::initializer_list<const char*> values){int i=0;for(auto x:values){if(v==x)return i;++i;}return 0;};
         m.operation=index(p.value("operation",std::string("new")),{"join","cut","intersect","new"});
+        m.operation_manual=true;
         if(revolve){m.axis=p.value("axis",std::string());m.type=p.value("type",std::string("angle"))=="full"?1:0;copy(m.angle,m.type==1?std::string("360 deg"):p.value("angle",std::string("360 deg")));}
         else {m.direction=index(p.value("direction",std::string("one_side")),{"one_side","symmetric","two_sides"});m.extent=p.value("extent",std::string("distance"))=="through_all"?1:0;copy(m.distance,p.value("distance",std::string("10 mm")));copy(m.second_distance,p.value("second_distance",std::string("10 mm")));}
         }catch(const std::exception& error){m.error=error.what();}
     }
+    update_model_operation(s,e);
+}
+void update_model_operation(State& s,const engine::Engine& e){
+    auto& m=s.model;if(!m.open||m.revolve||m.operation_manual)return;
+    auto p=model_params(s);p.erase("operation");p.erase("target_bodies");
+    const auto document=engine::model_context(e.session().document,m.feature_id);
+    const auto revision=doc::to_json(document).dump()+p.dump();if(revision==m.automatic_revision)return;m.automatic_revision=revision;
+    if(!m.face.is_object()&&m.profiles.empty()){m.operation=3;m.targets.clear();return;}
+    auto r=engine::extrusion_defaults(document,p);if(!r.ok)return;
+    const auto op=r.value.at("operation").get<std::string>();m.operation=op=="join"?0:op=="cut"?1:3;
+    m.targets=r.value.at("target_bodies").get<std::vector<std::string>>();
 }
 nlohmann::json model_params(const State& s){
     const auto& m=s.model;const char* ops[]={"join","cut","intersect","new"};
@@ -46,7 +60,7 @@ nlohmann::json model_params(const State& s){
     else {const char* dirs[]={"one_side","symmetric","two_sides"};p["distance"]=m.distance.data();p["second_distance"]=m.second_distance.data();p["direction"]=dirs[std::clamp(m.direction,0,2)];p["extent"]=m.extent==1?"through_all":"distance";}
     return p;
 }
-bool submit_model(State& s,engine::Engine& e){auto& m=s.model;auto params=model_params(s);auto r=m.feature_id.empty()?e.execute(m.revolve?"feature.revolve":"feature.extrude",params):e.execute("feature.edit",{{"feature_id",m.feature_id},{"params",params}});m.error=r.error;if(r.ok){m.open=false;s.selected_profiles.clear();s.selected_profile_sketch.clear();}return r.ok;}
+bool submit_model(State& s,engine::Engine& e){update_model_operation(s,e);auto& m=s.model;auto params=model_params(s);auto r=m.feature_id.empty()?e.execute(m.revolve?"feature.revolve":"feature.extrude",params):e.execute("feature.edit",{{"feature_id",m.feature_id},{"params",params}});m.error=r.error;if(r.ok){m.open=false;s.selected_profiles.clear();s.selected_profile_sketch.clear();}return r.ok;}
 void cancel_model(State& s){s.model.open=false;s.model.dragging=false;s.model.pick_axis=false;s.selected_profile_sketch.clear();s.selected_profiles.clear();}
-nlohmann::json model_state_json(const State& s){const auto& m=s.model;return {{"open",m.open},{"revolve",m.revolve},{"feature_id",m.feature_id},{"params",model_params(s)},{"pick_axis",m.pick_axis},{"fields",m.fields},{"preview_error",m.preview_error},{"handle",{{"x",m.handle_x},{"y",m.handle_y}}},{"value",{{"x",m.value_x},{"y",m.value_y}}}};}
+nlohmann::json model_state_json(const State& s){const auto& m=s.model;return {{"open",m.open},{"revolve",m.revolve},{"feature_id",m.feature_id},{"params",model_params(s)},{"pick_axis",m.pick_axis},{"operation_manual",m.operation_manual},{"fields",m.fields},{"preview_error",m.preview_error},{"handle",{{"x",m.handle_x},{"y",m.handle_y}}},{"value",{{"x",m.value_x},{"y",m.value_y}}}};}
 }

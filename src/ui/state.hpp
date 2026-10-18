@@ -28,7 +28,8 @@ struct State {
     nlohmann::json topology_labels=nlohmann::json::array();
     struct ModelEditor {
         nlohmann::json face=nullptr;
-        bool open=false,revolve=false,pick_axis=false,dragging=false,operation_menu=false;
+        bool open=false,revolve=false,pick_axis=false,dragging=false,operation_menu=false,operation_manual=false;
+        std::string automatic_revision;
         std::string feature_id,sketch,axis,error,preview_error;
         std::vector<std::string> profiles,targets;
         int direction=0,extent=0,operation=3,type=0;
@@ -48,6 +49,7 @@ struct State {
     int navigation_mode = -1; // -1: pointer, 0: pan, 1: orbit, 2: zoom
     std::string theme = "light";
     bool design_board=false;
+    bool preferences_open=false,hide_sketch_after_feature=false;
     bool browser = true;
     bool properties = false;
     bool timeline = true;
@@ -70,6 +72,11 @@ struct State {
     std::array<char,4096> sketch_dimension_expression{};
     std::string sketch_error;
     bool sketch_field_focus=false;
+    std::vector<engine::SketchMeasure> sketch_measures;
+    std::map<std::string,std::array<float,4>> sketch_live_fields,sketch_dimension_rects;
+    std::array<float,4> sketch_dimension_edit_rect{};
+    std::array<float,2> sketch_dimension_anchor{};
+    bool sketch_dimension_focus=false;
     std::array<std::array<char,4096>,2> sketch_fields{};
     int selected_tab = 0;
     bool previous_sketch_mode = false;

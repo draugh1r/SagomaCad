@@ -295,6 +295,7 @@ void Shell::draw() {
         icon(dl,icon_texture("chevron-down"),{file_pos.x+57*z,file_pos.y+6*z},12*z,packed(t.muted));
         if (ImGui::BeginPopup("file_commands")) {
             for (const auto& command:ui::file_menu_commands()) popup_command(command,190);
+            if(ImGui::MenuItem("Preferenze"))state_.preferences_open=true;
             ImGui::EndPopup();
         }
         float action_x=file_pos.x+88*z;
@@ -481,6 +482,7 @@ void Shell::draw() {
             auto preview=ui::feature_preview(state_,engine_->session().document);
             if(state_.model.open){
                 preview=engine::model_context(engine_->session().document,state_.model.feature_id);
+                ui::update_model_operation(state_,*engine_);
                 const auto params=ui::model_params(state_);const auto revision=doc::to_json(engine_->session().document).dump()+params.dump()+state_.model.feature_id;
                 if(revision!=model_revision_){model_revision_=revision;model_preview_=engine::model_preview(engine_->session().document,state_.model.feature_id,state_.model.revolve?"feature.revolve":"feature.extrude",params);model_surfaces_.clear();if(model_preview_.surface)model_surfaces_.push_back(*model_preview_.surface);}
                 state_.model.preview_error=model_preview_.error;
@@ -577,6 +579,14 @@ void Shell::draw() {
     ui::splitter("timeline_separator",layout.timeline_separator,false,state_.timeline_height,t.timeline_height,t.layout.timeline_min,t.layout.timeline_max,z,t);
     draw_overlays(t);
     draw_sketch_panels(t);
+    if(state_.preferences_open&&engine_){
+        ui::frame::window("Preferenze",&state_.preferences_open,t,z,{t.file_dialog_width*z,0},false,ImGuiWindowFlags_AlwaysAutoResize);
+        bool hide=engine_->session().hide_sketch_after_feature;
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,t.layout.panel_border*z);
+        if(ImGui::Checkbox("Nascondi lo schizzo dopo la creazione di una feature",&hide))engine_->execute("preferences.set",{{"hide_sketch_after_feature",hide}});
+        ImGui::PopStyleVar();
+        ImGui::End();
+    }
 }
 void Shell::fit_camera() {
     if (surfaces_.empty()) return;
@@ -943,16 +953,20 @@ bool Shell::screenshot(const std::string& path, std::string& error, bool viewpor
 }
 void Shell::set_settings_file(const std::string& path) {
     settings_file_=path;
+    bool loaded=false;
     std::error_code ec;
     const auto length=std::filesystem::file_size(path,ec);
     if (!ec && length<=16384) {
         std::ifstream input(path,std::ios::binary);
         const auto json=nlohmann::json::parse(input,nullptr,false);
         ui::restore_layout_state(state_,json);
+        loaded=json.is_object();
     }
-    settings_cache_=ui::layout_state_json(state_).dump();
+    if(engine_)engine_->session().hide_sketch_after_feature=state_.hide_sketch_after_feature;
+    settings_cache_=loaded?ui::layout_state_json(state_).dump():std::string{};
 }
 void Shell::save_settings() {
+    if(engine_)state_.hide_sketch_after_feature=engine_->session().hide_sketch_after_feature;
     if (settings_file_.empty()) return;
     const auto value=ui::layout_state_json(state_).dump();
     if (value==settings_cache_) return;
@@ -986,7 +1000,7 @@ nlohmann::json Shell::inspect() const {
         {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
         {"surface",{{"open",state_.surface.open},{"command",state_.surface.command},{"params",ui::surface_params(state_)},{"error",state_.surface.preview_error},{"fields",state_.surface.fields},{"handle",{{"x",state_.surface.handle_x},{"y",state_.surface.handle_y}}}}},{"topology_labels",state_.topology_labels},{"selection",engine_?engine_->session().selection:nlohmann::json::array()},{"feature_edit_open",state_.primitive_editor_open||(!state_.model.feature_id.empty()&&state_.model.open)},{"feature_edit_id",state_.model.open?state_.model.feature_id:state_.primitive_feature_id},{"model",ui::model_state_json(state_)},
-        {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"error",state_.sketch_error}}},
+        {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"active_field",state_.sketch_tool.active_field},{"live_fields",state_.sketch_live_fields},{"dimension_rects",state_.sketch_dimension_rects},{"dimension_edit_rect",state_.sketch_dimension_edit_rect},{"error",state_.sketch_error}}},
         {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }
 }

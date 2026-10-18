@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T13:40:17Z",
+    "updatedAt": "2026-10-18T14:12:34Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -451,7 +451,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        19
+        19,
+        101
       ],
       "files": [
         "docs/reference/fusion/17-stile-visivo.png",
@@ -474,7 +475,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        20
+        20,
+        101
       ],
       "files": [
         "src/ui/render/gl_viewport.hpp",
@@ -496,7 +498,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        21
+        21,
+        101
       ],
       "files": [
         "src/ui/render/shaders/solid.frag",
@@ -515,7 +518,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        22
+        22,
+        101
       ],
       "files": [
         "src/ui/render/shaders/line.vert",
@@ -534,7 +538,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        23
+        23,
+        101
       ],
       "files": [
         "src/ui/render/gl_viewport.cpp",
@@ -553,7 +558,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        24
+        24,
+        101
       ],
       "files": [
         "src/ui/render/shaders/solid.frag",
@@ -572,7 +578,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        25
+        25,
+        101
       ],
       "files": [
         "src/ui/render/gl_viewport.cpp",
@@ -591,7 +598,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        26
+        26,
+        101
       ],
       "files": [
         "src/engine/picking.cpp",
@@ -611,7 +619,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        27
+        27,
+        101
       ],
       "files": [
         "apps/sagomacad-cli/main.cpp",
@@ -631,7 +640,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        28
+        28,
+        101
       ],
       "files": [
         "src/ui/handles.hpp",
@@ -654,7 +664,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        29
+        29,
+        101
       ],
       "files": [
         "apps/sagomacad-cli/scenario.cpp",
@@ -676,7 +687,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        30
+        30,
+        101
       ],
       "files": [
         "tests/scenarios/*.json"
@@ -694,7 +706,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        31
+        31,
+        101
       ],
       "files": [
         "src/solver/profile_regions.cpp",
@@ -714,7 +727,8 @@
       "status": "pending",
       "priority": "high",
       "dependencies": [
-        32
+        32,
+        101
       ],
       "files": [],
       "action": "VERIFY",
@@ -2009,6 +2023,142 @@
       "isTest": true,
       "testType": "e2e",
       "milestone": "M8"
+    },
+    {
+      "id": 97,
+      "phase": 9.5,
+      "title": "9.5.0 Riferimenti 40–42 e criteri di regressione",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        19
+      ],
+      "files": [
+        "docs/.plan/prps/phase-9.5-correzioni-m5.md",
+        "docs/.plan/PLAN.md"
+      ],
+      "action": "VERIFY",
+      "validation": "Verifica presenza e lettura dei riferimenti 40–42 e delle tavole approvate",
+      "features": [
+        "Riferimenti 40–42 e criteri di regressione"
+      ],
+      "isTest": true,
+      "milestone": "M5",
+      "completedAt": "2026-10-18T13:41:41.654144+00:00",
+      "note": "Letti i riferimenti 40–42 e le due tavole approvate; individuati visibilità, model editor e input schizzo.",
+      "commit": "d10bd9cb1e483ff9e087091fb50d7ac211deee75"
+    },
+    {
+      "id": 98,
+      "phase": 9.5,
+      "title": "9.5.1 Preferenza di visibilità dello schizzo e riuso dei profili",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        97
+      ],
+      "files": [
+        "src/engine/cmds/preference_cmds.cpp",
+        "src/engine/cmds/model_cmds.cpp",
+        "src/regen/regenerator.cpp",
+        "src/ui/layout_state.cpp",
+        "apps/common/shell.cpp",
+        "tests/m5_visibility.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build/agent-phase9 -C Release --output-on-failure -R \"m5_visibility|sketch_extrude_workflows|sketch_mcp\"",
+      "features": [
+        "Preferenza di visibilità dello schizzo e riuso dei profili"
+      ],
+      "isTest": false,
+      "milestone": "M5",
+      "startedAt": "2026-10-18T13:41:41.654163+00:00",
+      "completedAt": "2026-10-18T13:47:24.631510+00:00",
+      "note": "58/58 ctest, build Release, livelli; riuso rettangolo/cerchio, persistenza, undo, CLI/MCP. Screenshot model_interaction nei due temi e dimensioni.",
+      "commit": "dc86da9b7721d72becfd73c3c6b57adb726c60a3"
+    },
+    {
+      "id": 99,
+      "phase": 9.5,
+      "title": "9.5.2 Operazione automatica di estrusione e scelta manuale persistente",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        98
+      ],
+      "files": [
+        "src/engine/tools/extrusion_defaults.cpp",
+        "src/kernel/measure.cpp",
+        "src/ui/model_editor.cpp",
+        "apps/common/model_widget.cpp",
+        "tests/m5_extrusion_defaults.cpp",
+        "tests/test_topology_agents.py"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build/agent-phase9 -C Release --output-on-failure -R \"m5_extrusion_defaults|face_extrude|topology_agents\"",
+      "features": [
+        "Operazione automatica di estrusione e scelta manuale persistente"
+      ],
+      "isTest": false,
+      "milestone": "M5",
+      "startedAt": "2026-10-18T13:47:24.631524+00:00",
+      "completedAt": "2026-10-18T13:55:13.678144+00:00",
+      "note": "59/59 ctest, 12 casi facce orientate + profili: GProp volume/area esterna, segno e override, CLI/MCP. Scenari storici di corpi indipendenti ora esplicitano operation=new.",
+      "commit": "21a054849862f2019d2d4cada7d7546f4f5dbf55"
+    },
+    {
+      "id": 100,
+      "phase": 9.5,
+      "title": "9.5.3 Quote sui tratti durante disegno e modifica",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        99
+      ],
+      "files": [
+        "src/engine/tools/sketch_tool.cpp",
+        "src/engine/tools/sketch_overlay.cpp",
+        "apps/common/sketch_widget.cpp",
+        "tests/m5_dimensions.cpp",
+        "tests/scenarios/m5-quote.json"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build/agent-phase9 -C Release --output-on-failure -R \"m5_dimensions|sketch_mouse|sketch_interaction\"",
+      "features": [
+        "Quote sui tratti durante disegno e modifica"
+      ],
+      "isTest": false,
+      "milestone": "M5",
+      "startedAt": "2026-10-18T13:55:13.678326+00:00",
+      "completedAt": "2026-10-18T14:06:55.149941+00:00",
+      "note": "60/60 ctest; 16 scenari in JSON, 48 PNG generati, confronto con 40/41 e tavole. Verificati pixel accento, Tab/Invio, vincoli, doppio clic, editor sulla quota e roundtrip.",
+      "commit": "2a51bb03443a3490645625e731a56a56db2e8fff"
+    },
+    {
+      "id": 101,
+      "phase": 9.5,
+      "title": "9.5.4 Verifica finale M5: scenari, GProp e confronto visivo",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        100
+      ],
+      "files": [
+        "tests/test_m5_control.py",
+        "docs/design/verifica-m5/README.md",
+        "log/devlog.md"
+      ],
+      "action": "VERIFY",
+      "validation": "cmake --build build/agent-phase9 --config Release && ctest --test-dir build/agent-phase9 -C Release --output-on-failure && python tools/check_layers.py && python tests/frame_rule.py && python tests/test_utf8.py && build/agent-phase9/apps/sagomacad-cli/sagomacad-cli.exe fuzz-commands",
+      "features": [
+        "Verifica finale M5: scenari, GProp e confronto visivo"
+      ],
+      "isTest": true,
+      "milestone": "M5",
+      "startedAt": "2026-10-18T14:06:55.149954+00:00",
+      "completedAt": "2026-10-18T14:12:06.404164+00:00",
+      "note": "Build Release, 61/61 ctest in 49.19 s; selezione UI del profilo inutilizzato, controllo nativo autenticato, GProp, 16 scenari/48 PNG; livelli/frame/UTF-8/parità/fuzz verdi. Confronto 40/41, immagini proprie archiviate senza modificare golden.",
+      "commit": "b202b22cda843118f8a99aaacf4f56ebe5822c9f"
     }
   ]
 }
