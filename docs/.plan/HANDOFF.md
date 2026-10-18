@@ -32,6 +32,11 @@ La fonte autorevole dello stato è `docs/.plan/tasks.json`. Nessun codice lascia
 - `SketchMeasure` è il contratto per i futuri strumenti: quote/ancoraggi/riferimenti nel motore, un solo ciclo di rendering nella shell. Scenari JSON M5 dedicati, senza anticipare l’infrastruttura generale prevista nella fase 10.
 - Evidenze e confronto: `docs/design/verifica-m5/README.md`; screenshot completi sotto `build/agent-phase9/m5-dimensions` e `m5-preferences`. Le golden approvate sono rimaste intatte.
 
+## Giunzioni dopo booleane
+- Il caso L aveva un corpo corretto ma 14 facce; non era un errore di bersaglio. `src/kernel/unify.cpp` pulisce i risultati con History, propagando alias e cancellazioni. SafeInputMode e fallback preservano il risultato grezzo se la pulizia fallisce.
+- OCCT 8 non ha IsDone per ShapeUpgrade_UnifySameDomain: vengono controllati forma, storia e validità BRep. Non aggiungere una chiamata a un metodo assente.
+- Il test boolean_unify verifica anche alias di spigoli allungati e raccordo sulla L che segue una modifica 20→30; boolean_unify_agents ripete tramite MCP e CLI. Confronti e modello in docs/design/verifica-booleane/. Ultima verifica documentata nel devlog: 63/63 ctest.
+
 ## Per ripartire
 La build Release verificata è `build/agent-phase9`; applicazione e CLI sono nelle rispettive sottocartelle di `apps/`. La verifica della fase 9 comprendeva 57/57 ctest; la verifica M5 successiva è documentata in docs/design/verifica-m5/README.md e nell’ultima voce del devlog (61/61 ctest, livelli, parità, regola finestre, UTF-8 e fuzz). Gli screenshot di confronto della sessione sono sotto `build/phase9-final-*` e `build/check-ribbon.png`.
 

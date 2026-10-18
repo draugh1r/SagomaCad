@@ -17,7 +17,8 @@ Result<ExtrusionContact> extrusion_contact(const Shape& profile,const Shape& swe
         if(result.distance<=1e-7){
             BRepAlgoAPI_Common common(ShapeAccess::get(swept)->shape,ShapeAccess::get(body)->shape);common.Build();
             if(!common.IsDone())throw std::runtime_error("Sovrapposizione estrusione non valutabile");
-            GProp_GProps mass;BRepGProp::VolumeProperties(common.Shape(),mass);result.overlap_volume=std::abs(mass.Mass());
+            const auto cleaned=unify_same_domain(ShapeAccess::make(common.Shape()));
+            GProp_GProps mass;BRepGProp::VolumeProperties(ShapeAccess::get(cleaned)->shape,mass);result.overlap_volume=std::abs(mass.Mass());
         }
         return Result<ExtrusionContact>::success(result);
     }catch(const Standard_Failure& e){return Result<ExtrusionContact>::failure(e.GetMessageString()?e.GetMessageString():"Contatto OCCT fallito");}

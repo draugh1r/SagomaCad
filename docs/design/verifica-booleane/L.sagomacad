@@ -1,0 +1,375 @@
+{
+  "bodies": [
+    {
+      "color": "#8B9BA6",
+      "id": "body-1",
+      "kind": "brep",
+      "name": "Box",
+      "visible": true
+    }
+  ],
+  "features": {
+    "feature-2": {
+      "data": {
+        "body_id": "body-1",
+        "direction": "one_side",
+        "distance": "20 mm",
+        "extent": "distance",
+        "face": {
+          "body": "body-1",
+          "name": "primitive-1/x_max",
+          "signature": {
+            "center": [
+              20.0,
+              10.0,
+              5.0
+            ],
+            "direction": [
+              1.0,
+              0.0,
+              -0.0
+            ],
+            "kind": "face",
+            "measure": 199.99999999999997,
+            "type": "plane"
+          }
+        },
+        "operation": "join",
+        "second_distance": "10 mm",
+        "target_bodies": [
+          "body-1"
+        ]
+      },
+      "error": null,
+      "id": "feature-2",
+      "kind": "exact",
+      "name": "Estrusione 2",
+      "suppressed": false,
+      "type": "feature.extrude"
+    },
+    "feature-4": {
+      "data": {
+        "body_id": "body-1",
+        "direction": "one_side",
+        "distance": "10 mm",
+        "extent": "distance",
+        "operation": "join",
+        "profiles": [
+          [
+            "e1",
+            "e2",
+            "e3",
+            "e4"
+          ]
+        ],
+        "second_distance": "10 mm",
+        "sketch": "sketch-3",
+        "target_bodies": [
+          "body-1"
+        ]
+      },
+      "error": null,
+      "id": "feature-4",
+      "kind": "exact",
+      "name": "Estrusione 4",
+      "suppressed": false,
+      "type": "feature.extrude"
+    },
+    "primitive-1": {
+      "data": {
+        "body_id": "body-1",
+        "dimensions": {
+          "depth": "20 mm",
+          "height": "10 mm",
+          "width": "20 mm"
+        },
+        "operation": "new",
+        "position": {
+          "x": "0 mm",
+          "y": "0 mm",
+          "z": "0 mm"
+        }
+      },
+      "error": null,
+      "id": "primitive-1",
+      "kind": "exact",
+      "name": "Box",
+      "suppressed": false,
+      "type": "primitive.box"
+    },
+    "sketch-3": {
+      "data": {
+        "constraints": [
+          {
+            "expression": "",
+            "id": "c1",
+            "kind": "horizontal",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c2",
+            "kind": "vertical",
+            "refs": [
+              "e2"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c3",
+            "kind": "horizontal",
+            "refs": [
+              "e3"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c4",
+            "kind": "vertical",
+            "refs": [
+              "e4"
+            ],
+            "values": []
+          },
+          {
+            "expression": "",
+            "id": "c5",
+            "kind": "fix",
+            "refs": [
+              "p1"
+            ],
+            "values": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "dimensions": [
+          {
+            "expression": "20 mm",
+            "id": "d1",
+            "kind": "length",
+            "refs": [
+              "e1"
+            ],
+            "values": []
+          },
+          {
+            "expression": "20 mm",
+            "id": "d2",
+            "kind": "length",
+            "refs": [
+              "e2"
+            ],
+            "values": []
+          }
+        ],
+        "entities": [
+          {
+            "construction": true,
+            "id": "refe-eaf3bd9469e08624",
+            "kind": "line",
+            "points": [
+              "refp-eaf3bd9469e08624-0",
+              "refp-eaf3bd9469e08624-1"
+            ],
+            "radius": 1.0,
+            "reference_name": "primitive-1/e-7602d0b8e851ebdb"
+          },
+          {
+            "construction": true,
+            "id": "refe-e7992f0c106f9b33",
+            "kind": "line",
+            "points": [
+              "refp-e7992f0c106f9b33-0",
+              "refp-e7992f0c106f9b33-1"
+            ],
+            "radius": 1.0,
+            "reference_name": "primitive-1/e-749655a4cd64db7e"
+          },
+          {
+            "construction": true,
+            "id": "refe-41f79be56d9e9bf1",
+            "kind": "line",
+            "points": [
+              "refp-41f79be56d9e9bf1-0",
+              "refp-41f79be56d9e9bf1-1"
+            ],
+            "radius": 1.0,
+            "reference_name": "feature-2/e-cb548449cc600bb1"
+          },
+          {
+            "construction": true,
+            "id": "refe-3cd3249161c80393",
+            "kind": "line",
+            "points": [
+              "refp-3cd3249161c80393-0",
+              "refp-3cd3249161c80393-1"
+            ],
+            "radius": 1.0,
+            "reference_name": "primitive-1/e-d729ed194a0d2288"
+          },
+          {
+            "construction": false,
+            "id": "e1",
+            "kind": "line",
+            "points": [
+              "p1",
+              "p2"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e2",
+            "kind": "line",
+            "points": [
+              "p2",
+              "p3"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e3",
+            "kind": "line",
+            "points": [
+              "p3",
+              "p4"
+            ],
+            "radius": 1.0
+          },
+          {
+            "construction": false,
+            "id": "e4",
+            "kind": "line",
+            "points": [
+              "p4",
+              "p1"
+            ],
+            "radius": 1.0
+          }
+        ],
+        "origin": [
+          0.0,
+          0.0,
+          10.0
+        ],
+        "plane": "XY",
+        "points": [
+          {
+            "id": "refp-eaf3bd9469e08624-0",
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "id": "refp-eaf3bd9469e08624-1",
+            "x": 0.0,
+            "y": 20.0
+          },
+          {
+            "id": "refp-e7992f0c106f9b33-0",
+            "x": 40.0,
+            "y": 0.0
+          },
+          {
+            "id": "refp-e7992f0c106f9b33-1",
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "id": "refp-41f79be56d9e9bf1-0",
+            "x": 40.0,
+            "y": 0.0
+          },
+          {
+            "id": "refp-41f79be56d9e9bf1-1",
+            "x": 40.0,
+            "y": 20.0
+          },
+          {
+            "id": "refp-3cd3249161c80393-0",
+            "x": 40.0,
+            "y": 20.0
+          },
+          {
+            "id": "refp-3cd3249161c80393-1",
+            "x": 0.0,
+            "y": 20.0
+          },
+          {
+            "id": "p1",
+            "x": 0.0,
+            "y": 0.0
+          },
+          {
+            "id": "p2",
+            "x": 20.0,
+            "y": 0.0
+          },
+          {
+            "id": "p3",
+            "x": 20.0,
+            "y": 20.0
+          },
+          {
+            "id": "p4",
+            "x": 0.0,
+            "y": 20.0
+          }
+        ],
+        "support": {
+          "body": "body-1",
+          "name": "primitive-1/z_max",
+          "signature": {
+            "center": [
+              20.0,
+              10.0,
+              10.0
+            ],
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "face",
+            "measure": 799.9999999999999,
+            "type": "plane"
+          }
+        },
+        "u": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "v": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "visible": false
+      },
+      "error": null,
+      "id": "sketch-3",
+      "kind": "exact",
+      "name": "Schizzo 3",
+      "suppressed": false,
+      "type": "sketch"
+    }
+  },
+  "format_version": 1,
+  "name": "Nuovo documento",
+  "parameters": [],
+  "rollback": 4,
+  "timeline": [
+    "primitive-1",
+    "feature-2",
+    "sketch-3",
+    "feature-4"
+  ]
+}

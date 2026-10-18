@@ -92,7 +92,13 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
         };
         BRepBuilderAPI_MakeFace outer(wire(boundary),true);if(!outer.IsDone())throw std::runtime_error("Faccia del profilo non valida");
         TopoDS_Shape face=outer.Face();
-        for(const auto& h:holes){BRepBuilderAPI_MakeFace hole(wire(h),true);if(!hole.IsDone())throw std::runtime_error("Foro del profilo non valido");BRepAlgoAPI_Cut cut(face,hole.Face());cut.Build();if(!cut.IsDone())throw std::runtime_error("Foro del profilo fallito");face=cut.Shape();}
+        for(const auto& h:holes){
+            BRepBuilderAPI_MakeFace hole(wire(h),true);if(!hole.IsDone())throw std::runtime_error("Foro del profilo non valido");
+            auto input=ShapeAccess::make(face,names),cutter=ShapeAccess::make(hole.Face(),names);
+            BRepAlgoAPI_Cut cut(face,hole.Face());cut.Build();if(!cut.IsDone())throw std::runtime_error("Foro del profilo fallito");
+            auto raw=ShapeAccess::make(cut.Shape());propagate(cut,*ShapeAccess::get(input),*ShapeAccess::get(raw));propagate(cut,*ShapeAccess::get(cutter),*ShapeAccess::get(raw));
+            const auto cleaned=unify_same_domain(raw);face=ShapeAccess::get(cleaned)->shape;names=ShapeAccess::get(cleaned)->names;
+        }
         return Result<Shape>::success(ShapeAccess::make(face,std::move(names)));
     }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}
     catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Creazione profilo fallita");}
@@ -136,7 +142,7 @@ Result<Shape> boolean_operation(const Shape& a,const Shape& b,const std::string&
         if(op=="join"){BRepAlgoAPI_Fuse operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Unione fallita");named.shape=operation.Shape();propagate(operation,*a.impl_,named);propagate(operation,*b.impl_,named);}
         else if(op=="intersect"){BRepAlgoAPI_Common operation(a.impl_->shape,b.impl_->shape);operation.Build();if(!operation.IsDone())throw std::runtime_error("Intersezione fallita");named.shape=operation.Shape();propagate(operation,*a.impl_,named);propagate(operation,*b.impl_,named);}
         else throw std::runtime_error("Operazione sconosciuta: "+op);
-        auto shape=output;auto mass=mass_properties(shape);if(!mass)throw std::runtime_error("L'operazione ha prodotto un corpo vuoto");return Result<Shape>::success(shape);
+        auto mass=mass_properties(output);if(!mass)throw std::runtime_error("L'operazione ha prodotto un corpo vuoto");return Result<Shape>::success(unify_same_domain(output));
     }catch(const Standard_Failure& e){return Result<Shape>::failure(occt_message(e));}catch(const std::exception& e){return Result<Shape>::failure(e.what());}catch(...){return Result<Shape>::failure("Operazione booleana fallita");}
 }
 Result<Shape> make_box(double width,double depth,double height) noexcept {
@@ -205,7 +211,7 @@ Result<Shape> subtract(const Shape& target,const Shape& cutter) noexcept {
         auto result=Shape(std::make_shared<Shape::Impl>(operation.Shape()));
         propagate(operation,*target.impl_,*result.impl_);propagate(operation,*cutter.impl_,*result.impl_);
         if (!mass_properties(result)) return Result<Shape>::failure("La sottrazione ha prodotto un corpo vuoto");
-        return Result<Shape>::success(std::move(result));
+        return Result<Shape>::success(unify_same_domain(result));
     } catch (const Standard_Failure& e) { return Result<Shape>::failure(occt_message(e)); }
       catch (const std::exception& e) { return Result<Shape>::failure(e.what()); }
       catch (...) { return Result<Shape>::failure("Errore imprevisto nella sottrazione"); }

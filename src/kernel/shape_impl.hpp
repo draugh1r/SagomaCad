@@ -19,6 +19,8 @@ struct ShapeAccess {
         return Shape(std::make_shared<Shape::Impl>(std::move(s),std::move(names),std::move(deleted)));
     }
 };
+// Optional cleanup: on failure preserve the boolean result and its naming.
+Shape unify_same_domain(const Shape&) noexcept;
 // Preserve aliases and explicit deletion through OCCT's own operation history.
 // A split retains the same alias on each descendant: resolution then reports
 // ambiguity, rather than silently choosing a different face by enumeration.

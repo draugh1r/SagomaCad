@@ -36,6 +36,7 @@ apps/sagomacad   apps/sagomacad-cli
 4. **Colori e misure dai token.** Mai colori, raggi o spaziature scritti a mano nei widget: tutto da `ui/theme.hpp`. Widget condivisi in `ui/widgets.cpp`.
 5. **Mai crashare.**
    - Nessuna eccezione OCCT esce da `kernel/`: cattura `Standard_Failure` e controlla `IsDone()`, restituisci `Result<T>`.
+   - Dopo ogni booleana unifica facce e spigoli coincidenti con `ShapeUpgrade_UnifySameDomain`, propagando `History()` nel naming. Se la pulizia fallisce conserva il risultato grezzo; per le API senza `IsDone()` verifica forma, storia e validità BRep.
    - `run` di un comando valida tutti i parametri e restituisce errore per qualsiasi input. Nessun `assert` o `abort` su input esterni.
    - Indici, dimensioni e numeri da file o parametri sono ostili: controlla i limiti, evita divisioni per zero e NaN, limita le allocazioni.
    - Una feature che fallisce va in errore nella timeline, la regen continua.

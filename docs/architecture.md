@@ -53,3 +53,9 @@ risultato dopo `Clay_EndLayout`. Per esempio, un figlio di `content` con
 CLAY_SIZING_GROW(0)}}` viene esposto con `candidate.new_panel=rect("new_panel")`.
 Aggiornare budget del viewport, ispezione e test di sovrapposizione. Esempio esteso,
 albero e formato delle preferenze sono in `docs/ui-design.md`.
+
+## Booleane e domini coincidenti
+
+I risultati persistenti di Fuse, Cut e Common passano da `kernel::unify_same_domain`: ShapeUpgrade_UnifySameDomain unisce facce e spigoli, in SafeInputMode. La storia della booleana viene prima trasferita al risultato grezzo; poi History() della pulizia rimappa gli stessi alias sulle facce e sugli spigoli fusi. Le eliminazioni restano esplicite e i riferimenti divisi restano ambigui: nessuna selezione per vicinanza.
+
+La pulizia è opzionale: se Build() genera Standard_Failure, produce una forma nulla/non valida o non fornisce storia, si conserva l’intero risultato grezzo con i suoi nomi. OCCT 8 non espone IsDone() per questo algoritmo; si controllano forma, storia e BRepCheck_Analyzer, mentre IsDone() è verificato sulle booleane. Il passaggio copre anche i fori nei profili, i fori solidi tramite subtract e le intersezioni di misura. Esempi numerici e screenshot in docs/design/verifica-booleane/.
