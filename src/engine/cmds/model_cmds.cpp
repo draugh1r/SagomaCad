@@ -2,6 +2,7 @@
 #include "engine/cmds/validation.hpp"
 #include "regen/regenerator.hpp"
 #include "kernel/topology.hpp"
+#include "engine/tools/extrusion_defaults.hpp"
 #include <algorithm>
 namespace sagomacad::engine::cmds {
 namespace {
@@ -23,12 +24,16 @@ CommandResult create(Session& s,const J& p,const std::string& type){
     if(!p.contains("face")&&(!p.contains("profiles")||!p["profiles"].is_array()||p["profiles"].empty()||p["profiles"].size()>1024))return CommandResult::failure("profiles deve contenere le regioni selezionate da sketch.inspect");
     for(const auto* key:{"distance","second_distance"}){data[key]=p.contains(key)?string_arg(p,key,true,4096):"10 mm";}
     for(const auto& [key,fallback]:{std::pair("direction","one_side"),std::pair("extent","distance"),std::pair("operation","new")})data[key]=p.contains(key)?string_arg(p,key,true,32):fallback;
+    if(type=="feature.extrude"&&!p.contains("operation")){
+        auto automatic=extrusion_defaults(s.document,data);if(!automatic.ok)return automatic;
+        data["operation"]=automatic.value["operation"];data["target_bodies"]=automatic.value["target_bodies"];
+    }
     if(type=="feature.revolve"){
         data.erase("distance");data.erase("second_distance");data.erase("direction");data.erase("extent");
         data["axis"]=string_arg(p,"axis",true,256);data["type"]=p.contains("type")?string_arg(p,"type",true,32):"angle";data["angle"]=p.contains("angle")?string_arg(p,"angle",true,4096):"360 deg";
     }
     const auto op=data["operation"].get<std::string>();if(op!="new"&&op!="join"&&op!="cut"&&op!="intersect")return CommandResult::failure("Operazione non valida: new, join, cut, intersect");
-    auto targets=p.value("target_bodies",J::array());if(!targets.is_array()||targets.size()>1024)return CommandResult::failure("target_bodies deve essere una lista di corpi");
+    auto targets=data.value("target_bodies",J::array());if(!targets.is_array()||targets.size()>1024)return CommandResult::failure("target_bodies deve essere una lista di corpi");
     if(op=="new"&&!targets.empty())return CommandResult::failure("Nuovo corpo non ammette corpi di destinazione");
     if(op!="new"&&targets.empty())return CommandResult::failure("Seleziona i corpi di destinazione");
     std::vector<std::string> seen;
@@ -82,6 +87,9 @@ CommandResult edit_model_feature(Session& s,const J& p,const std::string& id){
 std::vector<CommandSpec> model_specs(){return {{"feature.extrude","Estrudi",{"Solido","Crea"},"E",
     "{face?: {body,name,signature?}, sketch?: id, profiles?: [region_id|[entity_id,...],...], distance?: expression, direction?: one_side|symmetric|two_sides, second_distance?: expression, extent?: distance|through_all, operation?: new|join|cut|intersect, target_bodies?: [id,...], name?: string}",{},
     [](Session& s,const J& p){return create(s,p,"feature.extrude");},true},
+    {"feature.extrude.suggest","Operazione automatica estrusione",{"Solido","Crea"},std::nullopt,
+    "{face?: ref, sketch?: id, profiles?: array, distance?: expression, direction?: one_side|symmetric|two_sides, second_distance?: expression}; sola lettura: operation e target_bodies",{},
+    [](Session& s,const J& p)->CommandResult{only_keys(p,{"face","sketch","profiles","distance","direction","second_distance"});return extrusion_defaults(s.document,p);},false},
     {"feature.revolve","Rivoluzione",{"Solido","Crea"},std::nullopt,
     "{sketch: id, profiles: [region_id|[entity_id,...],...], axis: X|Y|Z|sketch_line_id, type?: angle|full, angle?: expression, operation?: new|join|cut|intersect, target_bodies?: [id,...], name?: string}",{},
     [](Session& s,const J& p){return create(s,p,"feature.revolve");},true},

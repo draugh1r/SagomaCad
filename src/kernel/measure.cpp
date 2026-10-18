@@ -1,10 +1,28 @@
 #include "kernel/measure.hpp"
 #include "kernel/shape_impl.hpp"
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
 #include <Standard_Failure.hxx>
 #include <cmath>
 #include <numbers>
 namespace sagomacad::kernel {
+Result<ExtrusionContact> extrusion_contact(const Shape& profile,const Shape& swept,const Shape& body)noexcept{
+    try{
+        if(!profile.valid()||!swept.valid()||!body.valid())throw std::runtime_error("Forma assente nel contatto estrusione");
+        BRepExtrema_DistShapeShape distance(ShapeAccess::get(profile)->shape,ShapeAccess::get(body)->shape);distance.Perform();
+        if(!distance.IsDone())throw std::runtime_error("Contatto del profilo non valutabile");
+        ExtrusionContact result;result.distance=distance.Value();
+        if(result.distance<=1e-7){
+            BRepAlgoAPI_Common common(ShapeAccess::get(swept)->shape,ShapeAccess::get(body)->shape);common.Build();
+            if(!common.IsDone())throw std::runtime_error("Sovrapposizione estrusione non valutabile");
+            GProp_GProps mass;BRepGProp::VolumeProperties(common.Shape(),mass);result.overlap_volume=std::abs(mass.Mass());
+        }
+        return Result<ExtrusionContact>::success(result);
+    }catch(const Standard_Failure& e){return Result<ExtrusionContact>::failure(e.GetMessageString()?e.GetMessageString():"Contatto OCCT fallito");}
+    catch(const std::exception& e){return Result<ExtrusionContact>::failure(e.what());}catch(...){return Result<ExtrusionContact>::failure("Contatto estrusione fallito");}
+}
 Result<Measurement> measure(const Shape& a,const TopologyEntity& ar,const Shape& b,const TopologyEntity& br)noexcept{
     try{
         auto subshape=[](const Shape& s,const TopologyEntity& r){auto p=ShapeAccess::get(s);if(!p)throw std::runtime_error("Corpo da misurare assente");auto kind=r.signature.kind;

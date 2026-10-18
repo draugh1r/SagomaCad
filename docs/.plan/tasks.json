@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T13:47:24Z",
+    "updatedAt": "2026-10-18T13:55:13Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 9.5
@@ -2073,7 +2073,7 @@
       "id": 99,
       "phase": 9.5,
       "title": "9.5.2 Operazione automatica di estrusione e scelta manuale persistente",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         98
@@ -2088,13 +2088,15 @@
       ],
       "isTest": false,
       "milestone": "M5",
-      "startedAt": "2026-10-18T13:47:24.631524+00:00"
+      "startedAt": "2026-10-18T13:47:24.631524+00:00",
+      "completedAt": "2026-10-18T13:55:13.678144+00:00",
+      "note": "59/59 ctest, 12 casi facce orientate + profili: GProp volume/area esterna, segno e override, CLI/MCP. Scenari storici di corpi indipendenti ora esplicitano operation=new."
     },
     {
       "id": 100,
       "phase": 9.5,
       "title": "9.5.3 Quote sui tratti durante disegno e modifica",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "dependencies": [
         99
@@ -2108,7 +2110,8 @@
         "Quote sui tratti durante disegno e modifica"
       ],
       "isTest": false,
-      "milestone": "M5"
+      "milestone": "M5",
+      "startedAt": "2026-10-18T13:55:13.678326+00:00"
     },
     {
       "id": 101,

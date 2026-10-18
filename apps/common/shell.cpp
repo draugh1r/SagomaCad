@@ -482,6 +482,7 @@ void Shell::draw() {
             auto preview=ui::feature_preview(state_,engine_->session().document);
             if(state_.model.open){
                 preview=engine::model_context(engine_->session().document,state_.model.feature_id);
+                ui::update_model_operation(state_,*engine_);
                 const auto params=ui::model_params(state_);const auto revision=doc::to_json(engine_->session().document).dump()+params.dump()+state_.model.feature_id;
                 if(revision!=model_revision_){model_revision_=revision;model_preview_=engine::model_preview(engine_->session().document,state_.model.feature_id,state_.model.revolve?"feature.revolve":"feature.extrude",params);model_surfaces_.clear();if(model_preview_.surface)model_surfaces_.push_back(*model_preview_.surface);}
                 state_.model.preview_error=model_preview_.error;
@@ -950,15 +951,17 @@ bool Shell::screenshot(const std::string& path, std::string& error, bool viewpor
 }
 void Shell::set_settings_file(const std::string& path) {
     settings_file_=path;
+    bool loaded=false;
     std::error_code ec;
     const auto length=std::filesystem::file_size(path,ec);
     if (!ec && length<=16384) {
         std::ifstream input(path,std::ios::binary);
         const auto json=nlohmann::json::parse(input,nullptr,false);
         ui::restore_layout_state(state_,json);
+        loaded=json.is_object();
     }
     if(engine_)engine_->session().hide_sketch_after_feature=state_.hide_sketch_after_feature;
-    settings_cache_=ui::layout_state_json(state_).dump();
+    settings_cache_=loaded?ui::layout_state_json(state_).dump():std::string{};
 }
 void Shell::save_settings() {
     if(engine_)state_.hide_sketch_after_feature=engine_->session().hide_sketch_after_feature;

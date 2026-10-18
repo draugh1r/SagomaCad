@@ -14,8 +14,8 @@ M5 aggiunge schizzi su faccia, raccordi, smussi e fori con riferimenti stabili;
 il push/pull diretto appartiene a M6. Per cambiare una distanza già confermata,
 fare doppio clic sull'estrusione nella timeline e modificarne il valore.
 
-Dopo una feature riuscita il suo schizzo viene nascosto automaticamente, non
-eliminato. Nel browser ogni schizzo ha un occhio: cliccarlo per mostrare di nuovo
+Dopo una feature riuscita lo schizzo resta visibile. La preferenza locale
+“Nascondi lo schizzo dopo la creazione di una feature” è disattivata per default. Nel browser ogni schizzo ha un occhio: cliccarlo per mostrare di nuovo
 i profili. Selezionare lo schizzo e premere E, oppure usare il menu contestuale
 Estrudi, permette di riutilizzarlo anche quando è nascosto. Un profilo unico è
 preselezionato; con più regioni selezionare quelle desiderate nel viewport.
@@ -24,7 +24,7 @@ di 15 mm su una piastra estrusa di 10 mm porta lo spessore totale a 15 mm.
 Nuovo corpo crea invece un corpo distinto, anche se si sovrappone al precedente.
 
 CLI e MCP espongono `sketch.visibility {sketch, visible}` con `true` per mostrare,
-`false` per nascondere e `null` per tornare alla gestione automatica. La scelta
+`false` per nascondere e `null` per tornare visibile senza scelta esplicita. La scelta
 si salva nel documento, sopravvive alle modifiche delle quote e supporta undo/redo.
 `sketch.inspect` restituisce `visible` effettivo e `visibility` (`true`, `false`
 o `null`). La visibilità non cambia il volume né la disponibilità geometrica
@@ -59,7 +59,7 @@ sono rispettivamente +Z/−Y/+X. Una distanza negativa inverte Un lato.
 Attraverso tutto deriva l'estensione dai limiti delle destinazioni; la distanza
 indica il verso. Con simmetrica o due lati attraversa entrambi i versi.
 
-Gli schizzi consumati vengono nascosti dalla vista. Modificare una quota o un
+Gli schizzi sorgente restano visibili salvo preferenza di occultamento attiva. Modificare una quota o un
 parametro rivaluta dalla prima feature dipendente; le feature in errore conservano
 un messaggio e la valutazione prosegue. Eliminare lo schizzo sorgente non elimina
 silenziosamente l'estrusione: `feature_get.error` descrive il riferimento mancante.
@@ -269,7 +269,7 @@ m5_top = tool("geometry_query", {"body": m5_body, "kind": "face", "normal": [0,0
 m5_sketch = command("sketch.create", face=m5_top)["sketch"]
 m5_circle = command("sketch.circle", x=20, y=20, diameter="10 mm")
 m5_region = region(m5_sketch, [m5_circle["entity"]])
-m5_cylinder = command("feature.extrude", sketch=m5_sketch, profiles=[m5_region], distance="6 mm")
+m5_cylinder = command("feature.extrude", sketch=m5_sketch, profiles=[m5_region], distance="6 mm", operation="new")
 command("param.set", name="m5_altezza", expression="35 mm")
 assert abs(tool("mass_properties", {"body": m5_cylinder["body_id"]})["bbox_mm"]["min"]["z"] - 35) < 1e-5
 m5_edges = tool("geometry_query", {"body": m5_body, "kind": "edge", "type": "line", "parallel_to": [0,0,1]})["entities"]

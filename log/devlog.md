@@ -403,3 +403,7 @@ Verifica di uscita Windows: build Release in `build/agent-phase9`; **57/57 ctest
 ## 2026-10-18 — Correzioni M5, visibilità
 
 Registrata fase 9.5 prima della 10. Schizzi visibili per default; preferenza locale opzionale, comandi preferences.get/set e checkbox File → Preferenze. Occultamento nello stesso undo della feature. Test rettangolo/cerchio separati, riuso, persistenza e MCP; test preesistenti di occultamento ora attivano esplicitamente la preferenza e il reset visibilità verifica il nuovo default. Build Release, livelli e 58/58 ctest verdi (40.62 s). Restano operazione automatica e quote sui tratti nella stessa fase.
+
+### Operazione automatica estrusione
+
+Decisione condivisa motore/UI con contatto esatto e volume di intersezione OCCT. Senza operation esplicita: contatto verso esterno Unisci, ingresso nel materiale Taglia, assenza contatto Nuovo corpo. Scelta manuale e feature riaperta restano ferme; suggest in sola lettura da CLI/MCP. Dodici casi sulle sei facce con i due segni verificano un solo corpo, volume e area esterna GProp senza superficie interna; anche profili a contatto/isolati e override. I vecchi casi che richiedono corpi indipendenti ora lo dichiarano esplicitamente. Corretta inoltre la prima scrittura delle preferenze se il file non esiste. Build/livelli/parità/frame e 59/59 ctest verdi (40.66 s).

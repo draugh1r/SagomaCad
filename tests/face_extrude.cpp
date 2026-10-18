@@ -24,7 +24,7 @@ int main(){try{
     }
     engine::Engine e;auto b=run(e,"primitive.add",{{"kind","box"},{"dimensions",{{"width","10 mm"},{"depth","20 mm"},{"height","30 mm"}}}});
     auto ref=J{{"body",b["body_id"]},{"name",b["feature_id"].get<std::string>()+"/x_max"}};
-    auto f=run(e,"feature.extrude",{{"face",ref},{"distance","7 mm"}});auto m=run(e,"model.mass_properties",{{"body",f["body_id"]}});close(m["volume_mm3"],4200);close(m["bbox_mm"]["min"]["x"],10);
+    auto f=run(e,"feature.extrude",{{"face",ref},{"distance","7 mm"},{"operation","new"}});auto m=run(e,"model.mass_properties",{{"body",f["body_id"]}});close(m["volume_mm3"],4200);close(m["bbox_mm"]["min"]["x"],10);
     run(e,"feature.edit",{{"feature_id",f["feature_id"]},{"params",{{"distance","9 mm"}}}});close(run(e,"model.mass_properties",{{"body",f["body_id"]}})["volume_mm3"],5400);
     auto before=e.session().document;check(!e.execute("feature.extrude",{{"face",ref},{"sketch","bad"}}).ok&&e.session().document==before,"ambiguous source atomic error");
     for(auto direction:{"one_side","symmetric"}){

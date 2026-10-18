@@ -109,7 +109,7 @@ void Shell::draw_model_panel(const ui::Theme& t){
             auto position=ImGui::GetCursorScreenPos();m.fields["operation"]={position.x,position.y,ImGui::GetContentRegionAvail().x,ImGui::GetFrameHeight()};
             m.operation_menu=ImGui::BeginCombo("##operation",operations[std::clamp(m.operation,0,3)]);
             if(m.operation_menu){for(int i=0;i<4;++i){if(ImGui::Selectable(("##op"+std::to_string(i)).c_str(),m.operation==i,ImGuiSelectableFlags_None,{0,t.model.row*z})){
-                        m.operation=i;m.error.clear();if(i!=3&&m.targets.empty()){auto context=engine::model_context(engine_->session().document,m.feature_id);auto snapshot=regen::Regenerator{}.evaluate(context);for(const auto& body:snapshot.bodies)if(body.exact)m.targets.push_back(body.id);}}
+                        if(!m.operation_manual)m.targets.clear();m.operation=i;m.operation_manual=true;m.error.clear();if(i!=3&&m.targets.empty()){auto context=engine::model_context(engine_->session().document,m.feature_id);auto snapshot=regen::Regenerator{}.evaluate(context);for(const auto& body:snapshot.bodies)if(body.exact)m.targets.push_back(body.id);}}
                     record(("op"+std::to_string(i)).c_str());auto a=ImGui::GetItemRectMin();auto texture=icon_texture(icons[i]);if(texture)ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)texture,{a.x+t.spacing*z,a.y+t.spacing*z*.5f},{a.x+(t.spacing+t.timeline.icon)*z,a.y+(t.spacing*.5f+t.timeline.icon)*z},{0,0},{1,1},color(t.text));
                     ImGui::GetWindowDrawList()->AddText({a.x+(t.timeline.icon+t.spacing*2)*z,a.y+t.spacing*z*.5f},color(t.text),operations[i]);}
                 ImGui::EndCombo();}

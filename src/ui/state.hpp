@@ -28,7 +28,8 @@ struct State {
     nlohmann::json topology_labels=nlohmann::json::array();
     struct ModelEditor {
         nlohmann::json face=nullptr;
-        bool open=false,revolve=false,pick_axis=false,dragging=false,operation_menu=false;
+        bool open=false,revolve=false,pick_axis=false,dragging=false,operation_menu=false,operation_manual=false;
+        std::string automatic_revision;
         std::string feature_id,sketch,axis,error,preview_error;
         std::vector<std::string> profiles,targets;
         int direction=0,extent=0,operation=3,type=0;

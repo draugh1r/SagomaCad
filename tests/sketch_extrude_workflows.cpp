@@ -28,7 +28,7 @@ int main(){try{
     check(run(e,"sketch.inspect",{{"sketch",first}})["visibility"]==true,"visibilità conservata modificando quote");
     state.selected_profile_sketch=first;ui::begin_model(state,e,false);
     check(state.model.sketch==first&&state.model.profiles.size()==1,"riuso sorgente dal browser con profilo unico");
-    state.model.operation=0;state.model.targets={plate["body_id"].get<std::string>()};std::snprintf(state.model.distance.data(),state.model.distance.size(),"15 mm");
+    state.model.operation_manual=true;state.model.operation=0;state.model.targets={plate["body_id"].get<std::string>()};std::snprintf(state.model.distance.data(),state.model.distance.size(),"15 mm");
     check(ui::submit_model(state,e),state.model.error);close(volume(e,plate["body_id"]),12000);
     auto joined=e.session().document.timeline.back();
     run(e,"param.set",{{"name","larghezza"},{"expression","60 mm"}});close(volume(e,plate["body_id"]),18000);
