@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T13:55:13Z",
+    "updatedAt": "2026-10-18T14:06:55Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 9.5
@@ -2096,7 +2096,7 @@
       "id": 100,
       "phase": 9.5,
       "title": "9.5.3 Quote sui tratti durante disegno e modifica",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         99
@@ -2111,13 +2111,15 @@
       ],
       "isTest": false,
       "milestone": "M5",
-      "startedAt": "2026-10-18T13:55:13.678326+00:00"
+      "startedAt": "2026-10-18T13:55:13.678326+00:00",
+      "completedAt": "2026-10-18T14:06:55.149941+00:00",
+      "note": "60/60 ctest; 16 scenari in JSON, 48 PNG generati, confronto con 40/41 e tavole. Verificati pixel accento, Tab/Invio, vincoli, doppio clic, editor sulla quota e roundtrip."
     },
     {
       "id": 101,
       "phase": 9.5,
       "title": "9.5.4 Verifica finale M5: scenari, GProp e confronto visivo",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "dependencies": [
         100
@@ -2131,7 +2133,8 @@
         "Verifica finale M5: scenari, GProp e confronto visivo"
       ],
       "isTest": true,
-      "milestone": "M5"
+      "milestone": "M5",
+      "startedAt": "2026-10-18T14:06:55.149954+00:00"
     }
   ]
 }

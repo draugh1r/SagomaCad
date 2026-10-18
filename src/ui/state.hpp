@@ -72,6 +72,11 @@ struct State {
     std::array<char,4096> sketch_dimension_expression{};
     std::string sketch_error;
     bool sketch_field_focus=false;
+    std::vector<engine::SketchMeasure> sketch_measures;
+    std::map<std::string,std::array<float,4>> sketch_live_fields,sketch_dimension_rects;
+    std::array<float,4> sketch_dimension_edit_rect{};
+    std::array<float,2> sketch_dimension_anchor{};
+    bool sketch_dimension_focus=false;
     std::array<std::array<char,4096>,2> sketch_fields{};
     int selected_tab = 0;
     bool previous_sketch_mode = false;

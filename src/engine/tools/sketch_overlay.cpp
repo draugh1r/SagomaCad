@@ -30,7 +30,31 @@ SketchOverlay sketch_overlay(const solver::SketchResult& result){
         if(found!=entities.end()){const auto& e=*found->second;p=points.at(e.points[0]);if(e.kind=="line"){auto b=points.at(e.points[1]);p={(p.x+b.x)/2,(p.y+b.y)/2};}else p.x+=e.radius;}
         else if(points.contains(d.refs[0])){p=points.at(d.refs[0]);if(d.refs.size()==2&&points.contains(d.refs[1])){auto q=points.at(d.refs[1]);p={(p.x+q.x)/2,(p.y+q.y)/2};}}
         bool vertical=false;if(found!=entities.end()&&found->second->kind=="line"){auto a=points.at(found->second->points[0]),b=points.at(found->second->points[1]);vertical=std::abs(b.y-a.y)>std::abs(b.x-a.x);}
-        out.dimensions.push_back({d.id,d.expression,d.kind,p,vertical});
+        SketchMeasure measure;measure.position=p;measure.refs=d.refs;measure.unit=d.kind=="angle"?"deg":"mm";
+        measure.a=p;measure.b=p;measure.outward=vertical?SketchXY{1,0}:SketchXY{0,-1};
+        if(found!=entities.end()){
+            const auto& e=*found->second;measure.a=points.at(e.points[0]);
+            if(e.kind=="line"){measure.b=points.at(e.points[1]);measure.outward={measure.b.y-measure.a.y,measure.a.x-measure.b.x};}
+            else {measure.b={measure.a.x+e.radius,measure.a.y};if(d.kind=="diameter")measure.a.x-=e.radius;}
+            if(vertical){
+                // Put a rectangular height on its outer left side, while its
+                // driving reference remains the original constrained segment.
+                for(const auto& candidate:result.sketch.entities)if(candidate.kind=="line"){
+                    auto a=points.at(candidate.points[0]),b=points.at(candidate.points[1]);
+                    int connections=0;for(const auto& link:result.sketch.entities)if(link.kind=="line"&&std::any_of(link.points.begin(),link.points.end(),[&](const auto& p){return std::find(e.points.begin(),e.points.end(),p)!=e.points.end();})&&std::any_of(link.points.begin(),link.points.end(),[&](const auto& p){return std::find(candidate.points.begin(),candidate.points.end(),p)!=candidate.points.end();}))++connections;
+                    if(connections>=2&&std::abs(a.x-b.x)<1e-7&&a.x<measure.a.x&&std::abs(std::min(a.y,b.y)-std::min(measure.a.y,measure.b.y))<1e-7&&std::abs(std::max(a.y,b.y)-std::max(measure.a.y,measure.b.y))<1e-7){measure.a=a;measure.b=b;measure.refs.push_back(candidate.id);}
+                }
+                if(measure.a.y<measure.b.y)std::swap(measure.a,measure.b);measure.outward={-1,0};
+            }
+            measure.position={(measure.a.x+measure.b.x)/2,(measure.a.y+measure.b.y)/2};
+            if(d.kind=="angle"){
+                measure.position={measure.a.x+(measure.b.x-measure.a.x)*.25,measure.a.y+(measure.b.y-measure.a.y)*.25};
+                measure.outward={measure.a.x-measure.b.x,measure.a.y-measure.b.y};
+            }
+            if(d.kind=="diameter")measure.position=measure.b;
+        }else if(d.refs.size()>1&&points.contains(d.refs[0])&&points.contains(d.refs[1])){measure.a=points.at(d.refs[0]);measure.b=points.at(d.refs[1]);}
+        for(const auto& e:result.sketch.entities)if(std::all_of(d.refs.begin(),d.refs.end(),[&](const auto& ref){return std::find(e.points.begin(),e.points.end(),ref)!=e.points.end();}))measure.refs.push_back(e.id);
+        out.dimensions.push_back({d.id,d.expression,d.kind,p,vertical,measure});
     }
     for(const auto& c:result.sketch.constraints){if(c.refs.empty())continue;SketchXY p;auto found=entities.find(c.refs[0]);if(found!=entities.end()){const auto& e=*found->second;p=points.at(e.points[0]);if(e.points.size()>1){auto b=points.at(e.points[1]);p={(p.x+b.x)/2,(p.y+b.y)/2};}}else if(points.contains(c.refs[0]))p=points.at(c.refs[0]);
         const auto text=c.kind=="horizontal"?"-":c.kind=="vertical"?"|":c.kind=="fix"?"+":c.kind=="coincident"?"o":c.kind=="equal"?"=":c.kind=="parallel"?"//":c.kind=="perpendicular"?"L":c.kind=="tangent"?"T":c.kind=="midpoint"?"M":"+";

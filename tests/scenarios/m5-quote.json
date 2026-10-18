@@ -1,0 +1,8 @@
+{
+  "cases": [
+    {"tool":"rect", "fields":["40", "20"], "entities":4, "dimensions":2, "edit":"45 mm"},
+    {"tool":"line", "fields":["30", "25 deg"], "entities":1, "dimensions":2, "edit":"35 mm"},
+    {"tool":"circle", "fields":["16"], "entities":1, "dimensions":1, "edit":"20 mm"},
+    {"tool":"arc", "fields":["12", "90 deg"], "entities":1, "dimensions":2, "edit":"15 mm"}
+  ]
+}

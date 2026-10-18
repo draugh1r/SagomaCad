@@ -51,7 +51,7 @@ int main(int argc,char** argv){try{
     check(result.value["state"]=="constrained","40 Tab20 Invio completamente vincolato");
     check(std::abs(result.value["points"][2]["x"].get<double>()-40)<1e-5&&std::abs(result.value["points"][2]["y"].get<double>()-20)<1e-5,"dimensioni effettive 40x20");
     check(result.value["profiles"].size()==1,"profilo chiuso");snapshot("m3-closed-profile.png");
-    auto dimension_position=shell.state().camera.project({20,0,0},v);dimension_position.y-=ui::light.sketch.dimension_offset;
+    auto dimension_rect=shell.state().sketch_dimension_rects.begin()->second;ImVec2 dimension_position{dimension_rect[0]+dimension_rect[2]/2,dimension_rect[1]+dimension_rect[3]/2};
     mouse(dimension_position.x,dimension_position.y,false);mouse(dimension_position.x,dimension_position.y,true);mouse(dimension_position.x,dimension_position.y,false);mouse(dimension_position.x,dimension_position.y,true);mouse(dimension_position.x,dimension_position.y,false);
     check(shell.state().sketch_dimension_open&&!shell.state().sketch_dimension_id.empty(),"doppio clic modifica quota");
     shell.state().sketch_dimension_open=false;frame();
