@@ -2,10 +2,10 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T14:06:55Z",
+    "updatedAt": "2026-10-18T14:12:06Z",
     "version": "1.0.0",
     "totalPhases": 15,
-    "currentPhase": 9.5
+    "currentPhase": 10
   },
   "tasks": [
     {
@@ -2034,17 +2034,19 @@
         19
       ],
       "files": [
-        "docs/.plan/prps/phase-9.5-correzioni-m5.md"
+        "docs/.plan/prps/phase-9.5-correzioni-m5.md",
+        "docs/.plan/PLAN.md"
       ],
       "action": "VERIFY",
-      "validation": "Build Release, ctest e controlli locali come da PRP",
+      "validation": "Verifica presenza e lettura dei riferimenti 40–42 e delle tavole approvate",
       "features": [
         "Riferimenti 40–42 e criteri di regressione"
       ],
       "isTest": true,
       "milestone": "M5",
       "completedAt": "2026-10-18T13:41:41.654144+00:00",
-      "note": "Letti i riferimenti 40–42 e le due tavole approvate; individuati visibilità, model editor e input schizzo."
+      "note": "Letti i riferimenti 40–42 e le due tavole approvate; individuati visibilità, model editor e input schizzo.",
+      "commit": "d10bd9cb1e483ff9e087091fb50d7ac211deee75"
     },
     {
       "id": 98,
@@ -2056,10 +2058,15 @@
         97
       ],
       "files": [
-        "docs/.plan/prps/phase-9.5-correzioni-m5.md"
+        "src/engine/cmds/preference_cmds.cpp",
+        "src/engine/cmds/model_cmds.cpp",
+        "src/regen/regenerator.cpp",
+        "src/ui/layout_state.cpp",
+        "apps/common/shell.cpp",
+        "tests/m5_visibility.cpp"
       ],
       "action": "MODIFY",
-      "validation": "Build Release, ctest e controlli locali come da PRP",
+      "validation": "ctest --test-dir build/agent-phase9 -C Release --output-on-failure -R \"m5_visibility|sketch_extrude_workflows|sketch_mcp\"",
       "features": [
         "Preferenza di visibilità dello schizzo e riuso dei profili"
       ],
@@ -2067,7 +2074,8 @@
       "milestone": "M5",
       "startedAt": "2026-10-18T13:41:41.654163+00:00",
       "completedAt": "2026-10-18T13:47:24.631510+00:00",
-      "note": "58/58 ctest, build Release, livelli; riuso rettangolo/cerchio, persistenza, undo, CLI/MCP. Screenshot model_interaction nei due temi e dimensioni."
+      "note": "58/58 ctest, build Release, livelli; riuso rettangolo/cerchio, persistenza, undo, CLI/MCP. Screenshot model_interaction nei due temi e dimensioni.",
+      "commit": "dc86da9b7721d72becfd73c3c6b57adb726c60a3"
     },
     {
       "id": 99,
@@ -2079,10 +2087,15 @@
         98
       ],
       "files": [
-        "docs/.plan/prps/phase-9.5-correzioni-m5.md"
+        "src/engine/tools/extrusion_defaults.cpp",
+        "src/kernel/measure.cpp",
+        "src/ui/model_editor.cpp",
+        "apps/common/model_widget.cpp",
+        "tests/m5_extrusion_defaults.cpp",
+        "tests/test_topology_agents.py"
       ],
       "action": "MODIFY",
-      "validation": "Build Release, ctest e controlli locali come da PRP",
+      "validation": "ctest --test-dir build/agent-phase9 -C Release --output-on-failure -R \"m5_extrusion_defaults|face_extrude|topology_agents\"",
       "features": [
         "Operazione automatica di estrusione e scelta manuale persistente"
       ],
@@ -2090,7 +2103,8 @@
       "milestone": "M5",
       "startedAt": "2026-10-18T13:47:24.631524+00:00",
       "completedAt": "2026-10-18T13:55:13.678144+00:00",
-      "note": "59/59 ctest, 12 casi facce orientate + profili: GProp volume/area esterna, segno e override, CLI/MCP. Scenari storici di corpi indipendenti ora esplicitano operation=new."
+      "note": "59/59 ctest, 12 casi facce orientate + profili: GProp volume/area esterna, segno e override, CLI/MCP. Scenari storici di corpi indipendenti ora esplicitano operation=new.",
+      "commit": "21a054849862f2019d2d4cada7d7546f4f5dbf55"
     },
     {
       "id": 100,
@@ -2102,10 +2116,14 @@
         99
       ],
       "files": [
-        "docs/.plan/prps/phase-9.5-correzioni-m5.md"
+        "src/engine/tools/sketch_tool.cpp",
+        "src/engine/tools/sketch_overlay.cpp",
+        "apps/common/sketch_widget.cpp",
+        "tests/m5_dimensions.cpp",
+        "tests/scenarios/m5-quote.json"
       ],
       "action": "MODIFY",
-      "validation": "Build Release, ctest e controlli locali come da PRP",
+      "validation": "ctest --test-dir build/agent-phase9 -C Release --output-on-failure -R \"m5_dimensions|sketch_mouse|sketch_interaction\"",
       "features": [
         "Quote sui tratti durante disegno e modifica"
       ],
@@ -2113,28 +2131,33 @@
       "milestone": "M5",
       "startedAt": "2026-10-18T13:55:13.678326+00:00",
       "completedAt": "2026-10-18T14:06:55.149941+00:00",
-      "note": "60/60 ctest; 16 scenari in JSON, 48 PNG generati, confronto con 40/41 e tavole. Verificati pixel accento, Tab/Invio, vincoli, doppio clic, editor sulla quota e roundtrip."
+      "note": "60/60 ctest; 16 scenari in JSON, 48 PNG generati, confronto con 40/41 e tavole. Verificati pixel accento, Tab/Invio, vincoli, doppio clic, editor sulla quota e roundtrip.",
+      "commit": "2a51bb03443a3490645625e731a56a56db2e8fff"
     },
     {
       "id": 101,
       "phase": 9.5,
       "title": "9.5.4 Verifica finale M5: scenari, GProp e confronto visivo",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         100
       ],
       "files": [
-        "docs/.plan/prps/phase-9.5-correzioni-m5.md"
+        "tests/test_m5_control.py",
+        "docs/design/verifica-m5/README.md",
+        "log/devlog.md"
       ],
       "action": "VERIFY",
-      "validation": "Build Release, ctest e controlli locali come da PRP",
+      "validation": "cmake --build build/agent-phase9 --config Release && ctest --test-dir build/agent-phase9 -C Release --output-on-failure && python tools/check_layers.py && python tests/frame_rule.py && python tests/test_utf8.py && build/agent-phase9/apps/sagomacad-cli/sagomacad-cli.exe fuzz-commands",
       "features": [
         "Verifica finale M5: scenari, GProp e confronto visivo"
       ],
       "isTest": true,
       "milestone": "M5",
-      "startedAt": "2026-10-18T14:06:55.149954+00:00"
+      "startedAt": "2026-10-18T14:06:55.149954+00:00",
+      "completedAt": "2026-10-18T14:12:06.404164+00:00",
+      "note": "Build Release, 61/61 ctest in 49.19 s; selezione UI del profilo inutilizzato, controllo nativo autenticato, GProp, 16 scenari/48 PNG; livelli/frame/UTF-8/parità/fuzz verdi. Confronto 40/41, immagini proprie archiviate senza modificare golden."
     }
   ]
 }

@@ -582,7 +582,9 @@ void Shell::draw() {
     if(state_.preferences_open&&engine_){
         ui::frame::window("Preferenze",&state_.preferences_open,t,z,{t.file_dialog_width*z,0},false,ImGuiWindowFlags_AlwaysAutoResize);
         bool hide=engine_->session().hide_sketch_after_feature;
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,t.layout.panel_border*z);
         if(ImGui::Checkbox("Nascondi lo schizzo dopo la creazione di una feature",&hide))engine_->execute("preferences.set",{{"hide_sketch_after_feature",hide}});
+        ImGui::PopStyleVar();
         ImGui::End();
     }
 }

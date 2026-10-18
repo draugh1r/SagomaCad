@@ -248,7 +248,7 @@ add_test(NAME m5_interaction COMMAND m5_interaction_test ${CMAKE_BINARY_DIR}/m5-
 
 add_executable(m5_visibility_test tests/m5_visibility.cpp)
 target_link_libraries(m5_visibility_test PRIVATE sagomacad_shell)
-add_test(NAME m5_visibility COMMAND m5_visibility_test)
+add_test(NAME m5_visibility COMMAND m5_visibility_test ${CMAKE_BINARY_DIR}/m5-preferences)
 add_executable(m5_extrusion_defaults_test tests/m5_extrusion_defaults.cpp)
 target_link_libraries(m5_extrusion_defaults_test PRIVATE sagomacad_ui)
 add_test(NAME m5_extrusion_defaults COMMAND m5_extrusion_defaults_test)
@@ -256,3 +256,4 @@ add_executable(m5_dimensions_test tests/m5_dimensions.cpp)
 target_include_directories(m5_dimensions_test PRIVATE ${STB_INCLUDE_DIRS})
 target_link_libraries(m5_dimensions_test PRIVATE sagomacad_shell)
 add_test(NAME m5_dimensions COMMAND m5_dimensions_test ${PROJECT_SOURCE_DIR}/tests/scenarios/m5-quote.json ${CMAKE_BINARY_DIR}/m5-dimensions)
+add_test(NAME m5_control COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_m5_control.py $<TARGET_FILE:sagomacad>)

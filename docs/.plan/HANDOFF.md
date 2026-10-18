@@ -1,5 +1,5 @@
-# Handoff — Identità visiva di SagomaCad
-Aggiornato: 2026-10-17 · Agente: Codex · Branch: main
+# Handoff — Identità visiva e correzioni M5
+Aggiornato: 2026-10-18 · Agente: Codex · Branch: main
 
 ## Stato
 La fonte autorevole dello stato è `docs/.plan/tasks.json`. Nessun codice lasciato a metà nella fase 9; la verifica di uscita è documentata nell’ultima voce di `log/devlog.md`.
@@ -24,7 +24,15 @@ La fonte autorevole dello stato è `docs/.plan/tasks.json`. Nessun codice lascia
 - `src/ui/frame.*`, `src/ui/layout.cpp`: fabbrica finestre e aree Clay.
 - `docs/ui-design.md`, `log/devlog.md`: comportamento della shell ed evidenze.
 
+## Correzioni M5 richieste prima della fase 10
+- La fase 9.5 ha milestone M5; mantiene i numeri delle fasi preesistenti e la fase 10 dipende dal suo task finale. Nessuna autorizzazione a iniziare la fase 10 in questa richiesta.
+- Schizzi visibili per default; preferences.get/set controllano l’occultamento al momento della creazione, salvato nello stesso undo della feature. `visible: null` torna visibile: vecchi scenari di occultamento ora attivano la preferenza o impostano false.
+- L’operazione automatica usa il contatto fra profilo e corpo e il volume di intersezione della spazzata, non il solo segno numerico. Sulle facce minime un valore positivo può puntare verso l’esterno grazie alla normale orientata. Le feature salvano l’operazione scelta; riaprire una feature la conserva. Gli esempi di cilindri indipendenti ora dichiarano operation=new.
+- Gli input live sono finestre sovrapposte distinte: `NoFocusOnAppearing` impedisce che la seconda rubi il focus alla prima. Anche la geometria inizialmente degenere deve produrre descrittori di misura per accettare subito testo. Non rimuovere queste due protezioni.
+- `SketchMeasure` è il contratto per i futuri strumenti: quote/ancoraggi/riferimenti nel motore, un solo ciclo di rendering nella shell. Scenari JSON M5 dedicati, senza anticipare l’infrastruttura generale prevista nella fase 10.
+- Evidenze e confronto: `docs/design/verifica-m5/README.md`; screenshot completi sotto `build/agent-phase9/m5-dimensions` e `m5-preferences`. Le golden approvate sono rimaste intatte.
+
 ## Per ripartire
-La build Release verificata è `build/agent-phase9`; applicazione e CLI sono nelle rispettive sottocartelle di `apps/`. La verifica finale comprende 57/57 ctest, livelli, import, parità, regola finestre, UTF-8 e fuzz (260 casi comandi, 222 MCP). Gli screenshot di confronto della sessione sono sotto `build/phase9-final-*` e `build/check-ribbon.png`.
+La build Release verificata è `build/agent-phase9`; applicazione e CLI sono nelle rispettive sottocartelle di `apps/`. La verifica della fase 9 comprendeva 57/57 ctest; la verifica M5 successiva è documentata in docs/design/verifica-m5/README.md e nell’ultima voce del devlog (61/61 ctest, livelli, parità, regola finestre, UTF-8 e fuzz). Gli screenshot di confronto della sessione sono sotto `build/phase9-final-*` e `build/check-ribbon.png`.
 
 Prima di agire leggi i file elencati sopra e verifica ogni affermazione sul codice: è contesto, non verità.

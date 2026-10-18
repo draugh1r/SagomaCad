@@ -48,3 +48,7 @@ Via MCP: `design_board({"theme":"light"})` o `design_board({"theme":"dark"})` re
 5. Ricompilare Release e verificare `icons`, `icon_palette`, `theme_tokens` e `frame_rule`; poi generare una tavola e screenshot nei due temi e alle due dimensioni. Il renderer risolve i ruoli e rasterizza ai pixel effettivi, DPI incluso; cache per ID/accento/tema/pixel/stato disabilitato. `gap` è un ritaglio trasparente, non una tinta di sfondo.
 
 Solo l’utente approva un’immagine: presentare la proposta, attendere la conferma, copiare esattamente il PNG in `docs/design/approvate/` e annotare data e ambito. Non rigenerare o sovrascrivere schermate approvate dopo una modifica dei token senza nuova approvazione.
+
+## Verifica delle correzioni M5
+
+2026-10-18: confronto dei comportamenti di quota con i riferimenti 40/41 e dell’aspetto con le tavole approvate. Screenshot e riscontri in [verifica-m5/README.md](verifica-m5/README.md). Queste evidenze non sostituiscono le golden approvate.
