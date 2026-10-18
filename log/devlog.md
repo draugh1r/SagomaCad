@@ -429,3 +429,7 @@ Build Release Windows e **63/63 ctest verdi in 51.86 s**; livelli, regola frame,
 ## 2026-10-18 — Vista Home dopo Fine schizzo
 
 Il comando UI Fine schizzo avvia la transizione alla vista Home usando la durata del tema; conserva centro e zoom. Il test di interazione ora preme il pulsante reale e verifica chiusura dello schizzo, orientamento Home e inquadratura invariata. Screenshot ispezionati nei due temi a 1440×900 e 1280×720, in build/finish-home-evidence. Build Release e **63/63 ctest verdi in 51.80 s**; livelli e regola finestre verdi. Fase 10 non iniziata.
+
+## 2026-10-18 — Comandi attivi evidenziati nei menu
+
+Ribbon e tendine condividono lo stato selezionato, derivato dai pannelli e dagli strumenti attivi: Estrudi, Rivoluzione, Raccordo, Smusso, Foro, primitive, parametri, selezione, dialog file e strumenti di schizzo. Sfondo accent_soft e bordo pistacchio dai token, hover distinto; nessuna selezione residua dopo la chiusura. Funziona anche da scorciatoia e riapertura della feature. Test di interazione su Estrudi, Rivoluzione, Raccordo, Foro e cambio Linea/Cerchio/Rettangolo; controllo dei pixel del ribbon con il mouse nel viewport. Screenshot di ribbon e tendina Crea nei due temi a 1440x900 e 1280x720 ispezionati in build/menu-selection-evidence. Build Release, 63/63 ctest, livelli, regola finestre e UTF-8 verdi. Golden approvate intatte; fase 10 non iniziata.

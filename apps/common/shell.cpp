@@ -274,10 +274,10 @@ void Shell::draw() {
     auto texture=[&](const ui::ToolbarCommand& c,float size,bool disabled) { return c.design_icon.empty()?icon_texture(c.icon):design_icon_texture(c.design_icon,c.accent,size,disabled); };
     auto invoke=[&](std::string_view id) { invoke_command(id); };
     auto command_button=[&](const ui::ToolbarCommand& c,ImVec2 pos,ImVec2 size,bool label) {
-        ui::ribbon_button(c,{pos.x,pos.y,size.x,size.y},label,t,z,engine_,texture,invoke);
+        ui::ribbon_button(c,{pos.x,pos.y,size.x,size.y},label,t,z,engine_,texture,invoke,ui::command_selected(c.id,state_));
     };
     auto popup_command=[&](const ui::ToolbarCommand& c,float width) {
-        ui::popup_command(c,width,t,z,engine_,texture,invoke);
+        ui::popup_command(c,width,t,z,engine_,texture,invoke,ui::command_selected(c.id,state_));
     };
     panel("SagomaCad  |  Solido", nullptr, t, layout.topbar, [&] {
         ImDrawList* dl=ImGui::GetWindowDrawList();
@@ -331,7 +331,7 @@ void Shell::draw() {
             const auto& g=layout.groups[i];
             for (size_t j=0;j<g.button_count;++j) {
                 const auto& r=g.buttons[j];
-                ui::ribbon_button(groups[i].commands[j],r,true,t,z,engine_,texture,invoke);
+                ui::ribbon_button(groups[i].commands[j],r,true,t,z,engine_,texture,invoke,ui::command_selected(groups[i].commands[j].id,state_));
             }
             const auto& r=g.menu;
             const std::string popup_id="group_"+std::to_string(i);

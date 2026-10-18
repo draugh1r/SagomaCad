@@ -1,5 +1,6 @@
 #include "shell.hpp"
 #include "ui/sketch_view.hpp"
+#include "ui/widgets.hpp"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <cmath>
@@ -41,7 +42,10 @@ int main(int argc,char** argv){try{
     check(e.session().document.features.at(e.session().active_sketch).data["plane"]=="XY","clic sul piano XY seleziona XY");
     shell.state().view_transition.advance(shell.state().camera,1);frame();
     check(shell.state().sketch_mode,"modalità schizzo");snapshot("m3-sketch-mode.png");
+    key(ImGuiKey_L);check(ui::command_selected("sketch.line",shell.state()),"linea selezionata da L");
+    key(ImGuiKey_C);check(ui::command_selected("sketch.circle",shell.state())&&!ui::command_selected("sketch.line",shell.state()),"cambio strumento aggiorna selezione");
     key(ImGuiKey_R);check(shell.state().sketch_tool.kind=="rect","scorciatoia R");
+    check(ui::command_selected("sketch.rect",shell.state())&&!ui::command_selected("sketch.line",shell.state()),"rettangolo selezionato da R");
     auto origin=shell.state().camera.project({0,0,0},v);mouse(origin.x,origin.y,false);mouse(origin.x,origin.y,true);mouse(origin.x,origin.y,false);frame();
     check(shell.state().sketch_tool.started,"primo clic");
     ImGui::GetIO().AddInputCharactersUTF8("40");frame();key(ImGuiKey_Tab);frame();ImGui::GetIO().AddInputCharactersUTF8("20");frame();
@@ -67,6 +71,7 @@ int main(int argc,char** argv){try{
     ui::Camera home;home.home();const auto actual=shell.state().camera.forward(),expected=home.forward();
     check(std::abs(actual.x-expected.x)<1e-8&&std::abs(actual.y-expected.y)<1e-8&&std::abs(actual.z-expected.z)<1e-8&&std::abs(shell.state().camera.roll)<1e-8,"Fine schizzo riporta alla vista Home");
     check(shell.state().camera.distance==previous_camera.distance&&shell.state().camera.target.x==previous_camera.target.x&&shell.state().camera.target.y==previous_camera.target.y&&shell.state().camera.target.z==previous_camera.target.z,"ritorno Home conserva centro e zoom dello schizzo");
+    check(!ui::command_selected("sketch.rect",shell.state()),"Fine schizzo deseleziona il disegno");
     snapshot("m3-finish-home.png");
     check(shell.open_feature_editor(id),"rientro dalla timeline");frame();check(shell.state().sketch_mode,"riapre schizzo");
     check(e.execute("sketch.create",{{"plane","XY"}}).ok,"schizzo libero");auto line=e.execute("sketch.line",{{"x1",2},{"y1",3},{"x2",12},{"y2",3}});check(line.ok,"linea libera");frame();shell.state().view_transition.advance(shell.state().camera,1);frame();

@@ -1,5 +1,6 @@
 #include "shell.hpp"
 #include "ui/model_editor.hpp"
+#include "ui/widgets.hpp"
 #include <imgui.h>
 #include <filesystem>
 #include <numbers>
@@ -27,12 +28,18 @@ int main(int argc,char** argv){try{
         std::string error;auto suffix=std::string(light?"light-":"dark-")+std::to_string(size.first)+".png";
         auto capture=[&](const std::string& name){shell.render();check(shell.screenshot((root/(name+suffix)).string(),error),error);};
         const auto original=e.session().document;key(ImGuiKey_E);check(shell.state().model.open&&!shell.state().model.revolve,"E apre Estrudi");world_click({-20,0,0});
+        check(ui::command_selected("feature.extrude",shell.state())&&!ui::command_selected("feature.revolve",shell.state()),"solo Estrudi selezionato da scorciatoia");
         check(shell.state().model.profiles.size()==1,"selezione della sola corona");check(shell.state().model.preview_error.empty(),shell.state().model.preview_error);check(e.session().document==original,"anteprima non modifica il documento");
         world_click({6,-6,0});check(shell.state().model.profiles.size()==2,"disco selezionabile separatamente");world_click({6,-6,0});check(shell.state().model.profiles.size()==1,"rimozione del solo disco");capture("07-estrudi-");
+        ui::LayoutEngine selected_layout;const auto& selected_rect=selected_layout.compute(float(size.first),float(size.second),1,shell.state(),ui::theme(light)).groups[0].buttons[1];
+        int selected_w=0,selected_h=0,selected_channels=0;auto* selected_pixels=stbi_load((root/("07-estrudi-"+suffix)).string().c_str(),&selected_w,&selected_h,&selected_channels,4);
+        check(selected_pixels!=nullptr,"PNG selezione leggibile");auto* selected_pixel=selected_pixels+(int(selected_rect.y+10)*selected_w+int(selected_rect.x+5))*4;auto selected_color=ui::theme(light).visual.accent_soft;
+        check(std::abs(selected_pixel[0]-selected_color.r*255)<3&&std::abs(selected_pixel[1]-selected_color.g*255)<3&&std::abs(selected_pixel[2]-selected_color.b*255)<3,"Estrudi resta evidenziato con il mouse nel viewport");stbi_image_free(selected_pixels);
+        const auto create_menu=selected_layout.last().groups[0].menu;click(create_menu.x+create_menu.width/2,create_menu.y+create_menu.height/2);capture("menu-estrudi-selezionato-");click(150,15);
         field("operation");check(shell.state().model.operation_menu,"menu Operazione aperto");capture("08-operazione-");
         check(shell.state().model.fields.contains("op3"),"quattro operazioni con hitbox");field("op3");
         auto& m=shell.state().model;float hx=m.handle_x,hy=m.handle_y;mouse(hx,hy,false);mouse(hx,hy,true);mouse(hx,hy-30,true);mouse(hx,hy-30,false);shell.render();
-        check(std::abs(std::stod(m.distance.data())-10)>.1,"freccia aggiorna la distanza");check(e.session().document==original,"drag è solo anteprima");click(m.value_x+30,m.value_y+10);ImGui::GetIO().AddInputCharactersUTF8("10 mm");shell.render();key(ImGuiKey_Enter);check(std::string(m.distance.data())=="10 mm","casella nel viewport modificabile");field("ok");check(!m.open,"OK chiude Estrudi");
+        check(std::abs(std::stod(m.distance.data())-10)>.1,"freccia aggiorna la distanza");check(e.session().document==original,"drag è solo anteprima");click(m.value_x+30,m.value_y+10);ImGui::GetIO().AddInputCharactersUTF8("10 mm");shell.render();key(ImGuiKey_Enter);check(std::string(m.distance.data())=="10 mm","casella nel viewport modificabile");field("ok");check(!m.open,"OK chiude Estrudi");check(!ui::command_selected("feature.extrude",shell.state()),"OK deseleziona Estrudi");
         double expected=(2400-100*std::numbers::pi)*10;check(std::abs(run(e,"model.mass_properties")["volume_mm3"].get<double>()-expected)<1e-4,"volume della corona UI");
         auto feature=e.session().document.timeline[1];const auto item=shell.state().timeline_items.at(1);click(item.x+item.width/2,item.y+item.height/2);click(item.x+item.width/2,item.y+item.height/2);check(m.open&&m.feature_id==feature,"doppio clic riapre il dialogo");field("cancel");
         const auto source=sk.get<std::string>();check(!shell.state().sketch_browser.at(source).visible,"occhio indica sorgente nascosta dopo estrusione");
@@ -59,7 +66,7 @@ int main(int argc,char** argv){try{
         // Start Revolve through the third command in the Create ribbon group.
         run(e,"document.new");sk=run(e,"sketch.create",{{"plane","XZ"}})["sketch"];run(e,"sketch.rect",{{"x",5},{"width","30 mm"},{"height","20 mm"}});run(e,"sketch.finish");shell.render();shell.state().camera.home();shell.state().camera.target={0,0,10};shell.state().camera.distance=180;shell.render();
         ui::LayoutEngine probe;const auto ribbon=probe.compute(float(size.first),float(size.second),1,shell.state(),ui::theme(light));const auto command=ribbon.groups[0].buttons[2];click(command.x+command.width/2,command.y+command.height/2);
-        check(m.open&&m.revolve,"Rivoluzione dal gruppo Crea");world_click({20,0,10});field("axis");check(m.pick_axis,"campo Asse attiva selezione");world_click({0,0,50});shell.render();check(m.axis=="Z","selezione asse Z nel viewport");check(m.preview_error.empty(),m.preview_error);capture("09-rivoluzione-");
+        check(m.open&&m.revolve,"Rivoluzione dal gruppo Crea");check(ui::command_selected("feature.revolve",shell.state())&&!ui::command_selected("feature.extrude",shell.state()),"Rivoluzione selezionata dal ribbon");world_click({20,0,10});field("axis");check(m.pick_axis,"campo Asse attiva selezione");world_click({0,0,50});shell.render();check(m.axis=="Z","selezione asse Z nel viewport");check(m.preview_error.empty(),m.preview_error);capture("09-rivoluzione-");
         hx=m.handle_x;hy=m.handle_y;mouse(hx,hy,false);mouse(hx,hy,true);check(m.dragging,"maniglia angolo attiva");mouse(hx-m.drag_px*90,hy-m.drag_py*90,true);mouse(hx-m.drag_px*90,hy-m.drag_py*90,false);shell.render();
         double angle=std::stod(m.angle.data());check(std::abs(angle-270)<1,"maniglia aggiorna l'angolo");field("ok");check(!m.open,"OK rivoluzione");double measured=run(e,"model.mass_properties")["volume_mm3"].get<double>();check(std::abs(measured-24000*std::numbers::pi*angle/360)<1e-3,"volume rivoluzione UI: "+std::to_string(measured)+", angolo "+std::to_string(angle));
         run(e,"document.new");auto older=run(e,"sketch.create",{{"plane","XY"}})["sketch"].get<std::string>();run(e,"sketch.rect",{{"width","30 mm"},{"height","20 mm"}});

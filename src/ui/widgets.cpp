@@ -1,5 +1,6 @@
 #include "ui/widgets.hpp"
 #include "ui/frame.hpp"
+#include "ui/state.hpp"
 #include <imgui.h>
 #include <algorithm>
 #include <cfloat>
@@ -13,8 +14,23 @@ void icon(ImDrawList* dl,unsigned texture,ImVec2 a,float size,ImU32 color) {
     else dl->AddImage(static_cast<ImTextureID>(texture),a,{a.x+size,a.y+size});
 }
 }
+bool command_selected(std::string_view id,const State& s) {
+    if(s.model.open&&(id=="feature.extrude"||id=="feature.revolve"))return id==(s.model.revolve?"feature.revolve":"feature.extrude");
+    if(s.surface.open&&id==s.surface.command)return true;
+    if(id=="sketch.create")return s.sketch_plane_picker;
+    if(id=="primitive.add")return s.primitive_create_open||s.primitive_editor_open;
+    if(id=="param.list"||id=="param.set"||id=="param.delete")return s.parameters_open;
+    if(id=="selection.set")return s.selection_filters_open;
+    if(s.file_dialog_open&&id==s.file_command)return true;
+    if(!s.sketch_mode)return false;
+    if(id=="sketch.constraint.add")return s.sketch_constraint_open;
+    if(id=="sketch.dimension.add")return s.sketch_tool.kind=="dimension";
+    if(id=="sketch.dimension.set")return s.sketch_dimension_open||s.sketch_tool.kind=="dimension";
+    if(id=="sketch.point.move")return s.sketch_tool.kind=="select";
+    return (id=="sketch.line"||id=="sketch.rect"||id=="sketch.circle"||id=="sketch.arc")&&id.substr(7)==s.sketch_tool.kind;
+}
 void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,const Theme& t,float z,
-                   const engine::Engine* engine,const IconTexture& texture,const InvokeCommand& invoke) {
+                   const engine::Engine* engine,const IconTexture& texture,const InvokeCommand& invoke,bool selected) {
     if (!r.visible()) return;
     auto* dl=ImGui::GetWindowDrawList();
     const auto status=command_availability(command.id,engine);
@@ -29,7 +45,8 @@ void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,co
     const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
     if (!available&&hovered) ImGui::SetTooltip("%s",status.reason.c_str());
     if (clicked&&available) invoke(command.id);
-    if (hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(t.panel_alt),t.rounding*z);
+    if (selected||hovered) dl->AddRectFilled(a,{a.x+size.x,a.y+size.y},packed(selected?t.visual.accent_soft:t.visual.hover),t.rounding*z);
+    if (selected) dl->AddRect(a,{a.x+size.x,a.y+size.y},packed(t.accent),t.rounding*z);
     const float logical_icon=show_label?t.board.ribbon_icon:t.layout.menu_icon,icon_size=logical_icon*z;
     icon(dl,texture(command,logical_icon,!available),{a.x+(size.x-icon_size)*0.5f,a.y+t.layout.ribbon_icon_top*z},icon_size,command.design_icon.empty()?packed(available?t.text:t.muted):0);
     if (show_label) {
@@ -44,7 +61,7 @@ void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,co
     ImGui::PopID();
 }
 void popup_command(const ToolbarCommand& command,float width,const Theme& t,float z,
-                   const engine::Engine* engine,const IconTexture& texture,const InvokeCommand& invoke) {
+                   const engine::Engine* engine,const IconTexture& texture,const InvokeCommand& invoke,bool selected) {
     const auto status=command_availability(command.id,engine);
     const bool available=status.enabled;
     auto* dl=ImGui::GetWindowDrawList();
@@ -54,7 +71,8 @@ void popup_command(const ToolbarCommand& command,float width,const Theme& t,floa
     ImGui::EndDisabled();
     const auto q=ImGui::GetItemRectMin();
     const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
-    if (hovered) dl->AddRectFilled(q,{q.x+width*z,q.y+27*z},packed(t.panel_alt));
+    if (selected||hovered) dl->AddRectFilled(q,{q.x+width*z,q.y+27*z},packed(selected?t.visual.accent_soft:t.visual.hover));
+    if (selected) dl->AddRect(q,{q.x+width*z,q.y+27*z},packed(t.accent));
     icon(dl,texture(command,t.layout.menu_icon,!available),{q.x+4*z,q.y+4*z},t.layout.menu_icon*z,command.design_icon.empty()?packed(available?t.text:t.muted):0);
     dl->AddText({q.x+30*z,q.y+5*z},packed(available?t.text:t.muted),std::string(command.label).c_str());
     if (!available&&hovered) ImGui::SetTooltip("%s",status.reason.c_str());
