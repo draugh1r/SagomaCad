@@ -650,6 +650,10 @@ void Shell::invoke_command(std::string_view id) {
     }
     const auto result=engine_->execute(id);
     state_.status_message=result.ok ? std::string() : result.error;
+    if(result.ok&&id=="sketch.finish"){
+        auto destination=state_.camera;destination.home();
+        state_.view_transition.begin(state_.camera,destination,ui::theme(state_.theme=="light").cube.transition_duration);
+    }
 }
 void Shell::draw_overlays(const ui::Theme& t) {
     const float z=static_cast<float>(scale_);

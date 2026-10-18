@@ -55,7 +55,19 @@ int main(int argc,char** argv){try{
     mouse(dimension_position.x,dimension_position.y,false);mouse(dimension_position.x,dimension_position.y,true);mouse(dimension_position.x,dimension_position.y,false);mouse(dimension_position.x,dimension_position.y,true);mouse(dimension_position.x,dimension_position.y,false);
     check(shell.state().sketch_dimension_open&&!shell.state().sketch_dimension_id.empty(),"doppio clic modifica quota");
     shell.state().sketch_dimension_open=false;frame();
-    auto id=e.session().active_sketch;check(e.execute("sketch.finish").ok,"fine");frame();check(!shell.state().sketch_mode,"chiude scheda contestuale");
+    auto id=e.session().active_sketch;
+    auto* sketch_panel=ImGui::FindWindowByName(ui::theme(light).sketch.palette);check(sketch_panel,"tavolozza schizzo");
+    const auto previous_camera=shell.state().camera;
+    const double finish_x=sketch_panel->WorkRect.Min.x+ImGui::CalcTextSize(ui::theme(light).sketch.finish_label).x/2;
+    const double finish_y=sketch_panel->DC.CursorPosPrevLine.y+ImGui::GetFrameHeight()/2;
+    mouse(finish_x,finish_y,false);mouse(finish_x,finish_y,true);mouse(finish_x,finish_y,false);frame();
+    check(e.session().active_sketch.empty()&&!shell.state().sketch_mode,"Fine schizzo chiude la scheda contestuale");
+    check(shell.state().view_transition.active,"Fine schizzo avvia il ritorno animato Home");
+    shell.state().view_transition.advance(shell.state().camera,1);frame();
+    ui::Camera home;home.home();const auto actual=shell.state().camera.forward(),expected=home.forward();
+    check(std::abs(actual.x-expected.x)<1e-8&&std::abs(actual.y-expected.y)<1e-8&&std::abs(actual.z-expected.z)<1e-8&&std::abs(shell.state().camera.roll)<1e-8,"Fine schizzo riporta alla vista Home");
+    check(shell.state().camera.distance==previous_camera.distance&&shell.state().camera.target.x==previous_camera.target.x&&shell.state().camera.target.y==previous_camera.target.y&&shell.state().camera.target.z==previous_camera.target.z,"ritorno Home conserva centro e zoom dello schizzo");
+    snapshot("m3-finish-home.png");
     check(shell.open_feature_editor(id),"rientro dalla timeline");frame();check(shell.state().sketch_mode,"riapre schizzo");
     check(e.execute("sketch.create",{{"plane","XY"}}).ok,"schizzo libero");auto line=e.execute("sketch.line",{{"x1",2},{"y1",3},{"x2",12},{"y2",3}});check(line.ok,"linea libera");frame();shell.state().view_transition.advance(shell.state().camera,1);frame();
     auto previous_sketch_visible=[&](bool expected=true){
