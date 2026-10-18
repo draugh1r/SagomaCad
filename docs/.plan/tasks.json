@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T14:12:06Z",
+    "updatedAt": "2026-10-18T14:12:34Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -2157,7 +2157,8 @@
       "milestone": "M5",
       "startedAt": "2026-10-18T14:06:55.149954+00:00",
       "completedAt": "2026-10-18T14:12:06.404164+00:00",
-      "note": "Build Release, 61/61 ctest in 49.19 s; selezione UI del profilo inutilizzato, controllo nativo autenticato, GProp, 16 scenari/48 PNG; livelli/frame/UTF-8/parità/fuzz verdi. Confronto 40/41, immagini proprie archiviate senza modificare golden."
+      "note": "Build Release, 61/61 ctest in 49.19 s; selezione UI del profilo inutilizzato, controllo nativo autenticato, GProp, 16 scenari/48 PNG; livelli/frame/UTF-8/parità/fuzz verdi. Confronto 40/41, immagini proprie archiviate senza modificare golden.",
+      "commit": "b202b22cda843118f8a99aaacf4f56ebe5822c9f"
     }
   ]
 }
