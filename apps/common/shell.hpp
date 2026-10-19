@@ -3,6 +3,7 @@
 #include "ui/layout.hpp"
 #include "ui/theme.hpp"
 #include "ui/icons.hpp"
+#include "ui/render/gl_viewport.hpp"
 #include "engine/command.hpp"
 #include "regen/regenerator.hpp"
 #include "mesh/surface.hpp"
@@ -69,6 +70,7 @@ private:
     std::unordered_map<std::string, unsigned int> icon_textures_;
     unsigned int icon_texture(std::string_view name);
     std::unique_ptr<ui::Icons> design_icons_;
+    std::unique_ptr<ui::GlViewport> gl_viewport_;
     unsigned design_icon_texture(std::string_view,ui::IconAccent,float size,bool disabled=false);
     void draw_design_board(const ui::Theme&);
     void draw();

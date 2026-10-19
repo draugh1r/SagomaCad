@@ -200,6 +200,7 @@ Shell::Shell(int width, int height, int scale, bool hidden, bool light) : scale_
     imgui_ready_ = true;
 }
 Shell::~Shell() {
+    gl_viewport_.reset();
     design_icons_.reset();
     if (imgui_ready_) { ImGui_ImplOpenGL3_Shutdown(); ImGui_ImplSDL3_Shutdown(); }
     for (const auto& [_,texture] : icon_textures_) glDeleteTextures(1,&texture);
@@ -528,8 +529,11 @@ void Shell::draw() {
                 line({-extent,i*step,0},{extent,i*step,0},i==0?t.axis_x:(i%5==0?t.grid_major:t.grid_minor));
             }
         }
+        if(!gl_viewport_)gl_viewport_=std::make_unique<ui::GlViewport>();
+        auto gpu_theme=t;gpu_theme.viewport.a=0;
+        const bool gpu=gl_viewport_->enqueue(dl,surfaces_,surface_revision_,state_.camera,viewport,gpu_theme,z);
+        if(!gpu){state_.status_message="Viewport CPU: "+gl_viewport_->error();draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);}
         if(state_.surface.open&&surface_preview_.surface){auto display=surfaces_;for(size_t i=0;i<display.size()&&i<surface_bodies_.size();++i)if(surface_bodies_[i]==surface_preview_.source_body)display[i]=*surface_preview_.surface;draw_surfaces(dl,display,state_.camera,viewport,t,z);}
-        else draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);
         if(state_.model.open&&!model_surfaces_.empty()){
             auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.model.preview;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
             draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);

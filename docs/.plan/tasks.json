@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:12:27Z",
+    "updatedAt": "2026-10-19T14:22:05Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -470,13 +470,14 @@
       "isTest": false,
       "milestone": "M5.5",
       "completedAt": "2026-10-19T14:12:27.199465+00:00",
-      "note": "Presenti e letti screenshot e note 17–19, 43–44; riferimenti di comportamento verificati."
+      "note": "Presenti e letti screenshot e note 17–19, 43–44; riferimenti di comportamento verificati.",
+      "commit": "8597cc34d234256c3d2a77652b9ad7f8334890b3"
     },
     {
       "id": 21,
       "phase": 10,
       "title": "10.1 Modulo di rendering OpenGL",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         20,
@@ -493,7 +494,10 @@
       "validation": "cmake --build build --config Release && ctest --test-dir build -R gl_viewport --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-19T14:12:30.101271+00:00",
+      "completedAt": "2026-10-19T14:22:05.130295+00:00",
+      "note": "Build Release build/agent-phase10; 64/64 ctest in 53.07 s, livelli/frame/UTF-8 verdi. Framebuffer depth/MSAA, callback ImGui, cache VBO per corpo; screenshot chiaro 1440x900 DPI2 e scuro 1280x720 ispezionati. Griglia e anteprime restano al percorso precedente fino ai task 10.6/10.7."
     },
     {
       "id": 22,

@@ -1,0 +1,7 @@
+#pragma once
+namespace sagomacad::ui::shaders {
+inline constexpr char solid_vert[]=R"GLSL(@SOLID_VERT@)GLSL";
+inline constexpr char solid_frag[]=R"GLSL(@SOLID_FRAG@)GLSL";
+inline constexpr char line_vert[]=R"GLSL(@LINE_VERT@)GLSL";
+inline constexpr char line_frag[]=R"GLSL(@LINE_FRAG@)GLSL";
+}
