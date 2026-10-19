@@ -211,8 +211,16 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
             }
             if(focus==i)ImGui::SetKeyboardFocusHere();ImGui::SetNextItemWidth(width-ImGui::CalcTextSize(measure.unit.c_str()).x-t.spacing*z);
             ImGui::PushStyleColor(ImGuiCol_Border,rgba(i==tool.active_field?t.accent:t.border));
-            auto callback=[](ImGuiInputTextCallbackData* data)->int{auto* state=static_cast<ui::State*>(data->UserData);state->sketch_tool.tab();state->sketch_field_focus=true;return 0;};
-            bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_AutoSelectAll,callback,&s);
+            struct InputContext {ui::State* state;int field;};InputContext input_context{&s,i};
+            auto callback=[](ImGuiInputTextCallbackData* data)->int{
+                auto& context=*static_cast<InputContext*>(data->UserData);auto& state=*context.state;
+                if(data->EventFlag==ImGuiInputTextFlags_CallbackCompletion){state.sketch_tool.tab();state.sketch_field_focus=true;}
+                // A deliberate replacement also drives the dimension when its text equals
+                // the live preview. InputText's final value comparison cannot detect that.
+                if(data->EventFlag==ImGuiInputTextFlags_CallbackEdit){state.sketch_tool.fields[context.field]=data->Buf;state.sketch_tool.locked[context.field]=data->BufTextLen>0;}
+                return 0;
+            };
+            bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_CallbackEdit|ImGuiInputTextFlags_AutoSelectAll,callback,&input_context);
             auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();s.sketch_live_fields[std::to_string(i)]={a.x,a.y,b.x-a.x,b.y-a.y};
             ImGui::PopStyleColor();
             if(ImGui::IsItemEdited()){tool.fields[i]=s.sketch_fields[i].data();tool.locked[i]=!tool.fields[i].empty();}

@@ -1,0 +1,150 @@
+{
+  "size": [
+    1440,
+    900
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "note": "La faccia proietta quattro bordi di riferimento; il rettangolo aggiunge quattro entita e due quote."
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "40 mm",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "geometry.query",
+          "params": {
+            "kind": "face",
+            "normal": [
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        "save": "top"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "selection.set",
+          "params": {
+            "refs": [
+              {
+                "$ref": "/top/entities/0/ref"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "start": "sketch.create"
+    },
+    {
+      "call": {
+        "method": "ui.frame",
+        "params": {
+          "seconds": 1
+        }
+      }
+    },
+    {
+      "expect": {
+        "active_sketch": true
+      }
+    },
+    {
+      "start": "sketch.rect"
+    },
+    {
+      "click": {
+        "sketch": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "move": {
+        "sketch": [
+          10,
+          10
+        ]
+      }
+    },
+    {
+      "text": "10"
+    },
+    {
+      "key": "Tab"
+    },
+    {
+      "text": "10"
+    },
+    {
+      "key": "Enter"
+    },
+    {
+      "shot": "before-extrude.png"
+    },
+    {
+      "expect": {
+        "entities": 8,
+        "dof": 0,
+        "dimensions": 2
+      }
+    },
+    {
+      "start": "feature.extrude"
+    },
+    {
+      "click": {
+        "handle": "field:distance"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "-10 mm"
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "volume": 31000,
+        "errors": 0
+      }
+    },
+    {
+      "shot": "cut.png"
+    }
+  ]
+}

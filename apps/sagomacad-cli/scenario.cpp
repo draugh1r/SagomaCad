@@ -53,7 +53,7 @@ struct Runner {
                 const auto snapshot=regen::Regenerator{}.evaluate(engine.session().document);
                 if(key=="bodies")check(key,std::count_if(snapshot.bodies.begin(),snapshot.bodies.end(),[](const auto& b){return b.final.has_value();}),wanted);
                 else if(key=="errors")check(key,std::count_if(snapshot.features.begin(),snapshot.features.end(),[](const auto& f){return !f.error.empty();}),wanted);
-                else {auto mass=call("engine.execute",{{"command","model.mass_properties"}});double actual=mass.at("volume_mm3"),target=wanted.get<double>(),tolerance=spec.value("tolerance",1e-5);if(!std::isfinite(target)||!std::isfinite(tolerance)||tolerance<0||std::abs(actual-target)>tolerance)throw std::runtime_error("volume: expected "+wanted.dump()+", got "+std::to_string(actual));}
+                else {double actual=0;for(const auto& body:snapshot.bodies)if(body.final)actual+=call("engine.execute",{{"command","model.mass_properties"},{"params",{{"body",body.id}}}}).at("volume_mm3").get<double>();double target=wanted.get<double>(),tolerance=spec.value("tolerance",1e-5);if(!std::isfinite(target)||!std::isfinite(tolerance)||tolerance<0||std::abs(actual-target)>tolerance)throw std::runtime_error("volume: expected "+wanted.dump()+", got "+std::to_string(actual));}
             }else if(key=="dof"||key=="entities"||key=="dimensions"||key=="regions"){
                 if(sketch.is_null())sketch=call("engine.execute",{{"command","sketch.inspect"}});
                 check(key,key=="dof"?sketch.at("degrees_of_freedom"):J(sketch.at(key).size()),wanted);
@@ -65,6 +65,7 @@ struct Runner {
             else if(key=="dialog"){
                 std::string actual=inspect["primitive"]["open"].get<bool>()?"primitive":inspect["model"]["open"].get<bool>()?"model":inspect["surface"]["open"].get<bool>()?"surface":inspect["parameters_open"].get<bool>()?"parameters":inspect["sketch"]["plane_picker"].get<bool>()?"plane":"none";check(key,actual,wanted);
             }else if(key=="handle") {if(!inspect["handles"].contains(wanted.get<std::string>()))throw std::runtime_error("Missing handle: "+wanted.dump());}
+            else if(key=="value") {const auto& a=wanted.at("actual");const auto& b=wanted.at("equals");if(wanted.contains("tolerance")){double tolerance=wanted.at("tolerance");if(!a.is_number()||!b.is_number()||!std::isfinite(tolerance)||tolerance<0||std::abs(a.get<double>()-b.get<double>())>tolerance)throw std::runtime_error("value: expected "+b.dump()+", got "+a.dump());}else check(key,a,b);}
             else if(key=="ui") {for(auto q=wanted.begin();q!=wanted.end();++q)check(q.key(),inspect.at(J::json_pointer(q.key())),q.value());}
             else throw std::runtime_error("Unknown expectation: "+key);
         }
@@ -94,7 +95,7 @@ struct Runner {
             const int count=p.value("frames",120);if(count<1||count>600)throw std::runtime_error("until frames outside 1..600");std::string error;
             for(int i=0;i<count;++i){try{expect(p.at("expect"));return;}catch(const std::exception& e){error=e.what();}call("ui.frame");}throw std::runtime_error("until timed out: "+error);
         }else if(key=="shot")shot(p.get<std::string>());
-        else if(key=="note")std::cout<<p.get<std::string>()<<'\n';
+        else if(key=="note")std::cout<<(p.is_string()?p.get<std::string>():p.dump())<<'\n';
         else if(key=="pending")throw std::runtime_error("pending: "+p.dump());
         else throw std::runtime_error("Unknown action: "+key);
     }

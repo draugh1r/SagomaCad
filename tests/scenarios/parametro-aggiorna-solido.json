@@ -1,0 +1,77 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "larghezza",
+            "expression": "40 mm"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "larghezza",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "start": "param.list"
+    },
+    {
+      "expect": {
+        "dialog": "parameters"
+      }
+    },
+    {
+      "click": {
+        "handle": "param:larghezza:2"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:expression"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "60 mm"
+    },
+    {
+      "key": "Enter"
+    },
+    {
+      "expect": {
+        "volume": 48000,
+        "errors": 0
+      }
+    },
+    {
+      "shot": "parameter.png"
+    }
+  ]
+}

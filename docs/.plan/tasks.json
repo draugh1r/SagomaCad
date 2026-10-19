@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T15:40:50Z",
+    "updatedAt": "2026-10-19T15:49:24Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -727,13 +727,14 @@
       "milestone": "M5.5",
       "note": "Runner JSON documentato, input reale, numeri e diagnostica; 74/74 e test input valido",
       "startedAt": "2026-10-19T15:36:57.673667+00:00",
-      "completedAt": "2026-10-19T15:40:49.809684+00:00"
+      "completedAt": "2026-10-19T15:40:49.809684+00:00",
+      "commit": "eac4e4293fc229ad66130303892d71b665f94972"
     },
     {
       "id": 31,
       "phase": 10,
       "title": "10.11 Primi scenari",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         30,
@@ -746,7 +747,10 @@
       "validation": "ctest --test-dir build -R scenario --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Dieci flussi UI numerici e 12 file JSON; 13/13 scenari, 71 test preesistenti verdi; corrette quote identiche al live",
+      "startedAt": "2026-10-19T15:40:52.724121+00:00",
+      "completedAt": "2026-10-19T15:49:24.425899+00:00"
     },
     {
       "id": 32,

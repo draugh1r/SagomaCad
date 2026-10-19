@@ -463,3 +463,6 @@ Registro per frame dei controlli visibili, input deterministico e bridge MCP ui_
 
 ### Fase 10 - runner scenari JSON
 CLI scenario run usa Shell nascosta, input reali, attese a frame e tempo virtuale. Controlli numerici motore, screenshot e riferimenti ai risultati delle chiamate. Fixture storici preservati. Release 74/74 (60.59 s), test input ostili del runner e livelli validi. Scenario rettangolo: 4 entita, 2 quote, 0 GDL; griglia nei due temi.
+
+### Fase 10 - scenari dei flussi M5
+Dodici file JSON registrati in ctest (dieci flussi richiesti, griglia e fixture storico), nei due temi con finestre 1440x900/1280x720. Verificati volumi, quote dai bordi, raccordo dopo modifica a monte, camera, rollback e coordinate dopo drag/undo/redo. Lo scenario su faccia ha trovato la riscrittura di una quota identica al valore live non vincolante: ora CallbackEdit registra anche quella digitazione. Il controllo mantiene 0 GDL, due quote e otto entita (quattro bordi proiettati + quattro linee nuove). Tutti i 71 test preesistenti verdi; 13/13 test scenario inclusi gli input ostili, livelli validi; screenshot verificati.

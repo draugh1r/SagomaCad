@@ -1060,7 +1060,9 @@ nlohmann::json Shell::inspect() const {
         rectangles.push_back({{"id",name},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     auto items=nlohmann::json::array();for(const auto& r:state_.timeline_items)items.push_back({{"id",r.id},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     auto frames=nlohmann::json::array();for(const auto& r:ui::frame::records())frames.push_back({{"name",r.name},{"kind",r.kind},{"x",r.rect.x},{"y",r.rect.y},{"width",r.rect.width},{"height",r.rect.height},{"minimum",r.minimum},{"maximum",r.maximum}});
+    const auto forward=state_.camera.forward();
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
+        {"camera",{{"yaw",state_.camera.yaw},{"pitch",state_.camera.pitch},{"distance",state_.camera.distance},{"forward",{forward.x,forward.y,forward.z}}}},
         {"handles",handles_.json()},{"primitive",{{"open",state_.primitive_create_open||state_.primitive_editor_open},{"creating",state_.primitive_create_open},{"kind",state_.primitive_kind}}},{"frames",frames},{"palette_search",state_.palette_search},{"design_board",state_.design_board},
         {"timeline_items",items},{"timeline_marker",{{"x",state_.timeline_marker_x},{"y",state_.timeline_marker_y},{"index",engine_?engine_->session().document.rollback:0}}},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
@@ -1068,7 +1070,7 @@ nlohmann::json Shell::inspect() const {
         {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
         {"surface",{{"open",state_.surface.open},{"command",state_.surface.command},{"params",ui::surface_params(state_)},{"error",state_.surface.preview_error},{"fields",state_.surface.fields},{"handle",{{"x",state_.surface.handle_x},{"y",state_.surface.handle_y}}}}},{"topology_labels",state_.topology_labels},{"selection",engine_?engine_->session().selection:nlohmann::json::array()},{"feature_edit_open",state_.primitive_editor_open||(!state_.model.feature_id.empty()&&state_.model.open)},{"feature_edit_id",state_.model.open?state_.model.feature_id:state_.primitive_feature_id},{"model",ui::model_state_json(state_)},
-        {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"active_field",state_.sketch_tool.active_field},{"live_fields",state_.sketch_live_fields},{"dimension_rects",state_.sketch_dimension_rects},{"dimension_edit_rect",state_.sketch_dimension_edit_rect},{"error",state_.sketch_error}}},
+        {"sketch",{{"mode",state_.sketch_mode},{"plane_picker",state_.sketch_plane_picker},{"id",state_.sketch_view_id},{"tool",state_.sketch_tool.kind},{"drawing",state_.sketch_tool.started},{"values",state_.sketch_tool.fields},{"locked",state_.sketch_tool.locked},{"active_field",state_.sketch_tool.active_field},{"live_fields",state_.sketch_live_fields},{"dimension_rects",state_.sketch_dimension_rects},{"dimension_edit_rect",state_.sketch_dimension_edit_rect},{"error",state_.sketch_error}}},
         {"parameters",engine_?engine::evaluated_parameters_json(engine_->session().document):nlohmann::json::array()}};
 }
 }

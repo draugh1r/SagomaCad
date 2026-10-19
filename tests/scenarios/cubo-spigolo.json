@@ -1,0 +1,90 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "40 mm",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "click": {
+        "handle": "cube:top-front"
+      }
+    },
+    {
+      "until": {
+        "expect": {
+          "camera_settled": true
+        },
+        "frames": 120
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "volume": 32000
+      }
+    },
+    {
+      "call": {
+        "method": "ui.inspect",
+        "save": "camera"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/camera/camera/forward/0"
+          },
+          "equals": 0,
+          "tolerance": 1e-06
+        }
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/camera/camera/forward/1"
+          },
+          "equals": 0.7071067811865476,
+          "tolerance": 1e-06
+        }
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/camera/camera/forward/2"
+          },
+          "equals": -0.7071067811865476,
+          "tolerance": 1e-06
+        }
+      }
+    },
+    {
+      "shot": "cube-edge.png"
+    }
+  ]
+}
