@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T15:36:46Z",
+    "updatedAt": "2026-10-19T15:40:50Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -700,13 +700,14 @@
       "milestone": "M5.5",
       "note": "Handle per frame, controllo UI e bridge MCP; Release 71/71, pytest handles e livelli validi",
       "startedAt": "2026-10-19T15:07:16.061903+00:00",
-      "completedAt": "2026-10-19T15:36:46.352943+00:00"
+      "completedAt": "2026-10-19T15:36:46.352943+00:00",
+      "commit": "9af9b8ede72f8de67fe7daa71151f193615e0ef8"
     },
     {
       "id": 30,
       "phase": 10,
       "title": "10.10 Esecutore degli scenari JSON",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         29,
@@ -723,7 +724,10 @@
       "validation": "ctest --test-dir build -R scenario --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Runner JSON documentato, input reale, numeri e diagnostica; 74/74 e test input valido",
+      "startedAt": "2026-10-19T15:36:57.673667+00:00",
+      "completedAt": "2026-10-19T15:40:49.809684+00:00"
     },
     {
       "id": 31,

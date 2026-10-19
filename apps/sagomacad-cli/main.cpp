@@ -2,6 +2,7 @@
 #include "fuzz.hpp"
 #include "client.hpp"
 #include "mcp.hpp"
+#include "scenario.hpp"
 #include "ui/parameter_editor.hpp"
 #include <cstdio>
 #include <iostream>
@@ -12,6 +13,7 @@
 #include <fstream>
 
 int main(int argc,char** argv) {
+    if(argc>=2&&std::string(argv[1])=="scenario")return scenario_cli(argc,argv);
     if (argc==2 && std::string(argv[1])=="fuzz-commands") return fuzz_commands();
     if (argc>=2 && (std::string(argv[1])=="call" || std::string(argv[1])=="run"))
         return client_cli(argc,argv);

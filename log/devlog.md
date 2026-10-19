@@ -460,3 +460,6 @@ Metadata renderer/MSAA esposti da ui.inspect e render_view; test MCP reale su is
 
 ### Fase 10 - handle e input UI
 Registro per frame dei controlli visibili, input deterministico e bridge MCP ui_inspect/ui_call. Test reali su dialogo primitive, volume 40000 mm3, campi chiusi, resize e input ostili. Release: 71/71 test (55.69 s); pytest handles 1/1; livelli validi. Screenshot M5 verificati nei due temi e dimensioni.
+
+### Fase 10 - runner scenari JSON
+CLI scenario run usa Shell nascosta, input reali, attese a frame e tempo virtuale. Controlli numerici motore, screenshot e riferimenti ai risultati delle chiamate. Fixture storici preservati. Release 74/74 (60.59 s), test input ostili del runner e livelli validi. Scenario rettangolo: 4 entita, 2 quote, 0 GDL; griglia nei due temi.
