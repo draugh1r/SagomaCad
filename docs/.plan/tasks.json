@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T20:53:17Z",
+    "updatedAt": "2026-10-19T20:55:09Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -801,13 +801,14 @@
       "milestone": "M5.5",
       "note": "Regressione obliqua prima fallita, depth di sfondo sui soli campioni liberi; 87/87 e screenshot verificati",
       "startedAt": "2026-10-19T20:50:27.271524+00:00",
-      "completedAt": "2026-10-19T20:53:17.017055+00:00"
+      "completedAt": "2026-10-19T20:53:17.017055+00:00",
+      "commit": "d394f1055ec2f22e88229a2d9d50a9f813641cfc"
     },
     {
       "id": 33,
       "phase": 10,
       "title": "10.13 Verifica criterio di fine fase",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         32,
@@ -826,8 +827,9 @@
       ],
       "isTest": false,
       "milestone": "M5.5",
-      "note": "La verifica dal basso ha rilevato che la griglia copre pareti sopra il suo piano; attende regressione e correzione.",
-      "startedAt": "2026-10-19T20:47:22.829570+00:00"
+      "note": "Criteri M5.5 verificati: 87/87, 13 JSON, screenshot 3 angoli/2 temi/2 dimensioni, livelli e fuzz; evidenze archiviate",
+      "startedAt": "2026-10-19T20:53:20.072401+00:00",
+      "completedAt": "2026-10-19T20:55:09.468480+00:00"
     },
     {
       "id": 34,

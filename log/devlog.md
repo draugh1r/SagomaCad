@@ -472,3 +472,6 @@ Test iniziale fallito: due cerchi davano due contorni interi. Core planare con i
 
 ### Fase 10 - correzione scoperta nella verifica dal basso
 Il confronto visivo ha trovato il piano opaco della griglia davanti alle pareti sopra Z=0. Nuova regressione prima fallita (Grid overwrites oblique body wall), poi shader a depth di sfondo e confronto GL_EQUAL sui soli campioni non coperti da solidi/prepass. La griglia resta testata in profondita e non cancella le pareti viste da sotto. Screenshot rigenerati: pareti, raccordi e cilindro ora visibili. Release 87/87 (75.76 s), livelli e fuzz 278/45/237 verdi.
+
+### Fase 10 - criterio di uscita verificato
+Tavole approvate presenti e immutate. Pezzo M5 (scatola, R2 verticali e cilindro) acquisito a 3 angoli, 2 temi e 2 dimensioni; confronto con 17-19 e tavole approvate. Evidenze riproducibili archiviate in docs/design/verifica-viewport con JSON e screenshot. Release 87/87 in 75.76 s, 13 scenari JSON, livelli/frame/UTF-8/parita e fuzz 278 casi su 45 comandi + 237 MCP verdi. Pytest render_view e handles: 1/1 ciascuno. Benchmark finale 200000 triangoli a 1440x900 MSAA4: 3263.51 fps medi, 2113.72 minimi, p95 2609.60, un upload (solo renderer). Due cerchi danno tre regioni selezionate ed estruse dalla UI, con volumi esatti anche dopo modifica del raggio. Nessuna golden aggiornata; nessun lavoro della fase 11 iniziato.
