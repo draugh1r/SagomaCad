@@ -154,11 +154,12 @@ bool GlViewport::initialize(){auto& p=*impl_;if(p.vao)return p.solid&&p.line;if(
 bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::string& revision,const Camera& camera,int w,int h,const Theme& theme,float scale){
     auto& p=*impl_;if(w<=0||h<=0||w>16384||h>16384){p.error="Invalid viewport dimensions";return false;}if(!initialize())return false;
     int old_fbo=0,old_read_fbo=0,old_viewport[4]{},old_program=0,old_vao=0,old_buffer=0,old_texture=0,old_renderbuffer=0,old_depth_func=0;
-    float old_clear[4]{},old_line_width=1;GLboolean old_depth_mask=GL_TRUE;
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&old_read_fbo);glGetIntegerv(GL_RENDERBUFFER_BINDING,&old_renderbuffer);glGetIntegerv(GL_DEPTH_FUNC,&old_depth_func);glGetBooleanv(GL_DEPTH_WRITEMASK,&old_depth_mask);glGetFloatv(GL_COLOR_CLEAR_VALUE,old_clear);glGetFloatv(GL_LINE_WIDTH,&old_line_width);
+    float old_clear[4]{},old_line_width=1,old_offset_factor=0,old_offset_units=0;GLboolean old_depth_mask=GL_TRUE;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&old_read_fbo);glGetIntegerv(GL_RENDERBUFFER_BINDING,&old_renderbuffer);glGetIntegerv(GL_DEPTH_FUNC,&old_depth_func);glGetBooleanv(GL_DEPTH_WRITEMASK,&old_depth_mask);glGetFloatv(GL_COLOR_CLEAR_VALUE,old_clear);glGetFloatv(GL_LINE_WIDTH,&old_line_width);glGetFloatv(GL_POLYGON_OFFSET_FACTOR,&old_offset_factor);glGetFloatv(GL_POLYGON_OFFSET_UNITS,&old_offset_units);
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&old_fbo);glGetIntegerv(GL_VIEWPORT,old_viewport);glGetIntegerv(GL_CURRENT_PROGRAM,&old_program);glGetIntegerv(GL_VERTEX_ARRAY_BINDING,&old_vao);glGetIntegerv(GL_ARRAY_BUFFER_BINDING,&old_buffer);glGetIntegerv(GL_TEXTURE_BINDING_2D,&old_texture);
+    const bool polygon_offset=glIsEnabled(GL_POLYGON_OFFSET_FILL);
     const bool depth=glIsEnabled(GL_DEPTH_TEST),blend=glIsEnabled(GL_BLEND),scissor=glIsEnabled(GL_SCISSOR_TEST),cull=glIsEnabled(GL_CULL_FACE);
-    auto restore=[&]{pBindFramebuffer(GL_DRAW_FRAMEBUFFER,old_fbo);pBindFramebuffer(GL_READ_FRAMEBUFFER,old_read_fbo);pBindRenderbuffer(GL_RENDERBUFFER,old_renderbuffer);glViewport(old_viewport[0],old_viewport[1],old_viewport[2],old_viewport[3]);pUseProgram(old_program);pBindVertexArray(old_vao);pBindBuffer(GL_ARRAY_BUFFER,old_buffer);glBindTexture(GL_TEXTURE_2D,old_texture);glDepthFunc(old_depth_func);glDepthMask(old_depth_mask);glClearColor(old_clear[0],old_clear[1],old_clear[2],old_clear[3]);glLineWidth(old_line_width);if(!depth)glDisable(GL_DEPTH_TEST);if(blend)glEnable(GL_BLEND);if(scissor)glEnable(GL_SCISSOR_TEST);if(cull)glEnable(GL_CULL_FACE);};
+    auto restore=[&]{pBindFramebuffer(GL_DRAW_FRAMEBUFFER,old_fbo);pBindFramebuffer(GL_READ_FRAMEBUFFER,old_read_fbo);pBindRenderbuffer(GL_RENDERBUFFER,old_renderbuffer);glViewport(old_viewport[0],old_viewport[1],old_viewport[2],old_viewport[3]);pUseProgram(old_program);pBindVertexArray(old_vao);pBindBuffer(GL_ARRAY_BUFFER,old_buffer);glBindTexture(GL_TEXTURE_2D,old_texture);glDepthFunc(old_depth_func);glDepthMask(old_depth_mask);glClearColor(old_clear[0],old_clear[1],old_clear[2],old_clear[3]);glLineWidth(old_line_width);glPolygonOffset(old_offset_factor,old_offset_units);if(polygon_offset)glEnable(GL_POLYGON_OFFSET_FILL);else glDisable(GL_POLYGON_OFFSET_FILL);if(!depth)glDisable(GL_DEPTH_TEST);if(blend)glEnable(GL_BLEND);if(scissor)glEnable(GL_SCISSOR_TEST);if(cull)glEnable(GL_CULL_FACE);};
     if(!p.target(w,h)){restore();return false;}
     pBindVertexArray(p.vao);
     if(p.revision!=revision||p.uploads==0){
@@ -184,7 +185,10 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
     pVertexAttribDivisor(0,0);pVertexAttribDivisor(1,0);
     uniforms(p.solid,theme.solid);
     const auto f=camera.forward();pUniform4f(pGetUniformLocation(p.solid,"toward_eye"),float(-f.x),float(-f.y),float(-f.z),0);
+    // Push faces by one pixel of their own depth slope; edges stay at their exact depth.
+    glEnable(GL_POLYGON_OFFSET_FILL);glPolygonOffset(1.f,2.f);
     for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pEnableVertexAttribArray(0);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pEnableVertexAttribArray(1);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));}
+    glDisable(GL_POLYGON_OFFSET_FILL);
     uniforms(p.line,theme.solid_edge);pUniform4f(pGetUniformLocation(p.line,"screen"),float(w),float(h),theme.render.edge_px*scale,0);
     pVertexAttribDivisor(0,1);pVertexAttribDivisor(1,1);
     for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));}

@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:30:22Z",
+    "updatedAt": "2026-10-19T14:33:08Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -553,7 +553,7 @@
       "id": 24,
       "phase": 10,
       "title": "10.4 Spigoli sempre sopra le facce",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         23,
@@ -567,7 +567,11 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-grazing.png --script docs/examples/m5/camera-radente.json",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 66/66 ctest in 53.30 s, livelli. Test continuita bordo a pitch .001/.035/.6. Script camera-radente eseguito e PNG controllati nei due temi/dimensioni. Snapshot supporta file JSON e camera esplicita con limiti.",
+      "startedAt": "2026-10-19T14:30:25.627969+00:00",
+      "completedAt": "2026-10-19T14:33:07.824788+00:00",
+      "commit": "5d76932e33d4a1838b32664a293608d84d4569e5"
     },
     {
       "id": 25,
