@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T15:49:24Z",
+    "updatedAt": "2026-10-19T20:47:19Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -750,13 +750,14 @@
       "milestone": "M5.5",
       "note": "Dieci flussi UI numerici e 12 file JSON; 13/13 scenari, 71 test preesistenti verdi; corrette quote identiche al live",
       "startedAt": "2026-10-19T15:40:52.724121+00:00",
-      "completedAt": "2026-10-19T15:49:24.425899+00:00"
+      "completedAt": "2026-10-19T15:49:24.425899+00:00",
+      "commit": "60c875e7bb2268de3a5a05e286fe678c92652f7e"
     },
     {
       "id": 32,
       "phase": 10,
       "title": "10.12 Profili con contorni intersecanti",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         31,
@@ -771,7 +772,10 @@
       "validation": "ctest --test-dir build -R \"profile_regions|profili-intersecanti\" --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Tre regioni analitiche selezionabili ed estrudibili, stabili dopo modifica raggio; test esatti CLI MCP UI e livelli validi",
+      "startedAt": "2026-10-19T15:49:28.915689+00:00",
+      "completedAt": "2026-10-19T20:47:19.237762+00:00"
     },
     {
       "id": 33,

@@ -1,0 +1,543 @@
+{
+  "size": [
+    1440,
+    900
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "document.new",
+          "params": {}
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "diametro",
+            "expression": "20 mm"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.create",
+          "params": {
+            "plane": "XY"
+          }
+        },
+        "save": "sk"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.circle",
+          "params": {
+            "diameter": "diametro"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.circle",
+          "params": {
+            "x": 10,
+            "diameter": "20 mm"
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "regions": 3,
+        "entities": 2,
+        "dof": 0
+      }
+    },
+    {
+      "start": "sketch.finish"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "view": "top",
+          "camera": {
+            "target": [
+              5,
+              0,
+              0
+            ],
+            "distance": 100
+          }
+        }
+      }
+    },
+    {
+      "click": {
+        "world": [
+          -5,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "shot": "left-selected.png"
+    },
+    {
+      "start": "feature.extrude"
+    },
+    {
+      "expect": {
+        "dialog": "model"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:distance"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "20 mm"
+    },
+    {
+      "call": {
+        "method": "ui.inspect",
+        "save": "before"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "errors": 0,
+        "volume": 3826.4459099620726
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "diametro",
+            "expression": "22 mm"
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "errors": 0,
+        "volume": 4718.553854744943
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "feature.get",
+          "params": {
+            "feature_id": "feature-2"
+          }
+        },
+        "save": "extrude"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/extrude/params/profiles/0"
+          },
+          "equals": {
+            "$ref": "/before/model/params/profiles/0"
+          }
+        }
+      }
+    },
+    {
+      "shot": "left-radius-edited.png"
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "document.new",
+          "params": {}
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "diametro",
+            "expression": "20 mm"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.create",
+          "params": {
+            "plane": "XY"
+          }
+        },
+        "save": "sk"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.circle",
+          "params": {
+            "diameter": "diametro"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.circle",
+          "params": {
+            "x": 10,
+            "diameter": "20 mm"
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "regions": 3,
+        "entities": 2,
+        "dof": 0
+      }
+    },
+    {
+      "start": "sketch.finish"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "view": "top",
+          "camera": {
+            "target": [
+              5,
+              0,
+              0
+            ],
+            "distance": 100
+          }
+        }
+      }
+    },
+    {
+      "click": {
+        "world": [
+          5,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "shot": "lens-selected.png"
+    },
+    {
+      "start": "feature.extrude"
+    },
+    {
+      "expect": {
+        "dialog": "model"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:distance"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "20 mm"
+    },
+    {
+      "call": {
+        "method": "ui.inspect",
+        "save": "before"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "errors": 0,
+        "volume": 2456.739397217514
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "diametro",
+            "expression": "22 mm"
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "errors": 0,
+        "volume": 2884.1003669423567
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "feature.get",
+          "params": {
+            "feature_id": "feature-2"
+          }
+        },
+        "save": "extrude"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/extrude/params/profiles/0"
+          },
+          "equals": {
+            "$ref": "/before/model/params/profiles/0"
+          }
+        }
+      }
+    },
+    {
+      "shot": "lens-radius-edited.png"
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "document.new",
+          "params": {}
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "diametro",
+            "expression": "20 mm"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.create",
+          "params": {
+            "plane": "XY"
+          }
+        },
+        "save": "sk"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.circle",
+          "params": {
+            "diameter": "diametro"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.circle",
+          "params": {
+            "x": 10,
+            "diameter": "20 mm"
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "regions": 3,
+        "entities": 2,
+        "dof": 0
+      }
+    },
+    {
+      "start": "sketch.finish"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "view": "top",
+          "camera": {
+            "target": [
+              5,
+              0,
+              0
+            ],
+            "distance": 100
+          }
+        }
+      }
+    },
+    {
+      "click": {
+        "world": [
+          15,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "shot": "right-selected.png"
+    },
+    {
+      "start": "feature.extrude"
+    },
+    {
+      "expect": {
+        "dialog": "model"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:distance"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "20 mm"
+    },
+    {
+      "call": {
+        "method": "ui.inspect",
+        "save": "before"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "errors": 0,
+        "volume": 3826.4459099620726
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "param.set",
+          "params": {
+            "name": "diametro",
+            "expression": "22 mm"
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "errors": 0,
+        "volume": 3399.08494023723
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "feature.get",
+          "params": {
+            "feature_id": "feature-2"
+          }
+        },
+        "save": "extrude"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/extrude/params/profiles/0"
+          },
+          "equals": {
+            "$ref": "/before/model/params/profiles/0"
+          }
+        }
+      }
+    },
+    {
+      "shot": "right-radius-edited.png"
+    }
+  ]
+}

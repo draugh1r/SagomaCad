@@ -17,3 +17,5 @@ Formato: oggetto con `size: [1440,900]`, `themes: ["light","dark"]`, `steps: [..
 Punti: `[x,y]` nello schermo, `{"world":[x,y,z]}`, `{"sketch":[x,y]}`, `{"plane":"XY"}`, `{"handle":"field:OK"}`, `{"browser":"Box"}`. La forma oggetto accetta anche pulsante, modificatori e coordinate x/y del protocollo UI.
 
 File fino a 4 MiB, massimo 10000 passi, finestra tra 320x240 e 4096x4096. Errori includono file, tema, indice (da 1), azione e risultato effettivo. I vecchi fixture snapshot con array di coppie metodo/parametri restano eseguibili. Le `cases` di m5-quote restano utilizzate anche dal test nativo delle quote.
+
+Il volume di expect somma tutti i corpi vivi. Per confrontare un risultato salvato usare `value: {actual: {"$ref":"/risultato/percorso"}, equals: 7, tolerance: 0.001}`; tolerance e opzionale. note accetta anche JSON risolto. ui.inspect espone orientamento camera, valori e blocchi dei campi di disegno.

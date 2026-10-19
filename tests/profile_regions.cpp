@@ -16,5 +16,12 @@ int main(){try{
     s.entities.back().construction=true;check(solver::solve({},s).profiles.size()==2,"costruzione esclusa");
     s.entities.erase(s.entities.begin());check(solver::solve({},s).profiles.size()==1,"contorno aperto escluso");
     check(solver::regions_json(regions)[0].contains("boundary"),"ispezione serializzabile");
+    doc::Sketch overlap;overlap.points={{"a",0,0},{"b",10,0}};overlap.entities={{"left","circle",{"a"},10},{"right","circle",{"b"},10}};
+    auto split=solver::profile_regions(overlap,solver::solve({},overlap).profiles);
+    check(split.size()==3,"due cerchi sovrapposti: tre regioni");
+    for(double x:{-5.,5.,15.})check(std::count_if(split.begin(),split.end(),[&](const auto& r){return solver::contains(r,x,0);})==1,"ogni lunetta e lente selezionabile una sola volta");
+    overlap.entities[0].radius=11;auto edited=solver::profile_regions(overlap,solver::solve({},overlap).profiles);
+    check(edited.size()==3,"tre regioni dopo modifica raggio");
+    for(const auto& region:split)check(std::any_of(edited.begin(),edited.end(),[&](const auto& r){return r.id==region.id;}),"riferimento della regione stabile dopo modifica raggio");
     std::cout<<"Regioni annidate, picking, riferimenti stabili OK\n";
 }catch(const std::exception& e){std::cerr<<e.what();return 1;}}
