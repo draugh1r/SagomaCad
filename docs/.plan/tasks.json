@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T20:55:09Z",
+    "updatedAt": "2026-10-19T20:55:44Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -829,7 +829,8 @@
       "milestone": "M5.5",
       "note": "Criteri M5.5 verificati: 87/87, 13 JSON, screenshot 3 angoli/2 temi/2 dimensioni, livelli e fuzz; evidenze archiviate",
       "startedAt": "2026-10-19T20:53:20.072401+00:00",
-      "completedAt": "2026-10-19T20:55:09.468480+00:00"
+      "completedAt": "2026-10-19T20:55:09.468480+00:00",
+      "commit": "a95c266881c6378bfd129268bfa595e1aaecdf21"
     },
     {
       "id": 34,
