@@ -201,6 +201,7 @@ Shell::Shell(int width, int height, int scale, bool hidden, bool light) : scale_
     imgui_ready_ = true;
 }
 Shell::~Shell() {
+    ui::bind_handles(nullptr);
     gl_viewport_.reset();
     design_icons_.reset();
     if (imgui_ready_) { ImGui_ImplOpenGL3_Shutdown(); ImGui_ImplSDL3_Shutdown(); }
@@ -292,6 +293,7 @@ void Shell::draw() {
         const ImVec2 file_pos={p.x+126*z+ImGui::CalcTextSize(document_name.c_str()).x+26*z,p.y-2*z};
         ImGui::SetCursorScreenPos(file_pos);
         if (ImGui::InvisibleButton("file.menu",{76*z,24*z})) ImGui::OpenPopup("file_commands");
+        ui::publish_item("menu:File");
         if (ImGui::IsItemHovered()) dl->AddRectFilled(file_pos,{file_pos.x+76*z,file_pos.y+24*z},packed(t.panel_alt),t.rounding*z);
         icon(dl,icon_texture("file-text"),{file_pos.x+4*z,file_pos.y+3*z},18*z,packed(t.text));
         dl->AddText({file_pos.x+29*z,file_pos.y+3*z},packed(t.text),"File");
@@ -317,6 +319,7 @@ void Shell::draw() {
             ImGui::SetCursorScreenPos({tab_x,p.y+29*z});
             ImGui::PushID(i);
             if (ImGui::InvisibleButton("tab",{tab_width,23*z})) selected_tab=i;
+            ui::publish_item("tab:"+label);
             ImGui::PopID();
             dl->AddText({tab_x+9*z,p.y+33*z},packed(i==selected_tab?t.text:t.muted),label.c_str());
             if (i==selected_tab) dl->AddLine({tab_x+8*z,p.y+52*z},{tab_x+tab_width-8*z,p.y+52*z},packed(t.accent),2*z);
@@ -338,6 +341,7 @@ void Shell::draw() {
             }
             const auto& r=g.menu;
             const std::string popup_id="group_"+std::to_string(i);
+            ui::publish_rect("menu:"+std::string(groups[i].label),r);
             ImGui::SetCursorScreenPos({r.x,r.y});
             ImGui::PushID(popup_id.c_str());
             if (r.visible() && ImGui::InvisibleButton("menu",{r.width,r.height})) ImGui::OpenPopup("commands");
@@ -357,6 +361,8 @@ void Shell::draw() {
             ImDrawList* dl=ImGui::GetWindowDrawList();
             const ImVec2 q=ImGui::GetCursorScreenPos();
             const float indent=depth*15*z;
+            ui::publish_rect("row:"+std::string(text),{q.x+indent+39*z,q.y,std::max(1.f,ImGui::GetContentRegionAvail().x-indent-39*z),23*z});
+            if(has_children)ui::publish_rect("fold:"+std::string(text),{q.x+indent,q.y,13*z,18*z});
             if (has_children)
                 icon(dl,icon_texture(expanded?"chevron-down":"chevron-right"),{q.x+indent,q.y+2*z},13*z,packed(t.muted));
             if (show_eye)
@@ -381,6 +387,7 @@ void Shell::draw() {
             ImGui::PushID(body.id.c_str());
             ImGui::SetCursorScreenPos({q.x+67*z,q.y});
             ImGui::InvisibleButton("body_row",{std::max(50.0f,ImGui::GetContentRegionAvail().x-67*z),23*z});
+            ui::publish_item("row:"+body.name);ui::publish_item("row:"+body.id);
             if (ImGui::BeginPopupContextItem("body_context")) {
                 if (ImGui::MenuItem("Modifica feature")) {
                     const auto& document=engine_->session().document;
@@ -400,6 +407,7 @@ void Shell::draw() {
                 const auto result=engine_->execute("body.visibility",{{"body",body.id},{"visible",!body.visible}});
                 if (!result.ok) state_.status_message=result.error;
             }
+            ui::publish_item("visibility:"+body.id);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",body.visible?"Nascondi corpo":"Mostra corpo");
             ImGui::PopID();
             ImDrawList* dl=ImGui::GetWindowDrawList();
@@ -428,6 +436,7 @@ void Shell::draw() {
                 ImGui::SetCursorScreenPos({q.x+(67+t.board.browser_icon+t.spacing)*z,q.y});
                 if(ImGui::Selectable(f.name.c_str(),state_.sketch_view_id==id||state_.selected_profile_sketch==id)) {state_.selected_profile_sketch=id;state_.selected_profiles.clear();if(state_.model.open){state_.model.sketch=id;state_.model.profiles.clear();}}
                 auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();item.row={a.x,a.y,b.x-a.x,b.y-a.y};
+                ui::publish_item("row:"+f.name);ui::publish_item("row:"+id);ui::publish_rect("visibility:"+id,{item.eye[0],item.eye[1],item.eye[2],item.eye[3]});
                 if(ImGui::IsItemHovered()&&ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))open_feature_editor(id);
                 if(ImGui::IsItemHovered())ImGui::SetTooltip("%s",shown?"Seleziona e premi E per Estrudi. Doppio clic per modificare lo schizzo.":"Schizzo nascosto, non eliminato. Usa l'occhio per mostrarlo o scegli Estrudi.");
                 if(ImGui::BeginPopupContextItem()) {
@@ -706,6 +715,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
             }
             ImGui::BeginDisabled(!creating);
             ImGui::Combo("Tipo",&state_.primitive_kind,types,3);
+            ui::publish_item("field:Tipo",creating);
             ImGui::EndDisabled();
             const std::array<const char*,3> keys=state_.primitive_kind==0?std::array<const char*,3>{"width","depth","height"}:
                 state_.primitive_kind==1?std::array<const char*,3>{"radius","height",nullptr}:std::array<const char*,3>{"radius",nullptr,nullptr};
@@ -714,6 +724,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
             for (int i=0;i<3;++i) if (keys[i]) {
                 ImGui::TextUnformatted(labels[i]); ImGui::SetNextItemWidth(-1); ImGui::PushID(i);
                 ImGui::InputText("##dimension",state_.primitive_dimensions[i].data(),state_.primitive_dimensions[i].size());
+                ui::publish_item("field:"+std::string(labels[i]));ui::publish_item("field:"+std::string(keys[i]));
                 if (ImGui::IsItemEdited()) state_.primitive_error.clear();
                 ImGui::PopID();
             }
@@ -729,7 +740,9 @@ void Shell::draw_overlays(const ui::Theme& t) {
                 if (result.ok) { *open=false; state_.primitive_error.clear(); state_.primitive_preview_error.clear(); }
                 else state_.primitive_error=result.error;
             }
+            ui::publish_item(creating?"field:Crea":"field:OK");
             ImGui::SameLine(); if (ImGui::Button("Annulla") || ImGui::IsKeyPressed(ImGuiKey_Escape)) *open=false;
+            ui::publish_item("field:Annulla");
         }
         ImGui::End();
     }
@@ -739,6 +752,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
             ImGui::Separator();
             if (state_.palette_focus) { ImGui::SetKeyboardFocusHere(); state_.palette_focus=false; }
             ImGui::InputTextWithHint("##search","Cerca un comando...",state_.palette_query.data(),state_.palette_query.size());
+            ui::publish_item("field:Cerca comando");
             const auto search_a=ImGui::GetItemRectMin(),search_b=ImGui::GetItemRectMax();
             state_.palette_search={search_a.x,search_a.y,search_b.x-search_a.x,search_b.y-search_a.y};
             if (ImGui::IsKeyPressed(ImGuiKey_Escape)) state_.palette_open=false;
@@ -778,6 +792,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
                 state_.parameter_comment.fill('\0');
                 state_.parameter_error.clear();
             }
+            ui::publish_item("field:Aggiungi parametro");
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Aggiungi parametro");
             ImGui::SameLine(); ImGui::TextDisabled("Invio conferma · Esc annulla");
             if (state_.parameter_editing && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
@@ -811,6 +826,8 @@ void Shell::draw_overlays(const ui::Theme& t) {
                         }
                         ImGui::SetNextItemWidth(-1.0f);
                         if (ImGui::InputText(id,buffer.data(),buffer.size(),ImGuiInputTextFlags_EnterReturnsTrue)) commit_requested=true;
+                        ui::publish_item("field:"+std::string(id+2));
+                        const char* labels[]={"Nome","Unita","Espressione","Valore","Commento"};ui::publish_item(std::string("field:")+labels[column]);
                         if (ImGui::IsItemEdited()) state_.parameter_error.clear();
                         if (show_error && !error.empty()) {
                             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",error.c_str());
@@ -851,6 +868,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
                             std::snprintf(state_.parameter_comment.data(),state_.parameter_comment.size(),"%s",row.value("comment",std::string()).c_str());
                             state_.parameter_error.clear();
                         }
+                        ui::publish_item("param:"+name+":"+std::to_string(column));
                         if (is_error) {
                             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",row.value("error",std::string()).c_str());
                             ImGui::PopStyleColor();
@@ -874,6 +892,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
                 if (ImGui::Button("Conferma") || commit_requested) {
                     if (engine_) ui::submit_parameter(state_,*engine_);
                 }
+                ui::publish_item("field:Conferma");
                 ImGui::SameLine();
                 if (ImGui::Button("Annulla")) { state_.parameter_editing=false; state_.parameter_error.clear(); }
                 if (!state_.editing_parameter_name.empty()) {
@@ -893,6 +912,7 @@ void Shell::draw_overlays(const ui::Theme& t) {
         if (ui::frame::window(dialog_title,&state_.file_dialog_open,t,z,{t.file_dialog_width*z,160*z},false,ImGuiWindowFlags_NoResize)) {
             ImGui::TextUnformatted(state_.file_command=="export.stl"?"Nome file .stl (salvato in export/)":"File .sagomacad");
             ImGui::InputText("##path",state_.file_path.data(),state_.file_path.size());
+            ui::publish_item("field:Percorso");
             if (ImGui::Button("Conferma") && engine_) {
                 const auto result=engine_->execute(state_.file_command,{{"path",state_.file_path.data()}});
                 state_.status_message=result.ok?std::string():result.error;
@@ -911,11 +931,33 @@ bool Shell::glyphs_available() const {
     }
     return true;
 }
-void Shell::render() {
-    ImGui_ImplOpenGL3_NewFrame(); ImGui_ImplSDL3_NewFrame(); ImGui::NewFrame();
+void Shell::render(double seconds) {
+    handles_.clear();ui::bind_handles(&handles_);
+    ImGui_ImplOpenGL3_NewFrame();ImGui_ImplSDL3_NewFrame();
+    if(control_pointer_)ImGui::GetIO().AddMousePosEvent(control_pointer_->first,control_pointer_->second);
+    if(std::isfinite(seconds)&&seconds>0&&seconds<=1)ImGui::GetIO().DeltaTime=float(std::max(seconds,1e-6));
+    ImGui::NewFrame();
     style(ui::theme(state_.theme == "light"), scale_);
     ui::frame::reset_records();
     if(state_.design_board)draw_design_board(ui::theme(state_.theme=="light"));else draw();
+    if(!state_.design_board){
+        if(state_.timeline){
+            for(const auto& item:state_.timeline_items)ui::publish_rect("timeline:"+item.id,{item.x,item.y,item.width,item.height});
+            ui::publish_handle("timeline:marker",state_.timeline_marker_x,state_.timeline_marker_y);
+        }
+        auto fields=[&](const auto& entries){
+            static const std::map<std::string,std::string> labels{{"ok","OK"},{"cancel","Annulla"},{"distance","Distanza"},{"angle","Angolo"},{"direction","Direzione"},{"extent","Estensione"},{"operation","Operazione"},{"axis","Asse"},{"profiles","Profilo"},{"targets","Corpi"},{"value","Valore"},{"diameter","Diametro"}};
+            for(const auto& [name,r]:entries){ui::publish_rect("field:"+name,{r[0],r[1],r[2],r[3]});auto label=labels.find(name);if(label!=labels.end())ui::publish_rect("field:"+label->second,{r[0],r[1],r[2],r[3]});}
+        };
+        if(state_.model.open){fields(state_.model.fields);ui::publish_handle("handle:arrow",state_.model.handle_x,state_.model.handle_y);}
+        if(state_.surface.open){fields(state_.surface.fields);ui::publish_handle("handle:radius",state_.surface.handle_x,state_.surface.handle_y);}
+        if(state_.sketch_mode){for(const auto& [id,r]:state_.sketch_live_fields)ui::publish_rect("field:live:"+id,{r[0],r[1],r[2],r[3]});for(const auto& [id,r]:state_.sketch_dimension_rects)ui::publish_rect("handle:dimension:"+id,{r[0],r[1],r[2],r[3]});
+            for(const auto& m:state_.sketch_measures){auto field=state_.sketch_live_fields.find(std::to_string(m.field));if(field!=state_.sketch_live_fields.end()){const auto r=field->second;ui::publish_rect("field:"+m.label,{r[0],r[1],r[2],r[3]});}}
+            if(state_.sketch_dimension_open){const auto r=state_.sketch_dimension_edit_rect;ui::publish_rect("field:dimension",{r[0],r[1],r[2],r[3]});}
+            auto active=sketch_solutions_.find(state_.sketch_view_id);if(active!=sketch_solutions_.end())ui::publish_count("sketch:degrees_of_freedom",active->second.degrees_of_freedom);
+        }
+        if(engine_){ui::publish_count("bodies",engine_->session().document.bodies.size());ui::publish_count("features",engine_->session().document.timeline.size());}
+    }
     save_settings();
     ImGui::Render();
     int w=0,h=0; SDL_GetWindowSizeInPixels(window_,&w,&h);
@@ -1019,7 +1061,7 @@ nlohmann::json Shell::inspect() const {
     auto items=nlohmann::json::array();for(const auto& r:state_.timeline_items)items.push_back({{"id",r.id},{"x",r.x},{"y",r.y},{"width",r.width},{"height",r.height}});
     auto frames=nlohmann::json::array();for(const auto& r:ui::frame::records())frames.push_back({{"name",r.name},{"kind",r.kind},{"x",r.rect.x},{"y",r.rect.y},{"width",r.rect.width},{"height",r.rect.height},{"minimum",r.minimum},{"maximum",r.maximum}});
     return {{"theme",state_.theme},{"width",state_.width},{"height",state_.height},
-        {"frames",frames},{"palette_search",state_.palette_search},{"design_board",state_.design_board},
+        {"handles",handles_.json()},{"primitive",{{"open",state_.primitive_create_open||state_.primitive_editor_open},{"creating",state_.primitive_create_open},{"kind",state_.primitive_kind}}},{"frames",frames},{"palette_search",state_.palette_search},{"design_board",state_.design_board},
         {"timeline_items",items},{"timeline_marker",{{"x",state_.timeline_marker_x},{"y",state_.timeline_marker_y},{"index",engine_?engine_->session().document.rollback:0}}},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
         {"viewport",{{"grid",true},{"axes",true},{"title_visible",false},{"renderer",gl_viewport_&&gl_viewport_->texture()?"opengl":"cpu"},{"samples",gl_viewport_?gl_viewport_->samples():0},{"geometry_uploads",gl_viewport_?gl_viewport_->uploads():0}}},

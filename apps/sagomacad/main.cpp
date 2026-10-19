@@ -29,13 +29,14 @@ std::string fresh_token() {
 int main(int argc,char** argv) {
     int port=0;
     bool control_requested=false;
-    std::string token_file;
+    std::string token_file,settings_file;
     std::filesystem::path session_file=sagomacad::automation::default_session_file();
     std::filesystem::path root=std::filesystem::current_path();
     for (int i=1;i<argc;++i) {
         const std::string arg=argv[i];
         if (arg=="--control" && i+1<argc) { control_requested=true; try { port=std::stoi(argv[++i]); } catch (...) { std::cerr<<"Invalid port\n"; return 2; } }
         else if (arg=="--control-token-file" && i+1<argc) token_file=argv[++i];
+        else if (arg=="--settings-file" && i+1<argc) settings_file=argv[++i];
         else if (arg=="--session-file" && i+1<argc) session_file=argv[++i];
         else if (arg=="--automation-root" && i+1<argc) root=argv[++i];
         else { std::cerr<<"Unknown or incomplete option: "<<arg<<'\n'; return 2; }
@@ -44,7 +45,8 @@ int main(int argc,char** argv) {
     sagomacad::Shell shell(1440,900,1,false,true);
     if (!shell.valid()) { std::cerr<<shell.error()<<'\n'; return 1; }
     const char* preferences=SDL_GetPrefPath("SagomaCad","SagomaCad");
-    if (preferences) shell.set_settings_file((std::filesystem::path(preferences)/"layout.json").string());
+    if(!settings_file.empty())shell.set_settings_file(settings_file);
+    else if (preferences) shell.set_settings_file((std::filesystem::path(preferences)/"layout.json").string());
     sagomacad::engine::Engine engine;
     shell.bind_engine(&engine);
     std::unique_ptr<sagomacad::ControlServer> server;
@@ -100,6 +102,7 @@ int main(int argc,char** argv) {
                 if (!shell.screenshot(path.string(),error)) return {{"id",id},{"error",{{"message",error}}}};
                 return {{"id",id},{"result",{{"path",path.string()}}}};
             }
+            if(method.starts_with("ui.")){auto reply=shell.control(method,input.value("params",nlohmann::json::object()));reply["id"]=id;return reply;}
             return {{"id",id},{"error",{{"message","unknown method"}}}};
         });
         std::string error;

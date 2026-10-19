@@ -53,3 +53,22 @@ verifica trascinamento, doppio clic, compressione, riavvio e ridimensionamento.
 ## Snapshot con camera riproducibile
 
 `--script` accetta un array JSON inline oppure il percorso di un file JSON (massimo 4 MiB). `ui.set` nello script snapshot accetta `camera: {yaw?, pitch?, roll?, distance?, target?: [x,y,z]}`: angoli in radianti, distanza in mm. La camera esplicita viene applicata dopo il fit iniziale. Numeri non finiti, distanze inferiori a 0.05 e coordinate oltre 1e7 vengono rifiutati. Esempi: `docs/examples/m5/camera-radente.json` e `cilindro-raccordi.json`.
+
+## Handle nominati e input
+
+`ui.inspect.handles` e un oggetto indicizzato per nome, ricreato a ogni frame. Ogni record e `point` (`x`,`y`), `rect` (`x`,`y`,`width`,`height`,`enabled`) oppure `count` (`value`). `ui.at {handle}` restituisce il punto o il centro del rettangolo; un conteggio non e cliccabile. Gli elementi chiusi o non disegnati non conservano handle vecchi. Le coordinate sono quelle logiche ImGui, alla scala corrente.
+
+Nomi principali: `toolbar:<id comando>`, `menu:CREA`, `menu:MODIFICA`, `menu:File`, `tab:GESTISCI`, `row:<etichetta o id>`, `visibility:<id>`, `fold:<etichetta>`, `timeline:<id feature>`, `timeline:marker`, `timeline:control:<azione>`, `field:<etichetta o chiave>`, `field:live:<indice>`, `handle:arrow`, `handle:radius`, `handle:dimension:<id>`. Il cubo usa `cube:top`, `cube:top-front`, `cube:top-front-right`, `cube:home` e `cube:control:<azione>` per le frecce. Le voci di una tendina vengono pubblicate quando la tendina e aperta: Primitiva si raggiunge cliccando prima `menu:CREA`, poi `toolbar:primitive.add`.
+
+- `ui.click {handle}` oppure `{x,y,button?:0|1|2,count?:1|2,modifiers?:["Ctrl","Shift"]}`: invia eventi reali ai widget e avanza i frame necessari.
+- `ui.pointer {events:[{kind:"down"|"move"|"up",x,y,button?}],modifiers?}`: gesti, trascinamenti e pressioni prolungate. I pulsanti restano premuti tra chiamate fino a `up`.
+- `ui.key {key:"Enter"}` o `{key:"Ctrl+Z"}`; `ui.type {text}`: tastiera e testo UTF-8.
+- `ui.frame {seconds?:0.0166667}`: avanza un frame, fra 1 microsecondo e 1 secondo; utile per attese deterministiche e animazioni.
+- `ui.set {theme?,view?,camera?,panels?,tool?}`: stato della vista. `panels` contiene browser/properties/timeline booleani; `tool` seleziona uno strumento dello schizzo attivo.
+- `ui.resize {width,height}`: dimensioni logiche, da 320x240 a 4096x4096.
+
+`ui.at` e gli eventi accettano anche `world:[x,y,z]`, `sketch:[x,y]`, `plane:"XY"|"XZ"|"YZ"` o `browser:"etichetta"` al posto di x/y. Numeri non finiti, handle mancanti, conteggi usati come punti e pulsanti disabilitati restituiscono errori leggibili. Le stringhe e il numero di eventi sono limitati.
+
+CLI: `sagomacad-cli call ui.click '{"handle":"menu:CREA"}'`, poi `call ui.click '{"handle":"toolbar:primitive.add"}'`. Via MCP bridge: `ui_inspect {}` legge lo stesso registro e `ui_call {method:"ui.click",params:{handle:"..."}}` usa gli stessi eventi. In MCP headless questi due tool richiedono un bridge; il runner degli scenari usa direttamente una shell nascosta.
+
+Per test isolati l'app accetta `--settings-file <percorso>` insieme a `--session-file`: le prove non modificano le preferenze o la sessione dell'utente.

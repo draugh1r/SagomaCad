@@ -1,6 +1,7 @@
 #include "ui/widgets.hpp"
 #include "ui/frame.hpp"
 #include "ui/state.hpp"
+#include "ui/handles.hpp"
 #include <imgui.h>
 #include <algorithm>
 #include <cfloat>
@@ -42,6 +43,7 @@ void ribbon_button(const ToolbarCommand& command,LayoutRect r,bool show_label,co
     ImGui::BeginDisabled(!available);
     const bool clicked=ImGui::InvisibleButton("command",size);
     ImGui::EndDisabled();
+    publish_item("toolbar:"+std::string(command.id),available);
     const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
     if (!available&&hovered) ImGui::SetTooltip("%s",status.reason.c_str());
     if (clicked&&available) invoke(command.id);
@@ -69,6 +71,7 @@ void popup_command(const ToolbarCommand& command,float width,const Theme& t,floa
     ImGui::BeginDisabled(!available);
     const bool clicked=ImGui::InvisibleButton("item",{width*z,27*z});
     ImGui::EndDisabled();
+    publish_item("toolbar:"+std::string(command.id),available);
     const auto q=ImGui::GetItemRectMin();
     const bool hovered=ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
     if (selected||hovered) dl->AddRectFilled(q,{q.x+width*z,q.y+27*z},packed(selected?t.visual.accent_soft:t.visual.hover));

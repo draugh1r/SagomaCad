@@ -4,6 +4,7 @@
 #include "ui/theme.hpp"
 #include "ui/icons.hpp"
 #include "ui/render/gl_viewport.hpp"
+#include "ui/handles.hpp"
 #include "engine/command.hpp"
 #include "regen/regenerator.hpp"
 #include "mesh/surface.hpp"
@@ -25,7 +26,8 @@ public:
     bool valid() const { return imgui_ready_; }
     const std::string& error() const { return error_; }
     bool poll();
-    void render();
+    void render(double seconds=0);
+    nlohmann::json control(std::string_view method,const nlohmann::json& params);
     bool screenshot(const std::string& path, std::string& error, bool viewport_only=false,
                     int output_width=0,int output_height=0);
     void set_glyph_sample(bool enabled) { glyph_sample_ = enabled; }
@@ -75,6 +77,9 @@ private:
     std::array<std::pair<std::string,std::vector<engine::ModelProfile>>,2> sketch_fill_cache_;
     std::vector<mesh::Surface> display_surfaces_;
     std::string display_revision_,pick_camera_;
+    ui::Handles handles_;
+    std::optional<std::pair<float,float>> control_pointer_;
+    std::array<bool,3> control_buttons_{};
     unsigned design_icon_texture(std::string_view,ui::IconAccent,float size,bool disabled=false);
     void draw_design_board(const ui::Theme&);
     void draw();

@@ -53,6 +53,8 @@ Json tools_catalog() {
         entry("selection_get","Legge la selezione utente nell'app aperta (solo bridge)",schema()),
         entry("mass_properties","Volume, area, baricentro e bounding box di un corpo",schema({{"body",text_schema()}})),
         entry("export","Esporta STL nella cartella export consentita",schema({{"format",{{"type","string"},{"enum",Json::array({"stl"})}}},{"path",text_schema()},{"body",text_schema()},{"stage",text_schema()},{"tolerance",{{"type","number"}}},{"overwrite",bool_schema()}},{"format","path"})),
+        entry("ui_inspect","Legge UI e handle nominati dall’app aperta (solo bridge)",schema()),
+        entry("ui_call","Pilota la UI dell’app aperta tramite handle o eventi (solo bridge)",schema({{"method",text_schema()},{"params",object_schema()}},{"method"})),
         entry("ui_screenshot","Cattura la finestra dell'app aperta (solo bridge)",schema())
     });
 }
@@ -215,6 +217,16 @@ Json Server::tool(std::string_view name,const Json& a) {
         return invoke("engine.execute",{{"command","selection.get"},{"params",a}});
     }
     if (name=="render_view"||name=="design_board") return visuals_(name,a);
+    if(name=="ui_inspect"){
+        if(!valid_keys(a,{})||!a.empty())return tool_error("mcp.invalid_arguments","ui_inspect non accetta argomenti");
+        if(!bridge_)return tool_error("mcp.bridge_required","ui_inspect richiede l’app aperta");return invoke("ui.inspect",a);
+    }
+    if(name=="ui_call"){
+        if(!valid_keys(a,{"method","params"})||!string_field(a,"method",true)||(a.contains("params")&&!a["params"].is_object()))return tool_error("mcp.invalid_arguments","method e params non validi");
+        const auto method=a["method"].get<std::string>();
+        if(method!="ui.at"&&method!="ui.click"&&method!="ui.pointer"&&method!="ui.key"&&method!="ui.type"&&method!="ui.set"&&method!="ui.resize"&&method!="ui.frame")return tool_error("mcp.invalid_arguments","Metodo UI non supportato");
+        if(!bridge_)return tool_error("mcp.bridge_required","ui_call richiede l’app aperta");return invoke(method,a.value("params",Json::object()));
+    }
     if (name=="ui_screenshot") {
         if (!bridge_) return tool_error("mcp.bridge_required","ui_screenshot richiede l'app aperta","Avvia SagomaCad e usa la modalità bridge");
         return visuals_(name,a);

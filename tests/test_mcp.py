@@ -32,7 +32,8 @@ def main(cli=None):
         process.stdin.flush()
         tools = call("tools/list")["result"]["tools"]
         names = {tool["name"] for tool in tools}
-        assert {"commands_list", "command_run", "batch_run", "undo", "redo", "document_inspect", "render_view", "mass_properties", "export", "ui_screenshot", "feature_get"} <= names
+        assert {"commands_list", "command_run", "batch_run", "undo", "redo", "document_inspect", "render_view", "mass_properties", "export", "ui_screenshot", "feature_get", "ui_inspect", "ui_call"} <= names
+        assert call("tools/call", {"name":"ui_inspect", "arguments":{}})["result"]["structuredContent"]["code"] == "mcp.bridge_required"
         commands = call("tools/call", {"name": "commands_list", "arguments": {}})["result"]["structuredContent"]["commands"]
         assert any(command["id"] == "param.set" for command in commands)
         set_result = call("tools/call", {"name": "command_run", "arguments": {"command": "param.set", "params": {"name": "larghezza", "expression": "40 mm"}}})

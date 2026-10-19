@@ -21,6 +21,7 @@ void Shell::draw_timeline(const ui::Theme& t){
             s.timeline_playing=i==2?!s.timeline_playing:false;
             if(i==0)rollback(0);if(i==1)rollback(document.rollback?document.rollback-1:0);if(i==2&&document.rollback==count)rollback(0);if(i==3)rollback(std::min(count,document.rollback+1));if(i==4)rollback(count);
         }
+        ui::publish_item(std::string("timeline:control:")+controls[i]);
         auto texture=icon_texture(controls[i]);if(texture)dl->AddImage((ImTextureID)(intptr_t)texture,{p.x+(tokens.control-tokens.icon)*z/2,p.y+(tokens.item-tokens.icon)*z/2},{p.x+(tokens.control+tokens.icon)*z/2,p.y+(tokens.item+tokens.icon)*z/2},{0,0},{1,1},color(t.muted));
         if(ImGui::IsItemHovered()){const char* tips[]={"Torna all'inizio","Passo indietro","Riproduci / pausa","Passo avanti","Vai alla fine"};ImGui::SetTooltip("%s",tips[i]);}
         ImGui::PopID();

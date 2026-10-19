@@ -457,3 +457,6 @@ Layer GPU con cache per anteprime, facce/spigoli selezionati e sotto il mouse, p
 ## 2026-10-19 - Snapshot, render_view e prestazioni
 
 Metadata renderer/MSAA esposti da ui.inspect e render_view; test MCP reale su iso/top/front/right a 640x400, PNG e argomenti invalidi verificati anche con pytest. Benchmark della stessa pipeline in contesto nascosto: sfera sintetica di 200000 triangoli, 1440x900, MSAA4, 12 frame di warm-up e 120 frame di orbita sincronizzati con glFinish. NVIDIA GeForce RTX 3070 Ti, OpenGL 3.3 NVIDIA 617.42: 3038.21 fps medi, 2110.15 minimi, p95 2483.24; un solo upload. Sono tempi del renderer, senza il limite di frame della finestra. Build Release, 70/70 ctest in 55.01 s; pytest render_view 1/1.
+
+### Fase 10 - handle e input UI
+Registro per frame dei controlli visibili, input deterministico e bridge MCP ui_inspect/ui_call. Test reali su dialogo primitive, volume 40000 mm3, campi chiusi, resize e input ostili. Release: 71/71 test (55.69 s); pytest handles 1/1; livelli validi. Screenshot M5 verificati nei due temi e dimensioni.
