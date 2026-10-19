@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/camera.hpp"
+#include "ui/render/grid.hpp"
 #include "ui/theme.hpp"
 #include "mesh/surface.hpp"
 #include <memory>
@@ -25,6 +26,7 @@ public:
     std::size_t uploads() const;
     int samples() const;
     void set_style(Style);
+    void set_grid(GridPlane);
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

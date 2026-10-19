@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:41:58Z",
+    "updatedAt": "2026-10-19T14:48:57Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -594,13 +594,14 @@
       "milestone": "M5.5",
       "note": "Build Release, 67/67 ctest in 53.31 s. Normali per vertice dalla superficie esatta, deflessione angolare 0.10 per continuita sagome; gl_silhouette isola il contorno senza spigoli, verifica normali unitarie/orientate e wireframe. Screenshot due temi/dimensioni e livelli verificati.",
       "startedAt": "2026-10-19T14:33:10.720279+00:00",
-      "completedAt": "2026-10-19T14:41:58.487835+00:00"
+      "completedAt": "2026-10-19T14:41:58.487835+00:00",
+      "commit": "9cacb1acbe327255d8eac6c108cd4ac508564fde"
     },
     {
       "id": 26,
       "phase": 10,
       "title": "10.6 Sfondo, griglia e piani dell'origine",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         25,
@@ -619,7 +620,9 @@
       "features": [],
       "isTest": false,
       "milestone": "M5.5",
-      "note": "Richieste utente 2026-10-19: viewport bianco senza gradiente, griglia 5x5 minori/maggiori, passo che segue lo zoom con transizione fluida, griglia coperta dai corpi"
+      "note": "Build Release, 68/68 ctest in 57.41 s, livelli. Passo 8-40 px, continuita dei pesi ai confini, griglia coperta da corpi anche dal basso. 10 PNG a cinque distanze/due temi e due dimensioni controllati; vicino e lontano mostrati in chat. Shader filtra livelli non risolvibili; piano supportato e snap condividono il passo.",
+      "startedAt": "2026-10-19T14:42:01.862451+00:00",
+      "completedAt": "2026-10-19T14:48:57.133295+00:00"
     },
     {
       "id": 27,

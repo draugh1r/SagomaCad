@@ -104,6 +104,7 @@ struct Vertex {float x,y,z,nx,ny,nz;bool operator==(const Vertex&)const=default;
 }
 struct GlViewport::Impl {
     Style style;
+    GridPlane grid_plane;
     const std::vector<mesh::Surface>* scene=nullptr;
     Camera queued_camera;
     Theme queued_theme{};
@@ -116,7 +117,7 @@ struct GlViewport::Impl {
         std::vector<float> edges;
     };
     std::vector<Body> bodies;
-    unsigned vao=0,solid=0,line=0,fbo=0,resolve=0,texture=0,depth=0,mscolor=0;
+    unsigned vao=0,solid=0,line=0,grid=0,fbo=0,resolve=0,texture=0,depth=0,mscolor=0;
     int width=0,height=0,samples=0;
     int triangle_count=0,line_count=0;
     std::string revision,error;
@@ -150,8 +151,8 @@ struct GlViewport::Impl {
     }
 };
 GlViewport::GlViewport():impl_(std::make_unique<Impl>()){}
-GlViewport::~GlViewport(){auto& p=*impl_;if(!pDeleteProgram)return;p.release_target();for(auto& b:p.bodies){pDeleteBuffers(1,&b.vbo);pDeleteBuffers(1,&b.lines);}pDeleteVertexArrays(1,&p.vao);if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);}
-bool GlViewport::initialize(){auto& p=*impl_;if(p.vao)return p.solid&&p.line;if(!load()){p.error="OpenGL 3.3 viewport functions unavailable";return false;}if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);p.solid=p.program(shaders::solid_vert,shaders::solid_frag);p.line=p.program(shaders::line_vert,shaders::line_frag);if(!p.solid||!p.line)return false;pGenVertexArrays(1,&p.vao);return true;}
+GlViewport::~GlViewport(){auto& p=*impl_;if(!pDeleteProgram)return;p.release_target();for(auto& b:p.bodies){pDeleteBuffers(1,&b.vbo);pDeleteBuffers(1,&b.lines);}pDeleteVertexArrays(1,&p.vao);if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);if(p.grid)pDeleteProgram(p.grid);}
+bool GlViewport::initialize(){auto& p=*impl_;if(p.vao)return p.solid&&p.line&&p.grid;if(!load()){p.error="OpenGL 3.3 viewport functions unavailable";return false;}if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);if(p.grid)pDeleteProgram(p.grid);p.solid=p.program(shaders::solid_vert,shaders::solid_frag);p.line=p.program(shaders::line_vert,shaders::line_frag);p.grid=p.program(shaders::grid_vert,shaders::grid_frag);if(!p.solid||!p.line||!p.grid)return false;pGenVertexArrays(1,&p.vao);return true;}
 bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::string& revision,const Camera& camera,int w,int h,const Theme& theme,float scale){
     auto& p=*impl_;if(w<=0||h<=0||w>16384||h>16384){p.error="Invalid viewport dimensions";return false;}if(!initialize())return false;
     int old_fbo=0,old_read_fbo=0,old_viewport[4]{},old_program=0,old_vao=0,old_buffer=0,old_texture=0,old_renderbuffer=0,old_depth_func=0;
@@ -197,9 +198,23 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
     pEnableVertexAttribArray(0);pEnableVertexAttribArray(1);
     pVertexAttribDivisor(0,1);pVertexAttribDivisor(1,1);
     if(p.style.edges)for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));}
+    if(p.grid_plane.enabled){
+        pUseProgram(p.grid);pUniformMatrix4fv(pGetUniformLocation(p.grid,"camera"),1,GL_FALSE,m.data());
+        auto vector=[&](const char* name,kernel::Vec3 value,float w=0){pUniform4f(pGetUniformLocation(p.grid,name),float(value.x),float(value.y),float(value.z),w);};
+        auto tint=[&](const char* name,Color value){pUniform4f(pGetUniformLocation(p.grid,name),value.r,value.g,value.b,value.a);};
+        vector("eye",camera.eye(),1);vector("view_right",camera.right());vector("view_up",camera.up());vector("view_forward",camera.forward());
+        vector("plane_origin",p.grid_plane.origin);vector("plane_u",p.grid_plane.u);vector("plane_v",p.grid_plane.v);
+        tint("background",theme.viewport);tint("minor_color",theme.grid_minor);tint("major_color",theme.grid_major);tint("axis_x",theme.axis_x);tint("axis_y",theme.axis_y);
+        pUniform4f(pGetUniformLocation(p.grid,"screen"),float(w),float(h),0,float(camera.distance));
+        pUniform4f(pGetUniformLocation(p.grid,"widths"),theme.render.grid_minor_px*scale,theme.render.grid_major_px*scale,theme.render.grid_axis_px*scale,0);
+        const auto grid=grid_scale(camera.distance,h);const char* names[]={"level0","level1","level2"};
+        for(int i=0;i<3;++i){const auto l=grid.levels[i];pUniform4f(pGetUniformLocation(p.grid,names[i]),float(l.step),float(l.minor),float(l.major),0);}
+        glDepthMask(GL_FALSE);glDepthFunc(GL_LESS);glDrawArrays(GL_TRIANGLES,0,3);glDepthMask(GL_TRUE);glDepthFunc(GL_LEQUAL);
+    }
     pBindFramebuffer(GL_READ_FRAMEBUFFER,p.fbo);pBindFramebuffer(GL_DRAW_FRAMEBUFFER,p.resolve);pBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);
     restore();return true;
 }
+void GlViewport::set_grid(GridPlane plane){impl_->grid_plane=plane;}
 void GlViewport::set_style(Style style){impl_->style=style;}
 unsigned GlViewport::texture()const{return impl_->texture;}
 bool GlViewport::enqueue(ImDrawList* list,const std::vector<mesh::Surface>& scene,const std::string& revision,const Camera& camera,Viewport v,const Theme& theme,float scale){

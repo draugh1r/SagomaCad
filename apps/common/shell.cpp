@@ -8,6 +8,7 @@
 #include "ui/model_editor.hpp"
 #include "ui/widgets.hpp"
 #include "ui/frame.hpp"
+#include "ui/sketch_view.hpp"
 #include <fstream>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
@@ -516,7 +517,9 @@ void Shell::draw() {
         dl->AddRectFilled(a,b,packed(t.viewport));
         dl->PushClipRect(a,b,true);
         const float cx=(a.x+b.x)*0.5f;
-        if (!state_.sketch_mode) {
+        if(!gl_viewport_)gl_viewport_=std::make_unique<ui::GlViewport>();
+        const bool gpu_available=gl_viewport_->initialize();
+        if (!gpu_available&&!state_.sketch_mode) {
             const double extent=std::max(20.0,state_.camera.distance*0.8);
             const double step=std::max(5.0,std::pow(10.0,std::floor(std::log10(extent/5.0))));
             const int count=std::min(100,int(extent/step));
@@ -530,7 +533,14 @@ void Shell::draw() {
             }
         }
         if(!gl_viewport_)gl_viewport_=std::make_unique<ui::GlViewport>();
-        auto gpu_theme=t;gpu_theme.viewport.a=0;
+        auto gpu_theme=t;
+        ui::GridPlane grid;grid.enabled=!state_.sketch_mode||state_.sketch_grid;
+        if(state_.sketch_mode&&sketch_solutions_.contains(state_.sketch_view_id)){
+            const auto& sketch=sketch_solutions_.at(state_.sketch_view_id).sketch;
+            grid.origin=ui::sketch_world(sketch,{0,0});const auto u=ui::sketch_world(sketch,{1,0}),v=ui::sketch_world(sketch,{0,1});
+            grid.u={u.x-grid.origin.x,u.y-grid.origin.y,u.z-grid.origin.z};grid.v={v.x-grid.origin.x,v.y-grid.origin.y,v.z-grid.origin.z};
+        }
+        gl_viewport_->set_grid(grid);
         const bool gpu=gl_viewport_->enqueue(dl,surfaces_,surface_revision_,state_.camera,viewport,gpu_theme,z);
         if(!gpu){state_.status_message="Viewport CPU: "+gl_viewport_->error();draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);}
         if(state_.surface.open&&surface_preview_.surface){auto display=surfaces_;for(size_t i=0;i<display.size()&&i<surface_bodies_.size();++i)if(surface_bodies_[i]==surface_preview_.source_body)display[i]=*surface_preview_.surface;draw_surfaces(dl,display,state_.camera,viewport,t,z);}

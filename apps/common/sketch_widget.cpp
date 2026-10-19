@@ -59,7 +59,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     auto project=[&](std::string_view plane,engine::SketchXY p){auto q=s.camera.project(frame_sketch?ui::sketch_world(*frame_sketch,p):ui::sketch_world(plane,p),v);return ImVec2{float(q.x),float(q.y)};};
     if(s.sketch_plane_picker){
         const double extent=t.sketch.plane_extent;const auto selected=hovered?ui::pick_sketch_plane(s.camera,v,io.MousePos.x,io.MousePos.y,extent):"";
-        for(auto plane:{"YZ","XZ","XY"}){ImVec2 quad[4]={project(plane,{0,0}),project(plane,{extent,0}),project(plane,{extent,extent}),project(plane,{0,extent})};dl->AddConvexPolyFilled(quad,4,color(selected==plane?t.sketch.plane_hover:t.sketch.plane));dl->AddPolyline(quad,4,color(t.border),ImDrawFlags_Closed,t.sketch.line_width*z);auto label=project(plane,{extent*.65,extent*.65});dl->AddText(label,color(t.text),plane);}
+        for(auto plane:{"YZ","XZ","XY"}){ImVec2 quad[4]={project(plane,{0,0}),project(plane,{extent,0}),project(plane,{extent,extent}),project(plane,{0,extent})};dl->AddConvexPolyFilled(quad,4,color(selected==plane?t.sketch.plane_hover:t.sketch.plane));dl->AddPolyline(quad,4,color(t.visual.origin_plane_edge),ImDrawFlags_Closed,t.sketch.line_width*z);auto label=project(plane,{extent*.65,extent*.65});dl->AddText(label,color(t.text),plane);}
         if(hovered){auto pos=io.MousePos;pos.x+=t.padding*z;pos.y+=t.padding*z;auto size=ImGui::CalcTextSize(t.sketch.select_plane);dl->AddRectFilled(pos,{pos.x+size.x+t.padding*z,pos.y+size.y+t.spacing*z},color(t.panel));dl->AddText(pos,color(t.text),t.sketch.select_plane);
             if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)&&!selected.empty()){auto r=engine_->execute("sketch.create",{{"plane",selected}});if(!r.ok)s.sketch_error=r.error;else{sync_sketch();}}
         }
@@ -71,7 +71,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     const float palette_left=float(v.x+v.width)-t.sketch.palette_width*z-t.padding*z;
     const bool over_palette=s.sketch_mode&&io.MousePos.x>=palette_left&&io.MousePos.y>=v.y+t.sketch.palette_y*z;
     hovered=hovered&&!over_palette;
-    if(s.sketch_mode&&s.sketch_grid){
+    if(s.sketch_mode&&s.sketch_grid&&(!gl_viewport_||!gl_viewport_->texture())){
         double extent=s.camera.distance;
         double raw=s.camera.distance/(v.height*1.2071067811865475)*t.sketch.grid_pixel_step*z;
         double base=std::pow(10.,std::floor(std::log10(std::max(raw,1e-6))));
@@ -114,6 +114,11 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     if(!active->error.empty())s.sketch_error=active->error;
     engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,active->sketch,io.MousePos.x,io.MousePos.y,cursor);
     if(cursor_ok&&s.sketch_snap){double threshold=t.sketch.hit_radius*z*s.camera.distance/(v.height*1.2071067811865475);if(std::hypot(cursor.x,cursor.y)<threshold)cursor={};else for(const auto& p:active->sketch.points)if(std::hypot(cursor.x-p.x,cursor.y-p.y)<threshold){cursor={p.x,p.y};break;}}
+    if(cursor_ok&&s.sketch_snap&&s.sketch_grid){
+        const auto step=ui::grid_scale(s.camera.distance,v.height).step;
+        const engine::SketchXY candidate{std::round(cursor.x/step)*step,std::round(cursor.y/step)*step};
+        if(std::hypot(cursor.x-candidate.x,cursor.y-candidate.y)<step*.15)cursor=candidate;
+    }
     if(hovered&&cursor_ok)tool.move(cursor.x,cursor.y);
     auto new_dimension=[&](){
         s.sketch_dimension_id.clear();s.sketch_dimension_kind="distance";s.sketch_dimension_expression.fill(0);
