@@ -246,6 +246,7 @@ bool Shell::poll() {
     return true;
 }
 void Shell::draw() {
+    viewport_layers_.clear();
     sync_sketch();
     const auto& t = ui::theme(state_.theme == "light");
     const float z = static_cast<float>(scale_);
@@ -541,16 +542,23 @@ void Shell::draw() {
             grid.u={u.x-grid.origin.x,u.y-grid.origin.y,u.z-grid.origin.z};grid.v={v.x-grid.origin.x,v.y-grid.origin.y,v.z-grid.origin.z};
         }
         gl_viewport_->set_grid(grid);
-        const bool gpu=gl_viewport_->enqueue(dl,surfaces_,surface_revision_,state_.camera,viewport,gpu_theme,z);
-        if(!gpu){state_.status_message="Viewport CPU: "+gl_viewport_->error();draw_surfaces(dl,surfaces_,state_.camera,viewport,t,z);}
-        if(state_.surface.open&&surface_preview_.surface){auto display=surfaces_;for(size_t i=0;i<display.size()&&i<surface_bodies_.size();++i)if(surface_bodies_[i]==surface_preview_.source_body)display[i]=*surface_preview_.surface;draw_surfaces(dl,display,state_.camera,viewport,t,z);}
+        const bool surface_preview=state_.surface.open&&surface_preview_.surface.has_value();
+        const auto display_revision=surface_revision_+(surface_preview?surface_tool_revision_:std::string());
+        if(surface_preview&&display_revision!=display_revision_){display_revision_=display_revision;display_surfaces_=surfaces_;
+            for(std::size_t i=0;i<display_surfaces_.size()&&i<surface_bodies_.size();++i)if(surface_bodies_[i]==surface_preview_.source_body)display_surfaces_[i]=*surface_preview_.surface;
+        }
+        const auto& render_surfaces=surface_preview?display_surfaces_:surfaces_;
+        const bool gpu=gl_viewport_->enqueue(dl,render_surfaces,display_revision,state_.camera,viewport,gpu_theme,z);
+        if(!gpu){state_.status_message="Viewport CPU: "+gl_viewport_->error();draw_surfaces(dl,render_surfaces,state_.camera,viewport,t,z);}
         if(state_.model.open&&!model_surfaces_.empty()){
-            auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.model.preview;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
-            draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);
+            auto preview_theme=t;preview_theme.solid=state_.model.operation==1?t.model.cut:t.visual.preview_add;preview_theme.solid_edge=state_.model.operation==1?t.model.cut:t.accent;preview_theme.solid_edge.a=.85f;
+            if(gpu)for(const auto& surface:model_surfaces_)viewport_layers_.push_back({surface,preview_theme.solid,preview_theme.solid_edge,t.render.edge_px,true,false});
+            else draw_surfaces(dl,model_surfaces_,state_.camera,viewport,preview_theme,z);
         }
         draw_geometry_canvas(t,canvas_hovered&&!over_navigation&&!over_cube);
         draw_sketch_canvas(t,canvas_hovered && !over_navigation && !over_cube);
         draw_model_canvas(t,canvas_hovered&&!over_navigation&&!over_cube);
+        gl_viewport_->set_layers(std::move(viewport_layers_));
         if (surfaces_.empty()) {
             const auto origin=state_.camera.project({0,0,0},viewport);
             if (origin.visible) dl->AddCircleFilled({float(origin.x),float(origin.y)},2.5f*z,packed(t.accent));

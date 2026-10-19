@@ -49,7 +49,9 @@ PFNGLCHECKFRAMEBUFFERSTATUSPROC pCheckFramebufferStatus=nullptr;
 PFNGLBLITFRAMEBUFFERPROC pBlitFramebuffer=nullptr;
 PFNGLVERTEXATTRIBDIVISORPROC pVertexAttribDivisor=nullptr;
 PFNGLDRAWARRAYSINSTANCEDPROC pDrawArraysInstanced=nullptr;
+PFNGLBLENDFUNCSEPARATEPROC pBlendFuncSeparate=nullptr;
 bool load() {
+    pBlendFuncSeparate=reinterpret_cast<PFNGLBLENDFUNCSEPARATEPROC>(SDL_GL_GetProcAddress("glBlendFuncSeparate"));if(!pBlendFuncSeparate)return false;
     pVertexAttribDivisor=reinterpret_cast<PFNGLVERTEXATTRIBDIVISORPROC>(SDL_GL_GetProcAddress("glVertexAttribDivisor"));if(!pVertexAttribDivisor)return false;
     pDrawArraysInstanced=reinterpret_cast<PFNGLDRAWARRAYSINSTANCEDPROC>(SDL_GL_GetProcAddress("glDrawArraysInstanced"));if(!pDrawArraysInstanced)return false;
     pGenVertexArrays=reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(SDL_GL_GetProcAddress("glGenVertexArrays")); if(!pGenVertexArrays)return false;
@@ -116,7 +118,19 @@ struct GlViewport::Impl {
         std::vector<Vertex> vertices;
         std::vector<float> edges;
     };
-    std::vector<Body> bodies;
+    std::vector<Body> bodies,layer_buffers;
+    std::vector<Layer> layers;
+    void upload(Body& body,const mesh::Surface& surface,bool flat=false){
+        std::vector<Vertex> triangles;std::vector<float> lines;
+        triangles.reserve(surface.geometry.triangles.size()*3);
+        for(const auto& t:surface.geometry.triangles)for(int i=0;i<3;++i){auto v=t.vertices[i];auto n=t.normals[i];if(n.x*n.x+n.y*n.y+n.z*n.z<1e-12)n=t.normal;if(flat)n={};triangles.push_back({float(v.x),float(v.y),float(v.z),float(n.x),float(n.y),float(n.z)});}
+        for(const auto& edge:surface.geometry.edges)for(std::size_t i=1;i<edge.points.size();++i)for(auto v:{edge.points[i-1],edge.points[i]}){lines.push_back(float(v.x));lines.push_back(float(v.y));lines.push_back(float(v.z));}
+        if(body.vertices!=triangles||body.edges!=lines){
+            pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pBufferData(GL_ARRAY_BUFFER,triangles.size()*sizeof(Vertex),triangles.data(),GL_STATIC_DRAW);
+            pBindBuffer(GL_ARRAY_BUFFER,body.lines);pBufferData(GL_ARRAY_BUFFER,lines.size()*sizeof(float),lines.data(),GL_STATIC_DRAW);
+            body.vertices=std::move(triangles);body.edges=std::move(lines);++uploads;
+        }
+    }
     unsigned vao=0,solid=0,line=0,grid=0,fbo=0,resolve=0,texture=0,depth=0,mscolor=0;
     int width=0,height=0,samples=0;
     int triangle_count=0,line_count=0;
@@ -151,35 +165,33 @@ struct GlViewport::Impl {
     }
 };
 GlViewport::GlViewport():impl_(std::make_unique<Impl>()){}
-GlViewport::~GlViewport(){auto& p=*impl_;if(!pDeleteProgram)return;p.release_target();for(auto& b:p.bodies){pDeleteBuffers(1,&b.vbo);pDeleteBuffers(1,&b.lines);}pDeleteVertexArrays(1,&p.vao);if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);if(p.grid)pDeleteProgram(p.grid);}
+GlViewport::~GlViewport(){auto& p=*impl_;if(!pDeleteProgram)return;p.release_target();for(auto* cache:{&p.bodies,&p.layer_buffers})for(auto& b:*cache){pDeleteBuffers(1,&b.vbo);pDeleteBuffers(1,&b.lines);}pDeleteVertexArrays(1,&p.vao);if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);if(p.grid)pDeleteProgram(p.grid);}
 bool GlViewport::initialize(){auto& p=*impl_;if(p.vao)return p.solid&&p.line&&p.grid;if(!load()){p.error="OpenGL 3.3 viewport functions unavailable";return false;}if(p.solid)pDeleteProgram(p.solid);if(p.line)pDeleteProgram(p.line);if(p.grid)pDeleteProgram(p.grid);p.solid=p.program(shaders::solid_vert,shaders::solid_frag);p.line=p.program(shaders::line_vert,shaders::line_frag);p.grid=p.program(shaders::grid_vert,shaders::grid_frag);if(!p.solid||!p.line||!p.grid)return false;pGenVertexArrays(1,&p.vao);return true;}
 bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::string& revision,const Camera& camera,int w,int h,const Theme& theme,float scale){
     auto& p=*impl_;if(w<=0||h<=0||w>16384||h>16384){p.error="Invalid viewport dimensions";return false;}if(!initialize())return false;
     int old_fbo=0,old_read_fbo=0,old_viewport[4]{},old_program=0,old_vao=0,old_buffer=0,old_texture=0,old_renderbuffer=0,old_depth_func=0;
+    int blend_src=0,blend_dst=0,blend_src_alpha=0,blend_dst_alpha=0;GLboolean color_mask[4]{};
+    glGetIntegerv(GL_BLEND_SRC_RGB,&blend_src);glGetIntegerv(GL_BLEND_DST_RGB,&blend_dst);glGetIntegerv(GL_BLEND_SRC_ALPHA,&blend_src_alpha);glGetIntegerv(GL_BLEND_DST_ALPHA,&blend_dst_alpha);glGetBooleanv(GL_COLOR_WRITEMASK,color_mask);
     float old_clear[4]{},old_line_width=1,old_offset_factor=0,old_offset_units=0;GLboolean old_depth_mask=GL_TRUE;
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&old_read_fbo);glGetIntegerv(GL_RENDERBUFFER_BINDING,&old_renderbuffer);glGetIntegerv(GL_DEPTH_FUNC,&old_depth_func);glGetBooleanv(GL_DEPTH_WRITEMASK,&old_depth_mask);glGetFloatv(GL_COLOR_CLEAR_VALUE,old_clear);glGetFloatv(GL_LINE_WIDTH,&old_line_width);glGetFloatv(GL_POLYGON_OFFSET_FACTOR,&old_offset_factor);glGetFloatv(GL_POLYGON_OFFSET_UNITS,&old_offset_units);
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&old_fbo);glGetIntegerv(GL_VIEWPORT,old_viewport);glGetIntegerv(GL_CURRENT_PROGRAM,&old_program);glGetIntegerv(GL_VERTEX_ARRAY_BINDING,&old_vao);glGetIntegerv(GL_ARRAY_BUFFER_BINDING,&old_buffer);glGetIntegerv(GL_TEXTURE_BINDING_2D,&old_texture);
     const bool polygon_offset=glIsEnabled(GL_POLYGON_OFFSET_FILL);
     const bool depth=glIsEnabled(GL_DEPTH_TEST),blend=glIsEnabled(GL_BLEND),scissor=glIsEnabled(GL_SCISSOR_TEST),cull=glIsEnabled(GL_CULL_FACE);
-    auto restore=[&]{pBindFramebuffer(GL_DRAW_FRAMEBUFFER,old_fbo);pBindFramebuffer(GL_READ_FRAMEBUFFER,old_read_fbo);pBindRenderbuffer(GL_RENDERBUFFER,old_renderbuffer);glViewport(old_viewport[0],old_viewport[1],old_viewport[2],old_viewport[3]);pUseProgram(old_program);pBindVertexArray(old_vao);pBindBuffer(GL_ARRAY_BUFFER,old_buffer);glBindTexture(GL_TEXTURE_2D,old_texture);glDepthFunc(old_depth_func);glDepthMask(old_depth_mask);glClearColor(old_clear[0],old_clear[1],old_clear[2],old_clear[3]);glLineWidth(old_line_width);glPolygonOffset(old_offset_factor,old_offset_units);if(polygon_offset)glEnable(GL_POLYGON_OFFSET_FILL);else glDisable(GL_POLYGON_OFFSET_FILL);if(!depth)glDisable(GL_DEPTH_TEST);if(blend)glEnable(GL_BLEND);if(scissor)glEnable(GL_SCISSOR_TEST);if(cull)glEnable(GL_CULL_FACE);};
+    auto restore=[&]{pBindFramebuffer(GL_DRAW_FRAMEBUFFER,old_fbo);pBindFramebuffer(GL_READ_FRAMEBUFFER,old_read_fbo);pBindRenderbuffer(GL_RENDERBUFFER,old_renderbuffer);glViewport(old_viewport[0],old_viewport[1],old_viewport[2],old_viewport[3]);pUseProgram(old_program);pBindVertexArray(old_vao);pBindBuffer(GL_ARRAY_BUFFER,old_buffer);glBindTexture(GL_TEXTURE_2D,old_texture);glDepthFunc(old_depth_func);glDepthMask(old_depth_mask);glColorMask(color_mask[0],color_mask[1],color_mask[2],color_mask[3]);pBlendFuncSeparate(blend_src,blend_dst,blend_src_alpha,blend_dst_alpha);glClearColor(old_clear[0],old_clear[1],old_clear[2],old_clear[3]);glLineWidth(old_line_width);glPolygonOffset(old_offset_factor,old_offset_units);if(polygon_offset)glEnable(GL_POLYGON_OFFSET_FILL);else glDisable(GL_POLYGON_OFFSET_FILL);if(!depth)glDisable(GL_DEPTH_TEST);if(blend)glEnable(GL_BLEND);if(scissor)glEnable(GL_SCISSOR_TEST);if(cull)glEnable(GL_CULL_FACE);};
     if(!p.target(w,h)){restore();return false;}
     pBindVertexArray(p.vao);
     if(p.revision!=revision||p.uploads==0){
         while(p.bodies.size()>surfaces.size()){auto& b=p.bodies.back();pDeleteBuffers(1,&b.vbo);pDeleteBuffers(1,&b.lines);p.bodies.pop_back();}
         for(std::size_t index=0;index<surfaces.size();++index){
             if(index==p.bodies.size()){p.bodies.emplace_back();pGenBuffers(1,&p.bodies.back().vbo);pGenBuffers(1,&p.bodies.back().lines);}
-            auto& body=p.bodies[index];const auto& surface=surfaces[index];
-            std::vector<Vertex> triangles;std::vector<float> lines;
-            triangles.reserve(surface.geometry.triangles.size()*3);
-            for(const auto& t:surface.geometry.triangles)for(int i=0;i<3;++i){auto v=t.vertices[i];auto n=t.normals[i];if(n.x*n.x+n.y*n.y+n.z*n.z<1e-12)n=t.normal;triangles.push_back({float(v.x),float(v.y),float(v.z),float(n.x),float(n.y),float(n.z)});}
-            for(const auto& edge:surface.geometry.edges)for(std::size_t i=1;i<edge.points.size();++i)for(auto v:{edge.points[i-1],edge.points[i]}){lines.push_back(float(v.x));lines.push_back(float(v.y));lines.push_back(float(v.z));}
-            if(body.vertices!=triangles||body.edges!=lines){
-                pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pBufferData(GL_ARRAY_BUFFER,triangles.size()*sizeof(Vertex),triangles.data(),GL_STATIC_DRAW);
-                pBindBuffer(GL_ARRAY_BUFFER,body.lines);pBufferData(GL_ARRAY_BUFFER,lines.size()*sizeof(float),lines.data(),GL_STATIC_DRAW);
-                body.vertices=std::move(triangles);body.edges=std::move(lines);++p.uploads;
-            }
+            p.upload(p.bodies[index],surfaces[index]);
         }
         p.revision=revision;
+    }
+    while(p.layer_buffers.size()>p.layers.size()){auto& b=p.layer_buffers.back();pDeleteBuffers(1,&b.vbo);pDeleteBuffers(1,&b.lines);p.layer_buffers.pop_back();}
+    for(std::size_t i=0;i<p.layers.size();++i){
+        if(i==p.layer_buffers.size()){p.layer_buffers.emplace_back();pGenBuffers(1,&p.layer_buffers.back().vbo);pGenBuffers(1,&p.layer_buffers.back().lines);}
+        p.upload(p.layer_buffers[i],p.layers[i].surface,!p.layers[i].lit);
     }
     pBindFramebuffer(GL_FRAMEBUFFER,p.fbo);glViewport(0,0,w,h);glDisable(GL_SCISSOR_TEST);glDisable(GL_BLEND);glDisable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);glDepthFunc(GL_LEQUAL);glDepthMask(GL_TRUE);glClearColor(theme.viewport.r,theme.viewport.g,theme.viewport.b,theme.viewport.a);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     const auto m=matrix(camera,w,h);
@@ -190,14 +202,23 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
     pUniform4f(pGetUniformLocation(p.solid,"silhouette"),p.style.edges&&p.style.silhouettes?theme.render.silhouette_px*scale:0.f,0,0,0);
     const auto eye=camera.eye();pUniform4f(pGetUniformLocation(p.solid,"eye"),float(eye.x),float(eye.y),float(eye.z),1);
     const auto f=camera.forward();pUniform4f(pGetUniformLocation(p.solid,"toward_eye"),float(-f.x),float(-f.y),float(-f.z),0);
-    // Push faces by one pixel of their own depth slope; edges stay at their exact depth.
+    auto faces=[&](const Impl::Body& body){
+        pVertexAttribDivisor(0,0);pVertexAttribDivisor(1,0);pBindBuffer(GL_ARRAY_BUFFER,body.vbo);
+        pEnableVertexAttribArray(0);pEnableVertexAttribArray(1);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));
+    };
+    auto edges=[&](const Impl::Body& body,Color color,float width){
+        uniforms(p.line,color);pUniform4f(pGetUniformLocation(p.line,"screen"),float(w),float(h),width*scale,0);
+        pEnableVertexAttribArray(0);pEnableVertexAttribArray(1);pVertexAttribDivisor(0,1);pVertexAttribDivisor(1,1);pBindBuffer(GL_ARRAY_BUFFER,body.lines);
+        pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));
+    };
+    // Opaque faces are biased; lines and selection fills stay on the exact surface.
     glEnable(GL_POLYGON_OFFSET_FILL);glPolygonOffset(1.f,2.f);
-    if(p.style.faces)for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pEnableVertexAttribArray(0);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pEnableVertexAttribArray(1);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));}
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    uniforms(p.line,theme.solid_edge);pUniform4f(pGetUniformLocation(p.line,"screen"),float(w),float(h),theme.render.edge_px*scale,0);
-    pEnableVertexAttribArray(0);pEnableVertexAttribArray(1);
-    pVertexAttribDivisor(0,1);pVertexAttribDivisor(1,1);
-    if(p.style.edges)for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));}
+    if(p.style.faces)for(const auto& body:p.bodies)faces(body);
+    // Transparent previews still hide the grid. This pass leaves the underlying body colors intact.
+    glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
+    for(std::size_t i=0;i<p.layers.size();++i)if(p.layers[i].grid_occluder)faces(p.layer_buffers[i]);
+    glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDisable(GL_POLYGON_OFFSET_FILL);
+    if(p.style.edges)for(const auto& body:p.bodies)edges(body,theme.solid_edge,theme.render.edge_px);
     if(p.grid_plane.enabled){
         pUseProgram(p.grid);pUniformMatrix4fv(pGetUniformLocation(p.grid,"camera"),1,GL_FALSE,m.data());
         auto vector=[&](const char* name,kernel::Vec3 value,float w=0){pUniform4f(pGetUniformLocation(p.grid,name),float(value.x),float(value.y),float(value.z),w);};
@@ -211,9 +232,17 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
         for(int i=0;i<3;++i){const auto l=grid.levels[i];pUniform4f(pGetUniformLocation(p.grid,names[i]),float(l.step),float(l.minor),float(l.major),0);}
         glDepthMask(GL_FALSE);glDepthFunc(GL_LESS);glDrawArrays(GL_TRIANGLES,0,3);glDepthMask(GL_TRUE);glDepthFunc(GL_LEQUAL);
     }
+    glEnable(GL_BLEND);pBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA);glDepthMask(GL_FALSE);
+    for(std::size_t i=0;i<p.layers.size();++i){const auto& layer=p.layers[i];const auto& body=p.layer_buffers[i];
+        if(layer.face.a>0){uniforms(p.solid,layer.face);pUniform4f(pGetUniformLocation(p.solid,"silhouette"),0,0,0,0);
+            if(layer.grid_occluder){glEnable(GL_POLYGON_OFFSET_FILL);glPolygonOffset(1.f,2.f);}faces(body);glDisable(GL_POLYGON_OFFSET_FILL);}
+    }
+    for(std::size_t i=0;i<p.layers.size();++i)if(p.layers[i].edge.a>0)edges(p.layer_buffers[i],p.layers[i].edge,p.layers[i].width);
+    glDepthMask(GL_TRUE);glDisable(GL_BLEND);
     pBindFramebuffer(GL_READ_FRAMEBUFFER,p.fbo);pBindFramebuffer(GL_DRAW_FRAMEBUFFER,p.resolve);pBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);
     restore();return true;
 }
+void GlViewport::set_layers(std::vector<Layer> layers){impl_->layers=std::move(layers);}
 void GlViewport::set_grid(GridPlane plane){impl_->grid_plane=plane;}
 void GlViewport::set_style(Style style){impl_->style=style;}
 unsigned GlViewport::texture()const{return impl_->texture;}

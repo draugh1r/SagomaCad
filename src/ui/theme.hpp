@@ -4,6 +4,7 @@
 
 namespace sagomacad::ui {
 struct Color { float r, g, b, a = 1.0f; };
+inline constexpr Color transparent{0,0,0,0};
 constexpr Color rgb(unsigned value,float alpha=1) {
     return {float((value>>16)&255)/255,float((value>>8)&255)/255,float(value&255)/255,alpha};
 }

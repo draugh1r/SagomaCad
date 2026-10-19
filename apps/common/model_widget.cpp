@@ -61,6 +61,7 @@ void Shell::draw_model_canvas(const ui::Theme& t,bool hovered){
     }
     for(const auto& candidate:candidates){const auto& view=*candidate.profile;const auto& ids=m.open?m.profiles:s.selected_profiles;const bool selected=(m.open?m.sketch:s.selected_profile_sketch)==candidate.sketch&&std::find(ids.begin(),ids.end(),view.region.id)!=ids.end();
         auto tint=selected?token.selected:t.sketch.profile;if(!m.pick_axis&&candidate.sketch==hit_sketch&&view.region.id==hit_region&&!selected)tint.a*=1.7f;
+        if(gl_viewport_&&gl_viewport_->texture()){ui::GlViewport::Layer fill;fill.surface.geometry=view.fill;fill.face=tint;fill.edge=selected?t.accent:ui::transparent;fill.width=t.sketch.line_width;viewport_layers_.push_back(std::move(fill));continue;}
         const auto flags=dl->Flags;dl->Flags&=~ImDrawListFlags_AntiAliasedFill;
         for(const auto& triangle:view.fill.triangles)dl->AddTriangleFilled(project(triangle.vertices[0]),project(triangle.vertices[1]),project(triangle.vertices[2]),color(tint));
         dl->Flags=flags;

@@ -71,6 +71,10 @@ private:
     unsigned int icon_texture(std::string_view name);
     std::unique_ptr<ui::Icons> design_icons_;
     std::unique_ptr<ui::GlViewport> gl_viewport_;
+    std::vector<ui::GlViewport::Layer> viewport_layers_;
+    std::array<std::pair<std::string,std::vector<engine::ModelProfile>>,2> sketch_fill_cache_;
+    std::vector<mesh::Surface> display_surfaces_;
+    std::string display_revision_,pick_camera_;
     unsigned design_icon_texture(std::string_view,ui::IconAccent,float size,bool disabled=false);
     void draw_design_board(const ui::Theme&);
     void draw();

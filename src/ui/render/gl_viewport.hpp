@@ -13,6 +13,12 @@ namespace sagomacad::ui {
 class GlViewport {
 public:
     struct Style {bool faces=true,edges=true,silhouettes=true;};
+    struct Layer {
+        mesh::Surface surface;
+        Color face=transparent,edge=transparent;
+        float width=light.render.edge_px;
+        bool grid_occluder=false,lit=false;
+    };
     GlViewport();
     ~GlViewport();
     GlViewport(const GlViewport&)=delete;
@@ -27,6 +33,7 @@ public:
     int samples() const;
     void set_style(Style);
     void set_grid(GridPlane);
+    void set_layers(std::vector<Layer>);
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

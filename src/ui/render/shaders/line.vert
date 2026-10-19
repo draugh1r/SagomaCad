@@ -10,6 +10,17 @@ void main() {
     if(za<0.0)a=mix(a,b,za/(za-zb));
     else if(zb<0.0)b=mix(b,a,zb/(zb-za));
     vec2 half_screen=screen.xy*0.5;
+    // Axis-aligned CAD strokes keep a fully covered center pixel instead of two blurred columns.
+    vec2 pixel_a=a.xy/max(a.w,1e-6)*half_screen+half_screen;
+    vec2 pixel_b=b.xy/max(b.w,1e-6)*half_screen+half_screen;
+    if(abs(pixel_a.x-pixel_b.x)<1e-4){
+        float x=floor((pixel_a.x+pixel_b.x)*.5)+.5;
+        a.x=(x-half_screen.x)/half_screen.x*a.w;b.x=(x-half_screen.x)/half_screen.x*b.w;
+    }
+    if(abs(pixel_a.y-pixel_b.y)<1e-4){
+        float y=floor((pixel_a.y+pixel_b.y)*.5)+.5;
+        a.y=(y-half_screen.y)/half_screen.y*a.w;b.y=(y-half_screen.y)/half_screen.y*b.w;
+    }
     vec2 delta=(b.xy/max(b.w,1e-6)-a.xy/max(a.w,1e-6))*half_screen;
     float len=length(delta);
     vec2 direction=len>1e-6?delta/len:vec2(1,0);

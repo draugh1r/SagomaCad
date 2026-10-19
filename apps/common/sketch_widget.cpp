@@ -86,7 +86,13 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     auto draw=[&](const solver::SketchResult& result,bool preview,bool editing){
         const auto* previous_frame=frame_sketch;frame_sketch=&result.sketch;
         const auto overlay=engine::sketch_overlay(result);const auto& pl=result.sketch.plane;
-        if(s.sketch_profiles&&editing)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
+        if(s.sketch_profiles&&editing){
+            if(gl_viewport_&&gl_viewport_->texture()){
+                auto& cache=sketch_fill_cache_[preview?1:0];const auto revision=doc::sketch_json(result.sketch).dump();
+                if(cache.first!=revision){cache.first=revision;cache.second=engine::model_profiles(result);}
+                for(const auto& profile:cache.second){ui::GlViewport::Layer fill;fill.surface.geometry=profile.fill;fill.face=t.sketch.profile;viewport_layers_.push_back(std::move(fill));}
+            }else for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
+        }
         for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;
             if(preview&&active&&std::any_of(active->sketch.entities.begin(),active->sketch.entities.end(),[&](const auto& e){return e.id==stroke.id;}))continue;
             auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
@@ -95,7 +101,12 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
             if(preview)for(const auto& m:s.sketch_measures)if(m.field==tool.active_field&&std::find(m.refs.begin(),m.refs.end(),stroke.id)!=m.refs.end())measured=true;
             if(editing&&s.sketch_dimension_open)for(const auto& label:overlay.dimensions)if(label.id==s.sketch_dimension_id&&std::find(label.measure.refs.begin(),label.measure.refs.end(),stroke.id)!=label.measure.refs.end())measured=true;
             if(measured||(editing&&std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end()))c=t.accent;
-            for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),(measured?t.sketch.active_line_width:t.sketch.line_width)*z);}
+            const auto width=measured?t.sketch.active_line_width:t.sketch.line_width;
+            if(gl_viewport_&&gl_viewport_->texture()){
+                auto batch=std::find_if(viewport_layers_.begin(),viewport_layers_.end(),[&](const auto& layer){return layer.face.a==0&&layer.edge.r==c.r&&layer.edge.g==c.g&&layer.edge.b==c.b&&layer.edge.a==c.a&&layer.width==width;});
+                if(batch==viewport_layers_.end()){ui::GlViewport::Layer layer;layer.edge=c;layer.width=width;viewport_layers_.push_back(std::move(layer));batch=std::prev(viewport_layers_.end());}
+                for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;batch->surface.geometry.edges.push_back({{ui::sketch_world(result.sketch,stroke.points[i-1]),ui::sketch_world(result.sketch,stroke.points[i])},0});}
+            }else for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),width*z);}
         }
         if(s.sketch_points)for(const auto& p:result.sketch.points){bool fixed=result.fixed_points.contains(p.id)&&result.fixed_points.at(p.id);auto c=result.state=="conflict"?t.error:fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;dl->AddCircleFilled(project(pl,{p.x,p.y}),t.sketch.point_radius*z,color(c));}
         if(!preview&&editing&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto placement=measure_position(s.camera,v,result.sketch,label.measure,t.sketch.dimension_offset*z,(t.sketch.field_width/2+t.padding)*z);dimension_guide(dl,placement,t.muted,t,z);auto q=placement.anchor;auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=size.y/2;

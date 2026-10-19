@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:48:57Z",
+    "updatedAt": "2026-10-19T15:03:59Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -622,13 +622,14 @@
       "milestone": "M5.5",
       "note": "Build Release, 68/68 ctest in 57.41 s, livelli. Passo 8-40 px, continuita dei pesi ai confini, griglia coperta da corpi anche dal basso. 10 PNG a cinque distanze/due temi e due dimensioni controllati; vicino e lontano mostrati in chat. Shader filtra livelli non risolvibili; piano supportato e snap condividono il passo.",
       "startedAt": "2026-10-19T14:42:01.862451+00:00",
-      "completedAt": "2026-10-19T14:48:57.133295+00:00"
+      "completedAt": "2026-10-19T14:48:57.133295+00:00",
+      "commit": "7ad865b005cfc8f85dcfe89e9c333596d1a696ff"
     },
     {
       "id": 27,
       "phase": 10,
       "title": "10.7 Picking e anteprime sulla nuova pipeline",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         26,
@@ -643,7 +644,10 @@
       "validation": "ctest --test-dir build -R \"picking|m5_interaction|model_interaction\" --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 69/69 ctest in 54.22 s; picking/M5/model interaction verdi. Layer GPU per anteprime, selezioni, profili e tratti; prepass depth per nascondere la griglia nelle trasparenze. Test gl_layers su preview e facce nascoste. M5 quote/stroke invariati, screenshot due temi/dimensioni verificati; livelli/frame/UTF-8 verdi.",
+      "startedAt": "2026-10-19T14:49:00.556309+00:00",
+      "completedAt": "2026-10-19T15:03:58.788903+00:00"
     },
     {
       "id": 28,
