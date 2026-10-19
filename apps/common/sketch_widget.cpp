@@ -59,7 +59,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     auto project=[&](std::string_view plane,engine::SketchXY p){auto q=s.camera.project(frame_sketch?ui::sketch_world(*frame_sketch,p):ui::sketch_world(plane,p),v);return ImVec2{float(q.x),float(q.y)};};
     if(s.sketch_plane_picker){
         const double extent=t.sketch.plane_extent;const auto selected=hovered?ui::pick_sketch_plane(s.camera,v,io.MousePos.x,io.MousePos.y,extent):"";
-        for(auto plane:{"YZ","XZ","XY"}){ImVec2 quad[4]={project(plane,{0,0}),project(plane,{extent,0}),project(plane,{extent,extent}),project(plane,{0,extent})};dl->AddConvexPolyFilled(quad,4,color(selected==plane?t.sketch.plane_hover:t.sketch.plane));dl->AddPolyline(quad,4,color(t.border),ImDrawFlags_Closed,t.sketch.line_width*z);auto label=project(plane,{extent*.65,extent*.65});dl->AddText(label,color(t.text),plane);}
+        for(auto plane:{"YZ","XZ","XY"}){ImVec2 quad[4]={project(plane,{0,0}),project(plane,{extent,0}),project(plane,{extent,extent}),project(plane,{0,extent})};dl->AddConvexPolyFilled(quad,4,color(selected==plane?t.sketch.plane_hover:t.sketch.plane));dl->AddPolyline(quad,4,color(t.visual.origin_plane_edge),ImDrawFlags_Closed,t.sketch.line_width*z);auto label=project(plane,{extent*.65,extent*.65});dl->AddText(label,color(t.text),plane);}
         if(hovered){auto pos=io.MousePos;pos.x+=t.padding*z;pos.y+=t.padding*z;auto size=ImGui::CalcTextSize(t.sketch.select_plane);dl->AddRectFilled(pos,{pos.x+size.x+t.padding*z,pos.y+size.y+t.spacing*z},color(t.panel));dl->AddText(pos,color(t.text),t.sketch.select_plane);
             if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)&&!selected.empty()){auto r=engine_->execute("sketch.create",{{"plane",selected}});if(!r.ok)s.sketch_error=r.error;else{sync_sketch();}}
         }
@@ -71,7 +71,7 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     const float palette_left=float(v.x+v.width)-t.sketch.palette_width*z-t.padding*z;
     const bool over_palette=s.sketch_mode&&io.MousePos.x>=palette_left&&io.MousePos.y>=v.y+t.sketch.palette_y*z;
     hovered=hovered&&!over_palette;
-    if(s.sketch_mode&&s.sketch_grid){
+    if(s.sketch_mode&&s.sketch_grid&&(!gl_viewport_||!gl_viewport_->texture())){
         double extent=s.camera.distance;
         double raw=s.camera.distance/(v.height*1.2071067811865475)*t.sketch.grid_pixel_step*z;
         double base=std::pow(10.,std::floor(std::log10(std::max(raw,1e-6))));
@@ -86,7 +86,13 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     auto draw=[&](const solver::SketchResult& result,bool preview,bool editing){
         const auto* previous_frame=frame_sketch;frame_sketch=&result.sketch;
         const auto overlay=engine::sketch_overlay(result);const auto& pl=result.sketch.plane;
-        if(s.sketch_profiles&&editing)for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
+        if(s.sketch_profiles&&editing){
+            if(gl_viewport_&&gl_viewport_->texture()){
+                auto& cache=sketch_fill_cache_[preview?1:0];const auto revision=doc::sketch_json(result.sketch).dump();
+                if(cache.first!=revision){cache.first=revision;cache.second=engine::model_profiles(result);}
+                for(const auto& profile:cache.second){ui::GlViewport::Layer fill;fill.surface.geometry=profile.fill;fill.face=t.sketch.profile;viewport_layers_.push_back(std::move(fill));}
+            }else for(const auto& profile:overlay.profiles){std::vector<ImVec2> poly;for(auto p:profile)poly.push_back(project(pl,p));if(poly.size()>=3)dl->AddConcavePolyFilled(poly.data(),int(poly.size()),color(t.sketch.profile));}
+        }
         for(const auto& stroke:overlay.strokes){if(stroke.construction&&!s.sketch_construction)continue;
             if(preview&&active&&std::any_of(active->sketch.entities.begin(),active->sketch.entities.end(),[&](const auto& e){return e.id==stroke.id;}))continue;
             auto c=result.state=="conflict"||result.state=="error"?t.error:stroke.fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;
@@ -95,7 +101,12 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
             if(preview)for(const auto& m:s.sketch_measures)if(m.field==tool.active_field&&std::find(m.refs.begin(),m.refs.end(),stroke.id)!=m.refs.end())measured=true;
             if(editing&&s.sketch_dimension_open)for(const auto& label:overlay.dimensions)if(label.id==s.sketch_dimension_id&&std::find(label.measure.refs.begin(),label.measure.refs.end(),stroke.id)!=label.measure.refs.end())measured=true;
             if(measured||(editing&&std::find(s.sketch_selection.begin(),s.sketch_selection.end(),stroke.id)!=s.sketch_selection.end()))c=t.accent;
-            for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),(measured?t.sketch.active_line_width:t.sketch.line_width)*z);}
+            const auto width=measured?t.sketch.active_line_width:t.sketch.line_width;
+            if(gl_viewport_&&gl_viewport_->texture()){
+                auto batch=std::find_if(viewport_layers_.begin(),viewport_layers_.end(),[&](const auto& layer){return layer.face.a==0&&layer.edge.r==c.r&&layer.edge.g==c.g&&layer.edge.b==c.b&&layer.edge.a==c.a&&layer.width==width;});
+                if(batch==viewport_layers_.end()){ui::GlViewport::Layer layer;layer.edge=c;layer.width=width;viewport_layers_.push_back(std::move(layer));batch=std::prev(viewport_layers_.end());}
+                for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;batch->surface.geometry.edges.push_back({{ui::sketch_world(result.sketch,stroke.points[i-1]),ui::sketch_world(result.sketch,stroke.points[i])},0});}
+            }else for(size_t i=1;i<stroke.points.size();++i){if(stroke.construction&&!stroke.reference&&i%2==0)continue;dl->AddLine(project(pl,stroke.points[i-1]),project(pl,stroke.points[i]),color(c),width*z);}
         }
         if(s.sketch_points)for(const auto& p:result.sketch.points){bool fixed=result.fixed_points.contains(p.id)&&result.fixed_points.at(p.id);auto c=result.state=="conflict"?t.error:fixed?(s.theme=="light"?t.sketch.constrained:t.text):t.sketch.free;dl->AddCircleFilled(project(pl,{p.x,p.y}),t.sketch.point_radius*z,color(c));}
         if(!preview&&editing&&s.sketch_dimensions)for(size_t i=0;i<overlay.dimensions.size();++i){const auto& label=overlay.dimensions[i];auto placement=measure_position(s.camera,v,result.sketch,label.measure,t.sketch.dimension_offset*z,(t.sketch.field_width/2+t.padding)*z);dimension_guide(dl,placement,t.muted,t,z);auto q=placement.anchor;auto text=label.text;auto size=ImGui::CalcTextSize(text.c_str());q.x-=size.x/2;q.y-=size.y/2;
@@ -114,6 +125,11 @@ void Shell::draw_sketch_canvas(const ui::Theme& t,bool hovered){
     if(!active->error.empty())s.sketch_error=active->error;
     engine::SketchXY cursor;bool cursor_ok=ui::sketch_cursor(s.camera,v,active->sketch,io.MousePos.x,io.MousePos.y,cursor);
     if(cursor_ok&&s.sketch_snap){double threshold=t.sketch.hit_radius*z*s.camera.distance/(v.height*1.2071067811865475);if(std::hypot(cursor.x,cursor.y)<threshold)cursor={};else for(const auto& p:active->sketch.points)if(std::hypot(cursor.x-p.x,cursor.y-p.y)<threshold){cursor={p.x,p.y};break;}}
+    if(cursor_ok&&s.sketch_snap&&s.sketch_grid){
+        const auto step=ui::grid_scale(s.camera.distance,v.height).step;
+        const engine::SketchXY candidate{std::round(cursor.x/step)*step,std::round(cursor.y/step)*step};
+        if(std::hypot(cursor.x-candidate.x,cursor.y-candidate.y)<step*.15)cursor=candidate;
+    }
     if(hovered&&cursor_ok)tool.move(cursor.x,cursor.y);
     auto new_dimension=[&](){
         s.sketch_dimension_id.clear();s.sketch_dimension_kind="distance";s.sketch_dimension_expression.fill(0);
@@ -172,7 +188,7 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
     ImGui::BeginChild("##sketch_options",{0,-ImGui::GetFrameHeightWithSpacing()-t.padding*z-t.spacing*z});
     ImGui::TextColored(rgba(result.state=="conflict"||result.state=="error"?t.error:t.muted),"%s · %d GDL",result.state=="constrained"?"Completamente vincolato":result.state=="conflict"?"In conflitto":result.state=="error"?"Errore di valutazione":"Libero",result.degrees_of_freedom);
     if(ImGui::Button("Guarda")){auto dest=ui::sketch_camera(s.camera,result.sketch.plane);s.view_transition.begin(s.camera,dest,t.cube.transition_duration);}
-    ImGui::Checkbox("Griglia",&s.sketch_grid);ImGui::Checkbox("Aggancio",&s.sketch_snap);ImGui::Checkbox("Profilo",&s.sketch_profiles);ImGui::Checkbox("Punti",&s.sketch_points);ImGui::Checkbox("Quote",&s.sketch_dimensions);ImGui::Checkbox("Vincoli",&s.sketch_constraints);ImGui::Checkbox("Geometrie di costruzione",&s.sketch_construction);
+    ImGui::Checkbox("Griglia",&s.sketch_grid);ui::publish_item("field:Griglia");ImGui::Checkbox("Aggancio",&s.sketch_snap);ui::publish_item("field:Aggancio");ImGui::Checkbox("Profilo",&s.sketch_profiles);ui::publish_item("field:Profilo");ImGui::Checkbox("Punti",&s.sketch_points);ui::publish_item("field:Punti");ImGui::Checkbox("Quote",&s.sketch_dimensions);ui::publish_item("field:Quote");ImGui::Checkbox("Vincoli",&s.sketch_constraints);ui::publish_item("field:Vincoli");ImGui::Checkbox("Geometrie di costruzione",&s.sketch_construction);ui::publish_item("field:Geometrie di costruzione");
     if(!result.redundant.empty()){ImGui::TextWrapped("Vincoli ridondanti:");for(const auto& id:result.redundant)ImGui::TextUnformatted(id.c_str());}
     if(!s.sketch_error.empty()){ImGui::PushStyleColor(ImGuiCol_Text,rgba(t.error));ImGui::TextWrapped("%s",s.sketch_error.c_str());ImGui::PopStyleColor();}
     ImGui::EndChild();ImGui::Separator();ImGui::PushStyleColor(ImGuiCol_Button,rgba(t.sketch.finish));if(ImGui::Button(t.sketch.finish_label))invoke_command("sketch.finish");ImGui::PopStyleColor();ImGui::End();
@@ -195,8 +211,16 @@ void Shell::draw_sketch_panels(const ui::Theme& t){
             }
             if(focus==i)ImGui::SetKeyboardFocusHere();ImGui::SetNextItemWidth(width-ImGui::CalcTextSize(measure.unit.c_str()).x-t.spacing*z);
             ImGui::PushStyleColor(ImGuiCol_Border,rgba(i==tool.active_field?t.accent:t.border));
-            auto callback=[](ImGuiInputTextCallbackData* data)->int{auto* state=static_cast<ui::State*>(data->UserData);state->sketch_tool.tab();state->sketch_field_focus=true;return 0;};
-            bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_AutoSelectAll,callback,&s);
+            struct InputContext {ui::State* state;int field;};InputContext input_context{&s,i};
+            auto callback=[](ImGuiInputTextCallbackData* data)->int{
+                auto& context=*static_cast<InputContext*>(data->UserData);auto& state=*context.state;
+                if(data->EventFlag==ImGuiInputTextFlags_CallbackCompletion){state.sketch_tool.tab();state.sketch_field_focus=true;}
+                // A deliberate replacement also drives the dimension when its text equals
+                // the live preview. InputText's final value comparison cannot detect that.
+                if(data->EventFlag==ImGuiInputTextFlags_CallbackEdit){state.sketch_tool.fields[context.field]=data->Buf;state.sketch_tool.locked[context.field]=data->BufTextLen>0;}
+                return 0;
+            };
+            bool entered=ImGui::InputText("##measure",s.sketch_fields[i].data(),s.sketch_fields[i].size(),ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_CallbackCompletion|ImGuiInputTextFlags_CallbackEdit|ImGuiInputTextFlags_AutoSelectAll,callback,&input_context);
             auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();s.sketch_live_fields[std::to_string(i)]={a.x,a.y,b.x-a.x,b.y-a.y};
             ImGui::PopStyleColor();
             if(ImGui::IsItemEdited()){tool.fields[i]=s.sketch_fields[i].data();tool.locked[i]=!tool.fields[i].empty();}

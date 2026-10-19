@@ -1,0 +1,137 @@
+{
+  "size": [
+    1440,
+    900
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "40 mm",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "key": "H"
+    },
+    {
+      "click": {
+        "world": [
+          10,
+          10,
+          20
+        ]
+      }
+    },
+    {
+      "expect": {
+        "dialog": "surface"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:offset0"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "10 mm"
+    },
+    {
+      "click": {
+        "handle": "field:offset1"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "10 mm"
+    },
+    {
+      "click": {
+        "handle": "field:diameter"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "8 mm"
+    },
+    {
+      "click": {
+        "handle": "field:depth"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "6 mm"
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "volume": 31698.40710525538,
+        "errors": 0,
+        "features": 2
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "feature.get",
+          "params": {
+            "feature_id": "feature-2"
+          }
+        },
+        "save": "hole"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/hole/params/references/0/distance"
+          },
+          "equals": "10 mm"
+        }
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/hole/params/references/1/distance"
+          },
+          "equals": "10 mm"
+        }
+      }
+    },
+    {
+      "shot": "hole.png"
+    }
+  ]
+}

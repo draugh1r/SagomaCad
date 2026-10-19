@@ -433,3 +433,45 @@ Il comando UI Fine schizzo avvia la transizione alla vista Home usando la durata
 ## 2026-10-18 — Comandi attivi evidenziati nei menu
 
 Ribbon e tendine condividono lo stato selezionato, derivato dai pannelli e dagli strumenti attivi: Estrudi, Rivoluzione, Raccordo, Smusso, Foro, primitive, parametri, selezione, dialog file e strumenti di schizzo. Sfondo accent_soft e bordo pistacchio dai token, hover distinto; nessuna selezione residua dopo la chiusura. Funziona anche da scorciatoia e riapertura della feature. Test di interazione su Estrudi, Rivoluzione, Raccordo, Foro e cambio Linea/Cerchio/Rettangolo; controllo dei pixel del ribbon con il mouse nel viewport. Screenshot di ribbon e tendina Crea nei due temi a 1440x900 e 1280x720 ispezionati in build/menu-selection-evidence. Build Release, 63/63 ctest, livelli, regola finestre e UTF-8 verdi. Golden approvate intatte; fase 10 non iniziata.
+
+## 2026-10-19 — Viewport GPU, infrastruttura iniziale
+
+Framebuffer OpenGL 3.3 con depth a 24 bit e MSAA fino a 4 campioni, texture risolta presentata dalla callback ImGui condivisa dalla shell e dagli snapshot. VBO per corpo: orbita e metadati senza ricaricare la geometria. Ripristino dello stato GL e distruzione prima del contesto SDL; ripiego CPU con diagnostica. Build Release isolata `build/agent-phase10`, 64/64 ctest in 53.07 s; livelli, frame e UTF-8 verdi. Screenshot `build/phase10-module-{light,dark}.png` controllati nei due temi/dimensioni. Griglia, anteprime, luci e linee avanzate rimangono ai task successivi del PRP. La validazione 10.2 omette dimensions obbligatorio: richiesta decisione per correggere il comando.
+
+Luce del task 10.2 implementata (key/fill/specular, sRGB, normale nulla piatta e tratteggio sezione disattivato di default), con attribuzione SolidCraft. Build Release e test gl_viewport verdi, inclusa conservazione esatta dei colori piatti nei due temi. Suite con nuova luce: 63/64; sketch_interaction cerca il colore prodotto dalla formula CPU precedente (righe 114–116). Controllo conservato. Il comando di validazione del PRP fallisce per dimensions mancante; in attesa di decisione utente sulla correzione della validazione. Screenshot supplementari check-shading.png e check-shading-dark.png ispezionati. Nessun merge su main.
+
+2026-10-19: correzione validazione 10.2 autorizzata; build Release, 64/64 ctest in 50.42 s. Screenshot nei due temi/dimensioni verificati. Il controllo di visibilita riconosce il colore del corpo senza dipendere dalla vecchia formula CPU.
+
+## 2026-10-19 - Linee, spigoli e sagome GPU
+
+Linee espanse in screen space con clipping near; test su 1.2/3/5 px, due distanze e risoluzioni. Depth bias delle facce: continuita dei bordi a tre inclinazioni, inclusi .001 e .035 rad. Normali per vertice prodotte dal kernel; sagome da N dot V e derivate, con direzione prospettica per frammento. Il test senza spigoli ha trovato una tassellazione troppo grossolana per il contorno: deflessione angolare ridotta da .35 a .10 rad. Flags separati per facce/spigoli/sagome. Build Release, 67/67 ctest in 53.31 s; livelli e UTF-8 verdi. Snapshot nei due temi/dimensioni controllati: check-lines, check-grazing, check-silhouette. Script riproducibili in docs/examples/m5/. Restano griglia, anteprime, handle e scenari come da PRP.
+
+## 2026-10-19 - Griglia adattiva GPU
+
+Piano infinito nel fragment shader, sfondo uniforme, livelli a fattore cinque e dissolvenza continua dei pesi. Antialiasing e filtro dei livelli sotto risoluzione, attenuazione con inclinazione/distanza. Griglia dopo il depth del modello, con bias coplanare: test pixel dall’alto e dal basso nei due temi senza infiltrazioni nel solido. Piano degli schizzi supportati e passo condiviso con lo snap. Token per spessori e piani origine; percorso CPU conservato come ripiego. Build Release, 68/68 ctest in 57.41 s, livelli verdi. Dieci screenshot a distanze 15/45/140/450/1400 nei due temi, due dimensioni, confrontati con 43/44 e tavole approvate; vicino/lontano mostrati in chat. Scenario griglia-zoom predisposto per il runner del task 10.10.
+
+## 2026-10-19 - Anteprime, selezione e tratti sulla GPU
+
+Layer GPU con cache per anteprime, facce/spigoli selezionati e sotto il mouse, profili e tratti di schizzo. Prepass di profondita delle anteprime trasparenti: la griglia non attraversa il volume, i colori del corpo sottostante restano disponibili per il compositing. Riempimenti prima di tutti i tratti, allineamento al pixel per linee assiali; risolte due regressioni reali M5 senza modificare i controlli. Picking ID dalla stessa tessellazione della vista, ricostruzione differita mentre la camera si muove. Build Release, 69/69 ctest in 54.22 s; gl_layers verifica griglia sotto trasparenza e selezione posteriore occlusa. Picking/M5/model interaction, livelli/frame/UTF-8 verdi; screenshot M4/M5 nei due temi e dimensioni ispezionati.
+
+## 2026-10-19 - Snapshot, render_view e prestazioni
+
+Metadata renderer/MSAA esposti da ui.inspect e render_view; test MCP reale su iso/top/front/right a 640x400, PNG e argomenti invalidi verificati anche con pytest. Benchmark della stessa pipeline in contesto nascosto: sfera sintetica di 200000 triangoli, 1440x900, MSAA4, 12 frame di warm-up e 120 frame di orbita sincronizzati con glFinish. NVIDIA GeForce RTX 3070 Ti, OpenGL 3.3 NVIDIA 617.42: 3038.21 fps medi, 2110.15 minimi, p95 2483.24; un solo upload. Sono tempi del renderer, senza il limite di frame della finestra. Build Release, 70/70 ctest in 55.01 s; pytest render_view 1/1.
+
+### Fase 10 - handle e input UI
+Registro per frame dei controlli visibili, input deterministico e bridge MCP ui_inspect/ui_call. Test reali su dialogo primitive, volume 40000 mm3, campi chiusi, resize e input ostili. Release: 71/71 test (55.69 s); pytest handles 1/1; livelli validi. Screenshot M5 verificati nei due temi e dimensioni.
+
+### Fase 10 - runner scenari JSON
+CLI scenario run usa Shell nascosta, input reali, attese a frame e tempo virtuale. Controlli numerici motore, screenshot e riferimenti ai risultati delle chiamate. Fixture storici preservati. Release 74/74 (60.59 s), test input ostili del runner e livelli validi. Scenario rettangolo: 4 entita, 2 quote, 0 GDL; griglia nei due temi.
+
+### Fase 10 - scenari dei flussi M5
+Dodici file JSON registrati in ctest (dieci flussi richiesti, griglia e fixture storico), nei due temi con finestre 1440x900/1280x720. Verificati volumi, quote dai bordi, raccordo dopo modifica a monte, camera, rollback e coordinate dopo drag/undo/redo. Lo scenario su faccia ha trovato la riscrittura di una quota identica al valore live non vincolante: ora CallbackEdit registra anche quella digitazione. Il controllo mantiene 0 GDL, due quote e otto entita (quattro bordi proiettati + quattro linee nuove). Tutti i 71 test preesistenti verdi; 13/13 test scenario inclusi gli input ostili, livelli validi; screenshot verificati.
+
+### Fase 10 - profili intersecanti
+Test iniziale fallito: due cerchi davano due contorni interi. Core planare con intersezioni analitiche e semispigoli; il kernel ricrea segmenti/archi OCCT esatti. Due cerchi R10 distanti 10 producono tre regioni esclusive; area lente 122.8369699 mm2 e lunette 191.3222955 mm2, estrudibili indipendentemente e stabili dopo R10->R11. Verificati tre piani, supporto ruotato, linea/cerchio, arco/linea, tre cerchi (sette regioni), salvataggio e scomparsa con errore leggibile. CLI e MCP stessi ID e volumi; scenario UI sceglie ciascuna regione ed estrude prima/dopo modifica. Screenshot nei due temi e due dimensioni verificati. Suite 86/87, sola guida incorporata da ricompilare dopo modifica del documento: ricompilata, 5/5 controlli profili/agenti/scenario/guida verdi. Artefatti scenario generati ora ignorati e rimossi solo dall'indice.
+
+### Fase 10 - correzione scoperta nella verifica dal basso
+Il confronto visivo ha trovato il piano opaco della griglia davanti alle pareti sopra Z=0. Nuova regressione prima fallita (Grid overwrites oblique body wall), poi shader a depth di sfondo e confronto GL_EQUAL sui soli campioni non coperti da solidi/prepass. La griglia resta testata in profondita e non cancella le pareti viste da sotto. Screenshot rigenerati: pareti, raccordi e cilindro ora visibili. Release 87/87 (75.76 s), livelli e fuzz 278/45/237 verdi.
+
+### Fase 10 - criterio di uscita verificato
+Tavole approvate presenti e immutate. Pezzo M5 (scatola, R2 verticali e cilindro) acquisito a 3 angoli, 2 temi e 2 dimensioni; confronto con 17-19 e tavole approvate. Evidenze riproducibili archiviate in docs/design/verifica-viewport con JSON e screenshot. Release 87/87 in 75.76 s, 13 scenari JSON, livelli/frame/UTF-8/parita e fuzz 278 casi su 45 comandi + 237 MCP verdi. Pytest render_view e handles: 1/1 ciascuno. Benchmark finale 200000 triangoli a 1440x900 MSAA4: 3263.51 fps medi, 2113.72 minimi, p95 2609.60, un upload (solo renderer). Due cerchi danno tre regioni selezionate ed estruse dalla UI, con volumi esatti anche dopo modifica del raggio. Nessuna golden aggiornata; nessun lavoro della fase 11 iniziato.

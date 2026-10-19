@@ -1,0 +1,83 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "40 mm",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "position": {
+              "x": "30 mm",
+              "y": "-5 mm"
+            },
+            "dimensions": {
+              "width": "15 mm",
+              "depth": "15 mm",
+              "height": "20 mm"
+            }
+          }
+        }
+      }
+    },
+    {
+      "hold": {
+        "at": {
+          "world": [
+            35,
+            2,
+            15
+          ]
+        },
+        "seconds": 0.65
+      }
+    },
+    {
+      "expect": {
+        "bodies": 2,
+        "handle": "select-other:0"
+      }
+    },
+    {
+      "shot": "select-other.png"
+    },
+    {
+      "click": {
+        "handle": "select-other:0"
+      }
+    },
+    {
+      "expect": {
+        "selection": 1
+      }
+    },
+    {
+      "key": "Escape"
+    }
+  ]
+}

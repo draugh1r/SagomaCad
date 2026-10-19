@@ -1,0 +1,102 @@
+{
+  "size": [
+    1440,
+    900
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "camera": {
+            "distance": 15
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 0
+      }
+    },
+    {
+      "shot": "grid-15.png"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "camera": {
+            "distance": 45
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 0
+      }
+    },
+    {
+      "shot": "grid-45.png"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "camera": {
+            "distance": 140
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 0
+      }
+    },
+    {
+      "shot": "grid-140.png"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "camera": {
+            "distance": 450
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 0
+      }
+    },
+    {
+      "shot": "grid-450.png"
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "camera": {
+            "distance": 1400
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 0
+      }
+    },
+    {
+      "shot": "grid-1400.png"
+    }
+  ]
+}

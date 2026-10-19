@@ -2,14 +2,18 @@
 #include "fuzz.hpp"
 #include "client.hpp"
 #include "mcp.hpp"
+#include "scenario.hpp"
 #include "ui/parameter_editor.hpp"
 #include <cstdio>
 #include <iostream>
 #include <string>
 #include <array>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 
 int main(int argc,char** argv) {
+    if(argc>=2&&std::string(argv[1])=="scenario")return scenario_cli(argc,argv);
     if (argc==2 && std::string(argv[1])=="fuzz-commands") return fuzz_commands();
     if (argc>=2 && (std::string(argv[1])=="call" || std::string(argv[1])=="run"))
         return client_cli(argc,argv);
@@ -23,7 +27,7 @@ int main(int argc,char** argv) {
     int width=design_board?1600:1440,height=design_board?1800:900,scale=1;
     std::string output,theme="light",script="[]";
     bool glyph_test=false,sketch_mode=false,palette_open=false,parameters_open=false,export_dialog=false;
-    nlohmann::json parameter_draft,feature_draft,sketch_draft;
+    nlohmann::json parameter_draft,feature_draft,sketch_draft,camera_draft;
     bool sketch_plane_picker=false;
     std::string feature_edit_id;
     for (int i=2;i<argc;++i) {
@@ -50,7 +54,11 @@ int main(int argc,char** argv) {
         std::cerr<<"Design board needs at least 1280x1800, without a model script or glyph test\n";return 2;
     }
     auto steps=nlohmann::json::parse(script,nullptr,false);
-    if (!steps.is_array()) { std::cerr<<"--script must be a JSON array\n"; return 2; }
+    if(steps.is_discarded()) {
+        std::error_code ec;const auto bytes=std::filesystem::file_size(script,ec);
+        if(!ec&&bytes<=4*1024*1024){std::ifstream input(script);steps=nlohmann::json::parse(input,nullptr,false);}
+    }
+    if (!steps.is_array()) { std::cerr<<"--script must be a JSON array or a JSON file\n"; return 2; }
     sagomacad::engine::Engine engine;
     for (const auto& step:steps) {
         if (!step.is_array() || step.size()!=2 || !step[0].is_string() || !step[1].is_object()) return 2;
@@ -61,6 +69,15 @@ int main(int argc,char** argv) {
             const auto result=engine.execute(params["command"].get<std::string>(),params.value("params",nlohmann::json::object()));
             if (!result.ok) { std::cerr<<result.error<<'\n'; return 1; }
         } else if (method=="ui.set") {
+            if(params.contains("camera")) {
+                const auto& c=params["camera"];if(!c.is_object())return 2;
+                for(auto it=c.begin();it!=c.end();++it){
+                    if(it.key()=="target"){if(!it->is_array()||it->size()!=3)return 2;for(const auto& v:*it)if(!v.is_number()||!std::isfinite(v.get<double>())||std::abs(v.get<double>())>1e7)return 2;}
+                    else if(it.key()=="yaw"||it.key()=="pitch"||it.key()=="roll"||it.key()=="distance"){if(!it->is_number()||!std::isfinite(it->get<double>())||std::abs(it->get<double>())>1e7)return 2;if(it.key()=="distance"&&it->get<double>()<.05)return 2;}
+                    else return 2;
+                }
+                camera_draft=c;
+            }
             if(params.contains("sketch_plane_picker")) {if(!params["sketch_plane_picker"].is_boolean())return 2;sketch_plane_picker=params["sketch_plane_picker"].get<bool>();}
             if(params.contains("sketch_draft")) {
                 const auto& draft=params["sketch_draft"];if(!draft.is_object())return 2;
@@ -148,6 +165,11 @@ int main(int argc,char** argv) {
         tool.click(sketch_draft.value("x",0.0),sketch_draft.value("y",0.0));tool.move(sketch_draft.value("cursor_x",40.0),sketch_draft.value("cursor_y",20.0));
         for(int i=0;i<2;++i){auto key=i==0?"first":"second";if(sketch_draft.contains(key)){auto value=sketch_draft[key].get<std::string>();if(value.size()>=shell.state().sketch_fields[i].size())return 2;tool.fields[i]=value;tool.locked[i]=true;std::snprintf(shell.state().sketch_fields[i].data(),shell.state().sketch_fields[i].size(),"%s",value.c_str());}}
         shell.state().sketch_field_focus=true;
+    }
+    if(camera_draft.is_object()) {
+        auto& c=shell.state().camera;shell.state().view_transition.cancel();
+        c.yaw=camera_draft.value("yaw",c.yaw);c.pitch=camera_draft.value("pitch",c.pitch);c.roll=camera_draft.value("roll",c.roll);c.distance=camera_draft.value("distance",c.distance);
+        if(camera_draft.contains("target")){const auto& t=camera_draft["target"];c.target={t[0],t[1],t[2]};}
     }
     for (int frame=0;frame<3;++frame) { shell.poll(); shell.render(); }
     std::string error;

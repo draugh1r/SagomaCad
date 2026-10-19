@@ -1,0 +1,146 @@
+{
+  "size": [
+    1280,
+    720
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.create",
+          "params": {
+            "plane": "XY"
+          }
+        },
+        "save": "sk"
+      }
+    },
+    {
+      "call": {
+        "method": "ui.frame",
+        "params": {
+          "seconds": 1
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.line",
+          "params": {
+            "x1": 2,
+            "y1": 3,
+            "x2": 12,
+            "y2": 3
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "ui.set",
+        "params": {
+          "tool": "select"
+        }
+      }
+    },
+    {
+      "drag": {
+        "from": {
+          "sketch": [
+            2,
+            3
+          ]
+        },
+        "to": {
+          "sketch": [
+            5,
+            7
+          ]
+        },
+        "frames": 8
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.inspect",
+          "params": {}
+        },
+        "save": "moved"
+      }
+    },
+    {
+      "expect": {
+        "entities": 1,
+        "value": {
+          "actual": {
+            "$ref": "/moved/points/0/y"
+          },
+          "equals": 7,
+          "tolerance": 0.3
+        }
+      }
+    },
+    {
+      "key": "Ctrl+Z"
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.inspect",
+          "params": {}
+        },
+        "save": "undo"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/undo/points/0/y"
+          },
+          "equals": 3,
+          "tolerance": 1e-06
+        }
+      }
+    },
+    {
+      "key": "Ctrl+Y"
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.inspect",
+          "params": {}
+        },
+        "save": "redo"
+      }
+    },
+    {
+      "expect": {
+        "value": {
+          "actual": {
+            "$ref": "/redo/points/0/y"
+          },
+          "equals": {
+            "$ref": "/moved/points/0/y"
+          },
+          "tolerance": 1e-06
+        }
+      }
+    },
+    {
+      "shot": "drag-redo.png"
+    }
+  ]
+}

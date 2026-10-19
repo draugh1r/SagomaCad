@@ -1,0 +1,31 @@
+[
+  [
+    "engine.execute",
+    {
+      "command": "primitive.add",
+      "params": {
+        "kind": "box",
+        "dimensions": {
+          "width": "40 mm",
+          "depth": "30 mm",
+          "height": "10 mm"
+        }
+      }
+    }
+  ],
+  [
+    "ui.set",
+    {
+      "camera": {
+        "yaw": -1.4,
+        "pitch": 0.035,
+        "distance": 105,
+        "target": [
+          20,
+          15,
+          8
+        ]
+      }
+    }
+  ]
+]

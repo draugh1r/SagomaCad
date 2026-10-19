@@ -1,4 +1,5 @@
 #include "view_cube_widget.hpp"
+#include "ui/handles.hpp"
 #include <imgui.h>
 #include <algorithm>
 #include <cmath>
@@ -71,6 +72,15 @@ void control_icon(ImDrawList* draw,const ui::CubeControl& control,const ui::Them
 ui::CubeHit draw_view_cube_widget(ImDrawList* draw,ui::Camera& camera,ui::CubeInteraction& interaction,ui::CameraTransition& transition,
                            ui::CubePoint origin,const ui::Theme& theme,float scale,bool interactive) {
     auto layout=ui::cube_layout(camera,origin,theme.cube,scale);
+    for(const auto& part:layout.parts){
+        const auto d=part.hit.direction;std::string name;
+        for(auto label:{d.z>0?"top":d.z<0?"bottom":"",d.y<0?"front":d.y>0?"back":"",d.x>0?"right":d.x<0?"left":""})if(*label){if(!name.empty())name+='-';name+=label;}
+        double x=0,y=0;for(auto p:part.polygon){x+=p.x/part.polygon.size();y+=p.y/part.polygon.size();}
+        ui::publish_handle("cube:"+name,x,y);
+    }
+    for(const auto& c:layout.controls){const char* name=c.kind==ui::CubeKind::Home?"home":c.kind==ui::CubeKind::Up?"up":c.kind==ui::CubeKind::Down?"down":c.kind==ui::CubeKind::Left?"left":c.kind==ui::CubeKind::Right?"right":c.kind==ui::CubeKind::Clockwise?"clockwise":"counterclockwise";
+        ui::publish_handle(std::string("cube:control:")+name,c.center.x,c.center.y);if(c.kind==ui::CubeKind::Home)ui::publish_handle("cube:home",c.center.x,c.center.y);
+    }
     const auto& io=ImGui::GetIO();
     auto hit=interactive?ui::cube_hit(layout,{io.MousePos.x,io.MousePos.y}):ui::CubeHit{};
     if (interactive && hit.kind!=ui::CubeKind::None && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {

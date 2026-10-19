@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:11:39Z",
+    "updatedAt": "2026-10-19T20:55:44Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -448,7 +448,7 @@
       "id": 20,
       "phase": 10,
       "title": "10.0 Screenshot di riferimento (bloccante)",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         19,
@@ -468,13 +468,16 @@
       "validation": "ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png docs/reference/fusion/43-*.png docs/reference/fusion/44-*.png",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "completedAt": "2026-10-19T14:12:27.199465+00:00",
+      "note": "Presenti e letti screenshot e note 17–19, 43–44; riferimenti di comportamento verificati.",
+      "commit": "8597cc34d234256c3d2a77652b9ad7f8334890b3"
     },
     {
       "id": 21,
       "phase": 10,
       "title": "10.1 Modulo di rendering OpenGL",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         20,
@@ -491,13 +494,17 @@
       "validation": "cmake --build build --config Release && ctest --test-dir build -R gl_viewport --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-19T14:12:30.101271+00:00",
+      "completedAt": "2026-10-19T14:22:05.130295+00:00",
+      "note": "Build Release build/agent-phase10; 64/64 ctest in 53.07 s, livelli/frame/UTF-8 verdi. Framebuffer depth/MSAA, callback ImGui, cache VBO per corpo; screenshot chiaro 1440x900 DPI2 e scuro 1280x720 ispezionati. Griglia e anteprime restano al percorso precedente fino ai task 10.6/10.7.",
+      "commit": "25b4a0ebf19d1ce11ccce80568494bf4b39f64d0"
     },
     {
       "id": 22,
       "phase": 10,
       "title": "10.2 Facce e luce",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         21,
@@ -508,16 +515,21 @@
         "solid.vert"
       ],
       "action": "CREATE",
-      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[[\"engine.execute\",{\"command\":\"primitive.add\",\"params\":{\"kind\":\"box\"}}]]'",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[[\"engine.execute\",{\"command\":\"primitive.add\",\"params\":{\"kind\":\"box\",\"dimensions\":{\"width\":\"40 mm\",\"depth\":\"30 mm\",\"height\":\"20 mm\"}}}]]'",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-19T14:22:32.888382+00:00",
+      "blockedAt": "2026-10-19T14:24:49.044167+00:00",
+      "note": "Correzione della validazione autorizzata. Build Release, 64/64 ctest in 50.42 s, livelli e screenshot nei due temi/dimensioni verificati.",
+      "completedAt": "2026-10-19T14:27:08.000947+00:00",
+      "commit": "28048dc18018ccbca71d6f2f7016b5f542fca814"
     },
     {
       "id": 23,
       "phase": 10,
       "title": "10.3 Linee spesse in screen space",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         22,
@@ -531,13 +543,17 @@
       "validation": "ctest --test-dir build -R gl_lines --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release e 65/65 ctest in 52.86 s. gl_lines misura 1.2/3/5 px a due risoluzioni e distanze, segmenti dietro occhio e taglio near. Screenshot due temi/dimensioni e livelli verificati.",
+      "startedAt": "2026-10-19T14:27:14.189123+00:00",
+      "completedAt": "2026-10-19T14:30:22.018809+00:00",
+      "commit": "5d76932e33d4a1838b32664a293608d84d4569e5"
     },
     {
       "id": 24,
       "phase": 10,
       "title": "10.4 Spigoli sempre sopra le facce",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         23,
@@ -551,13 +567,17 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-grazing.png --script docs/examples/m5/camera-radente.json",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 66/66 ctest in 53.30 s, livelli. Test continuita bordo a pitch .001/.035/.6. Script camera-radente eseguito e PNG controllati nei due temi/dimensioni. Snapshot supporta file JSON e camera esplicita con limiti.",
+      "startedAt": "2026-10-19T14:30:25.627969+00:00",
+      "completedAt": "2026-10-19T14:33:07.824788+00:00",
+      "commit": "9f1251a09eee28ed6c36ae27741d129e8f4f3406"
     },
     {
       "id": 25,
       "phase": 10,
       "title": "10.5 Sagome dei corpi curvi",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         24,
@@ -571,13 +591,17 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-silhouette.png --script docs/examples/m5/cilindro-raccordi.json",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 67/67 ctest in 53.31 s. Normali per vertice dalla superficie esatta, deflessione angolare 0.10 per continuita sagome; gl_silhouette isola il contorno senza spigoli, verifica normali unitarie/orientate e wireframe. Screenshot due temi/dimensioni e livelli verificati.",
+      "startedAt": "2026-10-19T14:33:10.720279+00:00",
+      "completedAt": "2026-10-19T14:41:58.487835+00:00",
+      "commit": "9cacb1acbe327255d8eac6c108cd4ac508564fde"
     },
     {
       "id": 26,
       "phase": 10,
       "title": "10.6 Sfondo, griglia e piani dell'origine",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         25,
@@ -596,13 +620,16 @@
       "features": [],
       "isTest": false,
       "milestone": "M5.5",
-      "note": "Richieste utente 2026-10-19: viewport bianco senza gradiente, griglia 5x5 minori/maggiori, passo che segue lo zoom con transizione fluida, griglia coperta dai corpi"
+      "note": "Build Release, 68/68 ctest in 57.41 s, livelli. Passo 8-40 px, continuita dei pesi ai confini, griglia coperta da corpi anche dal basso. 10 PNG a cinque distanze/due temi e due dimensioni controllati; vicino e lontano mostrati in chat. Shader filtra livelli non risolvibili; piano supportato e snap condividono il passo.",
+      "startedAt": "2026-10-19T14:42:01.862451+00:00",
+      "completedAt": "2026-10-19T14:48:57.133295+00:00",
+      "commit": "7ad865b005cfc8f85dcfe89e9c333596d1a696ff"
     },
     {
       "id": 27,
       "phase": 10,
       "title": "10.7 Picking e anteprime sulla nuova pipeline",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         26,
@@ -617,13 +644,17 @@
       "validation": "ctest --test-dir build -R \"picking|m5_interaction|model_interaction\" --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 69/69 ctest in 54.22 s; picking/M5/model interaction verdi. Layer GPU per anteprime, selezioni, profili e tratti; prepass depth per nascondere la griglia nelle trasparenze. Test gl_layers su preview e facce nascoste. M5 quote/stroke invariati, screenshot due temi/dimensioni verificati; livelli/frame/UTF-8 verdi.",
+      "startedAt": "2026-10-19T14:49:00.556309+00:00",
+      "completedAt": "2026-10-19T15:03:58.788903+00:00",
+      "commit": "80930c8cdabfe4230a4cc6acc1fb8c0930903a45"
     },
     {
       "id": 28,
       "phase": 10,
       "title": "10.8 Snapshot, render_view e prestazioni",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         27,
@@ -638,13 +669,17 @@
       "validation": "pytest tests/test_mcp.py -k render_view",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 70/70 ctest in 55.01 s e pytest render_view 1/1. MCP genera PNG 640x400 iso/top/front/right con metadata opengl e MSAA. Benchmark 200000 triangoli, 120 frame dopo warm-up, 1440x900 MSAA4, RTX3070Ti: 3038.21 fps medi, 2110.15 minimi, p95 2483.24, un upload. Misura renderer in contesto nascosto con glFinish.",
+      "startedAt": "2026-10-19T15:04:02.080203+00:00",
+      "completedAt": "2026-10-19T15:07:12.887352+00:00",
+      "commit": "f5a6d34f83708ce1efb24c4d0a22e39e096f4e80"
     },
     {
       "id": 29,
       "phase": 10,
       "title": "10.9 Handle con un nome",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         28,
@@ -662,13 +697,17 @@
       "validation": "pytest tests/test_control.py -k handles",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Handle per frame, controllo UI e bridge MCP; Release 71/71, pytest handles e livelli validi",
+      "startedAt": "2026-10-19T15:07:16.061903+00:00",
+      "completedAt": "2026-10-19T15:36:46.352943+00:00",
+      "commit": "9af9b8ede72f8de67fe7daa71151f193615e0ef8"
     },
     {
       "id": 30,
       "phase": 10,
       "title": "10.10 Esecutore degli scenari JSON",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         29,
@@ -685,13 +724,17 @@
       "validation": "ctest --test-dir build -R scenario --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Runner JSON documentato, input reale, numeri e diagnostica; 74/74 e test input valido",
+      "startedAt": "2026-10-19T15:36:57.673667+00:00",
+      "completedAt": "2026-10-19T15:40:49.809684+00:00",
+      "commit": "eac4e4293fc229ad66130303892d71b665f94972"
     },
     {
       "id": 31,
       "phase": 10,
       "title": "10.11 Primi scenari",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         30,
@@ -704,13 +747,17 @@
       "validation": "ctest --test-dir build -R scenario --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Dieci flussi UI numerici e 12 file JSON; 13/13 scenari, 71 test preesistenti verdi; corrette quote identiche al live",
+      "startedAt": "2026-10-19T15:40:52.724121+00:00",
+      "completedAt": "2026-10-19T15:49:24.425899+00:00",
+      "commit": "60c875e7bb2268de3a5a05e286fe678c92652f7e"
     },
     {
       "id": 32,
       "phase": 10,
       "title": "10.12 Profili con contorni intersecanti",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         31,
@@ -725,17 +772,48 @@
       "validation": "ctest --test-dir build -R \"profile_regions|profili-intersecanti\" --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Tre regioni analitiche selezionabili ed estrudibili, stabili dopo modifica raggio; test esatti CLI MCP UI e livelli validi",
+      "startedAt": "2026-10-19T15:49:28.915689+00:00",
+      "completedAt": "2026-10-19T20:47:19.237762+00:00",
+      "commit": "2e85c405713d15e37a22b2b756c57e0bcdb60b42"
+    },
+    {
+      "id": 102,
+      "phase": 10,
+      "title": "10.14 Griglia dietro ai solidi anche dal basso",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        32
+      ],
+      "files": [
+        "src/ui/render/shaders/grid.frag",
+        "src/ui/render/gl_viewport.cpp",
+        "tests/test_grid.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"grid|gl_layers\" --output-on-failure",
+      "features": [
+        "Occlusione della griglia nella vista dal basso"
+      ],
+      "isTest": true,
+      "milestone": "M5.5",
+      "note": "Regressione obliqua prima fallita, depth di sfondo sui soli campioni liberi; 87/87 e screenshot verificati",
+      "startedAt": "2026-10-19T20:50:27.271524+00:00",
+      "completedAt": "2026-10-19T20:53:17.017055+00:00",
+      "commit": "d394f1055ec2f22e88229a2d9d50a9f813641cfc"
     },
     {
       "id": 33,
       "phase": 10,
       "title": "10.13 Verifica criterio di fine fase",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         32,
-        101
+        101,
+        102
       ],
       "files": [],
       "action": "VERIFY",
@@ -748,7 +826,11 @@
         "Correzione dei profili con contorni intersecanti"
       ],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Criteri M5.5 verificati: 87/87, 13 JSON, screenshot 3 angoli/2 temi/2 dimensioni, livelli e fuzz; evidenze archiviate",
+      "startedAt": "2026-10-19T20:53:20.072401+00:00",
+      "completedAt": "2026-10-19T20:55:09.468480+00:00",
+      "commit": "a95c266881c6378bfd129268bfa595e1aaecdf21"
     },
     {
       "id": 34,

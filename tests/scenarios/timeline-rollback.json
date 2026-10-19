@@ -1,0 +1,82 @@
+{
+  "size": [
+    1440,
+    900
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "40 mm",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "position": {
+              "x": "60 mm"
+            },
+            "dimensions": {
+              "width": "10 mm",
+              "depth": "10 mm",
+              "height": "10 mm"
+            }
+          }
+        }
+      }
+    },
+    {
+      "expect": {
+        "bodies": 2,
+        "volume": 33000,
+        "rollback": 2
+      }
+    },
+    {
+      "click": {
+        "handle": "timeline:control:step-back"
+      }
+    },
+    {
+      "expect": {
+        "bodies": 1,
+        "volume": 32000,
+        "rollback": 1
+      }
+    },
+    {
+      "shot": "rollback.png"
+    },
+    {
+      "click": {
+        "handle": "timeline:control:skip-forward"
+      }
+    },
+    {
+      "expect": {
+        "bodies": 2,
+        "volume": 33000,
+        "rollback": 2
+      }
+    }
+  ]
+}

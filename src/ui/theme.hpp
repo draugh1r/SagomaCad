@@ -4,6 +4,7 @@
 
 namespace sagomacad::ui {
 struct Color { float r, g, b, a = 1.0f; };
+inline constexpr Color transparent{0,0,0,0};
 constexpr Color rgb(unsigned value,float alpha=1) {
     return {float((value>>16)&255)/255,float((value>>8)&255)/255,float(value&255)/255,alpha};
 }
@@ -149,6 +150,7 @@ struct Theme {
         float dialog_min=244,dialog_max=380,window_max=500,window_wide_max=800;
         float heading_height=24,min_height=80,margin=12;
     } frame;
+    struct RenderTokens {float edge_px=1.2f,selected_px=3,hover_px=3,halo_px=5,silhouette_px=1.5f,grid_minor_px=.7f,grid_major_px=1,grid_axis_px=1.2f;} render;
     struct BoardTokens {
         float margin=24,heading=25,row=32,icon_row=58,swatch=20;
         float columns=4,example_height=200;

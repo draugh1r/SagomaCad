@@ -1,0 +1,136 @@
+{
+  "size": [
+    1440,
+    900
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "primitive.add",
+          "params": {
+            "kind": "box",
+            "dimensions": {
+              "width": "40 mm",
+              "depth": "40 mm",
+              "height": "20 mm"
+            }
+          }
+        },
+        "save": "box"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "geometry.query",
+          "params": {
+            "kind": "edge",
+            "parallel_to": [
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        "save": "edges"
+      }
+    },
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "selection.set",
+          "params": {
+            "refs": [
+              {
+                "$ref": "/edges/entities/0/ref"
+              },
+              {
+                "$ref": "/edges/entities/1/ref"
+              },
+              {
+                "$ref": "/edges/entities/2/ref"
+              },
+              {
+                "$ref": "/edges/entities/3/ref"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "F"
+    },
+    {
+      "expect": {
+        "dialog": "surface"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:amount"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "2 mm"
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "volume": 31931.327412287184,
+        "errors": 0
+      }
+    },
+    {
+      "double": {
+        "handle": "timeline:primitive-1"
+      }
+    },
+    {
+      "expect": {
+        "dialog": "primitive"
+      }
+    },
+    {
+      "click": {
+        "handle": "field:Larghezza"
+      }
+    },
+    {
+      "key": "Ctrl+A"
+    },
+    {
+      "text": "60 mm"
+    },
+    {
+      "click": {
+        "handle": "field:OK"
+      }
+    },
+    {
+      "expect": {
+        "volume": 47931.32741228718,
+        "errors": 0,
+        "features": 2
+      }
+    },
+    {
+      "shot": "upstream-fillet.png"
+    }
+  ]
+}

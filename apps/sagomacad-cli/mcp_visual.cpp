@@ -107,7 +107,7 @@ Json mcp_visual_tool(std::string_view name,const Json& a,const McpInvoke& comman
         const auto path=temporary_png();
         std::string error;
         if (!shell.screenshot(path.string(),error,true,width,height)) return failure("mcp.render_failed",error);
-        auto result=image_result(path,{{"view",view},{"width",width},{"height",height},{"labels",a.value("labels",false)},{"entity_labels",shell.state().topology_labels}});
+        auto result=image_result(path,{{"view",view},{"width",width},{"height",height},{"labels",a.value("labels",false)},{"entity_labels",shell.state().topology_labels},{"renderer",shell.inspect()["viewport"]["renderer"]},{"samples",shell.inspect()["viewport"]["samples"]}});
         std::error_code ignored; fs::remove(path,ignored);
         return result;
     }

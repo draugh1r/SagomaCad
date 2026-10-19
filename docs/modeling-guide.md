@@ -37,6 +37,8 @@ non da coordinate o posizione nella lista; conservarli dopo le modifiche dimensi
 `profiles` accetta gli ID delle regioni oppure liste degli ID dei contorni esterni.
 I fori sono risolti dallo schizzo rivalutato. Le entità di costruzione sono escluse.
 
+I contorni intersecanti di linee, cerchi e archi vengono divisi in regioni: due cerchi sovrapposti danno due lunette e una lente. Per questi contorni boundary contiene selettori opachi di tratti analitici; conservarli come gli ID delle regioni, senza interpretarli come ID di entita intere. I contorni non intersecati mantengono i riferimenti precedenti. Le intersezioni sono identificate dalla coppia di entita e dal ramo analitico, quindi una modifica del raggio conserva la regione finche la topologia resta la stessa. Se la regione scompare, la feature segnala un errore nella timeline; non viene sostituita con la regione piu vicina.
+
 | Comando | Parametri principali |
 |---|---|
 | `feature.extrude` | `sketch`, `profiles`, `distance` (espressione); `direction`: `one_side`, `symmetric`, `two_sides`; `second_distance`; `extent`: `distance`, `through_all`; `operation`: `new`, `join`, `cut`, `intersect`; `target_bodies` |

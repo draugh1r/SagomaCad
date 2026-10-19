@@ -145,7 +145,7 @@ def bridge(app, cli, root):
             port = probe.getsockname()[1]
         application = subprocess.Popen([app, "--control", str(port), "--control-token-file", str(token),
                                         "--automation-root", str(temporary),
-                                        "--session-file", str(temporary / "session.json")],
+                                        "--session-file", str(temporary / "session.json"), "--settings-file", str(temporary / "layout.json")],
                                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         client = None
         try:
@@ -165,6 +165,17 @@ def bridge(app, cli, root):
             client.ok("command_run", {"command": "primitive.add", "params": {
                 "kind": "box", "dimensions": {"width": "40 mm", "depth": "40 mm", "height": "20 mm"}}})
             assert len(client.ok("document_inspect")["document"]["bodies"]) == 1
+            ui_state = client.ok("ui_inspect")
+            assert "menu:CREA" in ui_state["handles"] and "toolbar:primitive.add" not in ui_state["handles"]
+            client.ok("ui_call", {"method":"ui.click", "params":{"handle":"menu:CREA"}})
+            assert "toolbar:primitive.add" in client.ok("ui_inspect")["handles"]
+            point = client.ok("ui_call", {"method":"ui.at", "params":{"handle":"toolbar:primitive.add"}})
+            assert point["x"] > 0 and point["y"] > 0
+            client.ok("ui_call", {"method":"ui.click", "params":{"handle":"toolbar:primitive.add"}})
+            assert "field:Larghezza" in client.ok("ui_inspect")["handles"]
+            client.ok("ui_call", {"method":"ui.key", "params":{"key":"Escape"}})
+            assert "field:Larghezza" not in client.ok("ui_inspect")["handles"]
+            assert client.call("ui_call", {"method":"engine.execute"})["isError"]
             top = client.ok("geometry_query", {"kind": "face", "normal": [0, 0, 1]})["entities"][0]["ref"]
             client.ok("command_run", {"command": "selection.set", "params": {"refs": [top]}})
             selected = client.ok("selection_get")["refs"]

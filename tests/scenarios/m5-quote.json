@@ -1,8 +1,105 @@
 {
   "cases": [
-    {"tool":"rect", "fields":["40", "20"], "entities":4, "dimensions":2, "edit":"45 mm"},
-    {"tool":"line", "fields":["30", "25 deg"], "entities":1, "dimensions":2, "edit":"35 mm"},
-    {"tool":"circle", "fields":["16"], "entities":1, "dimensions":1, "edit":"20 mm"},
-    {"tool":"arc", "fields":["12", "90 deg"], "entities":1, "dimensions":2, "edit":"15 mm"}
+    {
+      "tool": "rect",
+      "fields": [
+        "40",
+        "20"
+      ],
+      "entities": 4,
+      "dimensions": 2,
+      "edit": "45 mm"
+    },
+    {
+      "tool": "line",
+      "fields": [
+        "30",
+        "25 deg"
+      ],
+      "entities": 1,
+      "dimensions": 2,
+      "edit": "35 mm"
+    },
+    {
+      "tool": "circle",
+      "fields": [
+        "16"
+      ],
+      "entities": 1,
+      "dimensions": 1,
+      "edit": "20 mm"
+    },
+    {
+      "tool": "arc",
+      "fields": [
+        "12",
+        "90 deg"
+      ],
+      "entities": 1,
+      "dimensions": 2,
+      "edit": "15 mm"
+    }
+  ],
+  "steps": [
+    {
+      "call": {
+        "method": "engine.execute",
+        "params": {
+          "command": "sketch.create",
+          "params": {
+            "plane": "XY"
+          }
+        }
+      }
+    },
+    {
+      "call": {
+        "method": "ui.frame",
+        "params": {
+          "seconds": 1
+        }
+      }
+    },
+    {
+      "start": "sketch.rect"
+    },
+    {
+      "click": {
+        "sketch": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "move": {
+        "sketch": [
+          20,
+          15
+        ]
+      }
+    },
+    {
+      "text": "40"
+    },
+    {
+      "key": "Tab"
+    },
+    {
+      "text": "20"
+    },
+    {
+      "key": "Enter"
+    },
+    {
+      "expect": {
+        "entities": 4,
+        "dimensions": 2,
+        "dof": 0
+      }
+    },
+    {
+      "shot": "rectangle.png"
+    }
   ]
 }

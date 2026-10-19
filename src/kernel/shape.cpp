@@ -1,5 +1,6 @@
 #include "kernel/shape.hpp"
 #include "kernel/shape_impl.hpp"
+#include "core/planar.hpp"
 #include <BRepGProp.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepBndLib.hxx>
@@ -11,6 +12,7 @@
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepLProp_SLProps.hxx>
 #include <GProp_GProps.hxx>
 #include <Standard_Failure.hxx>
 #include <TopoDS_Shape.hxx>
@@ -56,14 +58,34 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
         auto world=[&](double x,double y){if(s.support)return gp_Pnt(s.origin[0]+x*s.u[0]+y*s.v[0],s.origin[1]+x*s.u[1]+y*s.v[1],s.origin[2]+x*s.u[2]+y*s.v[2]);return s.plane=="XY"?gp_Pnt(x,y,0):s.plane=="XZ"?gp_Pnt(x,0,y):gp_Pnt(0,x,y);};
         auto point=[&](const std::string& id){for(const auto& p:s.points)if(p.id==id)return world(p.x,p.y);throw std::runtime_error("Punto del profilo mancante: "+id);};
         const gp_Dir normal=s.support?gp_Dir(gp_Vec(s.u[0],s.u[1],s.u[2]).Crossed(gp_Vec(s.v[0],s.v[1],s.v[2]))):s.plane=="XY"?gp_Dir(0,0,1):s.plane=="XZ"?gp_Dir(0,-1,0):gp_Dir(1,0,0);
+        std::optional<core::planar::Arrangement> arrangement;
+        auto spans=[&]()->const core::planar::Arrangement& {
+            if(!arrangement){
+                auto xy=[&](const std::string& id){for(const auto& p:s.points)if(p.id==id)return core::planar::Point{p.x,p.y};throw std::runtime_error("Punto del profilo mancante: "+id);};
+                std::vector<core::planar::Curve> curves;
+                for(const auto& e:s.entities)if(!e.construction){
+                    if(e.kind=="line")curves.push_back(core::planar::line(e.id,xy(e.points.at(0)),xy(e.points.at(1)),e.points.at(0),e.points.at(1)));
+                    else if(e.kind=="circle")curves.push_back(core::planar::circle(e.id,xy(e.points.at(0)),e.radius));
+                    else if(e.kind=="arc")curves.push_back(core::planar::arc(e.id,xy(e.points.at(0)),e.radius,xy(e.points.at(1)),xy(e.points.at(2)),e.points.at(1),e.points.at(2)));
+                }arrangement=core::planar::arrange(std::move(curves));
+            }return *arrangement;
+        };
         std::vector<NamedShape> names;
         auto wire=[&](const std::vector<std::string>& ids){
             BRepBuilderAPI_MakeWire builder;
             for(const auto& id:ids){
                 auto it=std::find_if(s.entities.begin(),s.entities.end(),[&](const auto& e){return e.id==id&&!e.construction;});
-                if(it==s.entities.end())throw std::runtime_error("Entità del profilo mancante: "+id);
-                const auto& e=*it;
                 TopoDS_Edge edge;
+                if(it==s.entities.end()){
+                    if(!id.starts_with("@+")&&!id.starts_with("@-"))throw std::runtime_error("Entità del profilo mancante: "+id);
+                    const auto& a=spans();auto found=std::find_if(a.spans.begin(),a.spans.end(),[&](const auto& span){return id==core::planar::selector(span,true)||id==core::planar::selector(span,false);});
+                    if(found==a.spans.end())throw std::runtime_error("Tratto del profilo non piu disponibile: "+id);
+                    const auto& c=a.curves.at(found->curve);auto first=core::planar::evaluate(c,found->begin),last=core::planar::evaluate(c,found->end);
+                    if(c.line){BRepBuilderAPI_MakeEdge make(world(first[0],first[1]),world(last[0],last[1]));if(!make.IsDone())throw std::runtime_error("Tratto lineare non valido");edge=make.Edge();}
+                    else {auto x=gp_Dir(gp_Vec(world(0,0),world(1,0)));BRepBuilderAPI_MakeEdge make(gp_Circ(gp_Ax2(world(c.center[0],c.center[1]),normal,x),c.radius),found->begin,found->end);if(!make.IsDone())throw std::runtime_error("Tratto circolare non valido");edge=make.Edge();}
+                    if(id.starts_with("@-"))edge.Reverse();
+                }else {
+                const auto& e=*it;
                 if(e.kind=="line")edge=BRepBuilderAPI_MakeEdge(point(e.points.at(0)),point(e.points.at(1))).Edge();
                 else if(e.kind=="circle")edge=BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(point(e.points.at(0)),normal),e.radius)).Edge();
                 else if(e.kind=="arc"){
@@ -75,6 +97,7 @@ Result<Shape> profile_face(const doc::Sketch& s,const std::vector<std::string>& 
                     if(!arc.IsDone())throw std::runtime_error("Arco del profilo non valido");
                     edge=BRepBuilderAPI_MakeEdge(arc.Value()).Edge();
                 }else throw std::runtime_error("Entità non ammessa nel profilo");
+                }
                 builder.Add(edge);names.push_back({"entity("+id+")",edge});
                 if(!builder.IsDone())throw std::runtime_error("Contorno del profilo non connesso");
             }
@@ -239,7 +262,7 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
     if (!std::isfinite(tolerance) || tolerance<0.001 || tolerance>10.0)
         return Result<Tessellation>::failure("Tolleranza di tassellazione non valida");
     try {
-        BRepMesh_IncrementalMesh mesher(shape.impl_->shape,tolerance,false,0.35,true);
+        BRepMesh_IncrementalMesh mesher(shape.impl_->shape,tolerance,false,0.10,true);
         if (!mesher.IsDone()) return Result<Tessellation>::failure("Tassellazione OpenCascade fallita");
         Tessellation result;
         int face_id=0;
@@ -250,6 +273,7 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
             TopLoc_Location location;
             const auto triangulation=BRep_Tool::Triangulation(face,location);
             if (triangulation.IsNull()) continue;
+            BRepAdaptor_Surface surface(face);
             for (int i=1;i<=triangulation->NbTriangles();++i) {
                 int a=0,b=0,c=0;
                 triangulation->Triangle(i).Get(a,b,c);
@@ -263,7 +287,21 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
                 const double size=std::hypot(normal.x,normal.y,normal.z);
                 if (size<=1.0e-12) continue;
                 normal.x/=size; normal.y/=size; normal.z/=size;
-                result.triangles.push_back({{{pa,pb,pc}},normal,face_id});
+                Triangle triangle{{{pa,pb,pc}},normal,face_id};
+                const std::array<int,3> indices{a,b,c};
+                for(int vertex=0;vertex<3;++vertex){
+                    auto smooth=normal;
+                    if(triangulation->HasUVNodes()){
+                        const auto uv=triangulation->UVNode(indices[vertex]);
+                        BRepLProp_SLProps properties(surface,uv.X(),uv.Y(),1,1e-9);
+                        if(properties.IsNormalDefined()){
+                            auto n=properties.Normal();if(face.Orientation()==TopAbs_REVERSED)n.Reverse();
+                            smooth={n.X(),n.Y(),n.Z()};
+                        }
+                    }
+                    triangle.normals[vertex]=smooth;
+                }
+                result.triangles.push_back(triangle);
                 if (result.triangles.size()>2000000) return Result<Tessellation>::failure("Troppi triangoli");
             }
         }

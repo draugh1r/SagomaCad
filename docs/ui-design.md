@@ -132,3 +132,9 @@ Contratto per gli strumenti presenti e futuri: `engine::SketchMeasure` contiene 
 ## Stato dei comandi nei menu
 
 Ribbon e tendine evidenziano il comando attivo con `visual.accent_soft` e bordo `accent`. Lo stato deriva dai pannelli e dallo strumento correnti: vale anche per scorciatoie e riapertura dalla timeline, si aggiorna al cambio di strumento e termina alla chiusura del pannello. Le azioni immediate non mantengono una selezione.
+
+## Griglia GPU
+
+Sfondo uniforme dal token `viewport` (bianco nel tema chiaro), senza gradiente. Le linee minori e maggiori usano `grid_minor`/`grid_major`; ogni maggiore copre cinque passi minori. `render.grid_minor_px`, `grid_major_px` e `grid_axis_px` determinano le larghezze in pixel. Tre livelli si sovrappongono solo durante la dissolvenza: le combinazioni di colore e opacita coincidono al cambio di passo, senza scatti. Il passo minore occupa tra 8 e 40 pixel alla distanza del bersaglio della camera.
+
+Il piano e il depth buffer sono condivisi dal modello: i solidi coprono griglia e assi, comprese le pareti viste obliquamente dal basso. La griglia colora solo i campioni del depth buffer ancora vuoti: il suo piano matematico non diventa una superficie opaca che taglia il modello. Derivate dello shader producono antialiasing; inclinazione e distanza attenuano le linee verso l'orizzonte. Negli schizzi il piano segue origine e base dello schizzo supportato; lo snap alla griglia propone lo stesso passo in prossimita degli incroci. La preferenza Aggancio continua a governare anche origine e punti esistenti.
