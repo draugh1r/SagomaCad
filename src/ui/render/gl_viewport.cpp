@@ -47,7 +47,11 @@ PFNGLFRAMEBUFFERRENDERBUFFERPROC pFramebufferRenderbuffer=nullptr;
 PFNGLDELETERENDERBUFFERSPROC pDeleteRenderbuffers=nullptr;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC pCheckFramebufferStatus=nullptr;
 PFNGLBLITFRAMEBUFFERPROC pBlitFramebuffer=nullptr;
+PFNGLVERTEXATTRIBDIVISORPROC pVertexAttribDivisor=nullptr;
+PFNGLDRAWARRAYSINSTANCEDPROC pDrawArraysInstanced=nullptr;
 bool load() {
+    pVertexAttribDivisor=reinterpret_cast<PFNGLVERTEXATTRIBDIVISORPROC>(SDL_GL_GetProcAddress("glVertexAttribDivisor"));if(!pVertexAttribDivisor)return false;
+    pDrawArraysInstanced=reinterpret_cast<PFNGLDRAWARRAYSINSTANCEDPROC>(SDL_GL_GetProcAddress("glDrawArraysInstanced"));if(!pDrawArraysInstanced)return false;
     pGenVertexArrays=reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(SDL_GL_GetProcAddress("glGenVertexArrays")); if(!pGenVertexArrays)return false;
     pBindVertexArray=reinterpret_cast<PFNGLBINDVERTEXARRAYPROC>(SDL_GL_GetProcAddress("glBindVertexArray")); if(!pBindVertexArray)return false;
     pDeleteVertexArrays=reinterpret_cast<PFNGLDELETEVERTEXARRAYSPROC>(SDL_GL_GetProcAddress("glDeleteVertexArrays")); if(!pDeleteVertexArrays)return false;
@@ -177,11 +181,13 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
     pBindFramebuffer(GL_FRAMEBUFFER,p.fbo);glViewport(0,0,w,h);glDisable(GL_SCISSOR_TEST);glDisable(GL_BLEND);glDisable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);glDepthFunc(GL_LEQUAL);glDepthMask(GL_TRUE);glClearColor(theme.viewport.r,theme.viewport.g,theme.viewport.b,theme.viewport.a);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     const auto m=matrix(camera,w,h);
     auto uniforms=[&](unsigned program,Color c){pUseProgram(program);pUniformMatrix4fv(pGetUniformLocation(program,"camera"),1,GL_FALSE,m.data());pUniform4f(pGetUniformLocation(program,"body"),c.r,c.g,c.b,c.a);};
+    pVertexAttribDivisor(0,0);pVertexAttribDivisor(1,0);
     uniforms(p.solid,theme.solid);
     const auto f=camera.forward();pUniform4f(pGetUniformLocation(p.solid,"toward_eye"),float(-f.x),float(-f.y),float(-f.z),0);
     for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pEnableVertexAttribArray(0);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pEnableVertexAttribArray(1);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));}
-    uniforms(p.line,theme.solid_edge);glLineWidth(scale);
-    for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3*sizeof(float),nullptr);glDrawArrays(GL_LINES,0,int(body.edges.size()/3));}
+    uniforms(p.line,theme.solid_edge);pUniform4f(pGetUniformLocation(p.line,"screen"),float(w),float(h),theme.render.edge_px*scale,0);
+    pVertexAttribDivisor(0,1);pVertexAttribDivisor(1,1);
+    for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));}
     pBindFramebuffer(GL_READ_FRAMEBUFFER,p.fbo);pBindFramebuffer(GL_DRAW_FRAMEBUFFER,p.resolve);pBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);
     restore();return true;
 }

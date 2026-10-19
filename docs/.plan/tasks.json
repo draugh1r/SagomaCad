@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:27:09Z",
+    "updatedAt": "2026-10-19T14:30:22Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -521,7 +521,7 @@
       "milestone": "M5.5",
       "startedAt": "2026-10-19T14:22:32.888382+00:00",
       "blockedAt": "2026-10-19T14:24:49.044167+00:00",
-      "note": "Validazione corretta autorizzata dall",
+      "note": "Correzione della validazione autorizzata. Build Release, 64/64 ctest in 50.42 s, livelli e screenshot nei due temi/dimensioni verificati.",
       "completedAt": "2026-10-19T14:27:08.000947+00:00",
       "commit": "3b07d4ad69de8e29fc1d13aeb9afd394358fc7ae"
     },
@@ -529,7 +529,7 @@
       "id": 23,
       "phase": 10,
       "title": "10.3 Linee spesse in screen space",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         22,
@@ -543,7 +543,11 @@
       "validation": "ctest --test-dir build -R gl_lines --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release e 65/65 ctest in 52.86 s. gl_lines misura 1.2/3/5 px a due risoluzioni e distanze, segmenti dietro occhio e taglio near. Screenshot due temi/dimensioni e livelli verificati.",
+      "startedAt": "2026-10-19T14:27:14.189123+00:00",
+      "completedAt": "2026-10-19T14:30:22.018809+00:00",
+      "commit": "28048dc18018ccbca71d6f2f7016b5f542fca814"
     },
     {
       "id": 24,
