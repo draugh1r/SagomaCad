@@ -1022,7 +1022,7 @@ nlohmann::json Shell::inspect() const {
         {"frames",frames},{"palette_search",state_.palette_search},{"design_board",state_.design_board},
         {"timeline_items",items},{"timeline_marker",{{"x",state_.timeline_marker_x},{"y",state_.timeline_marker_y},{"index",engine_?engine_->session().document.rollback:0}}},
         {"panels",{{"browser",state_.browser},{"properties",state_.properties},{"timeline",state_.timeline}}},
-        {"viewport",{{"grid",true},{"axes",true},{"title_visible",false}}},
+        {"viewport",{{"grid",true},{"axes",true},{"title_visible",false},{"renderer",gl_viewport_&&gl_viewport_->texture()?"opengl":"cpu"},{"samples",gl_viewport_?gl_viewport_->samples():0},{"geometry_uploads",gl_viewport_?gl_viewport_->uploads():0}}},
         {"docking",false},{"layout_engine","clay"},{"layout_scale",scale_},{"shell_rects",rectangles},{"layout_state",ui::layout_state_json(state_)},{"layout_error",layout_.error()},{"fixed_layout",true},{"tabs_visible",false},
         {"palette_open",state_.palette_open},{"parameters_open",state_.parameters_open},
         {"surface",{{"open",state_.surface.open},{"command",state_.surface.command},{"params",ui::surface_params(state_)},{"error",state_.surface.preview_error},{"fields",state_.surface.fields},{"handle",{{"x",state_.surface.handle_x},{"y",state_.surface.handle_y}}}}},{"topology_labels",state_.topology_labels},{"selection",engine_?engine_->session().selection:nlohmann::json::array()},{"feature_edit_open",state_.primitive_editor_open||(!state_.model.feature_id.empty()&&state_.model.open)},{"feature_edit_id",state_.model.open?state_.model.feature_id:state_.primitive_feature_id},{"model",ui::model_state_json(state_)},

@@ -453,3 +453,7 @@ Piano infinito nel fragment shader, sfondo uniforme, livelli a fattore cinque e 
 ## 2026-10-19 - Anteprime, selezione e tratti sulla GPU
 
 Layer GPU con cache per anteprime, facce/spigoli selezionati e sotto il mouse, profili e tratti di schizzo. Prepass di profondita delle anteprime trasparenti: la griglia non attraversa il volume, i colori del corpo sottostante restano disponibili per il compositing. Riempimenti prima di tutti i tratti, allineamento al pixel per linee assiali; risolte due regressioni reali M5 senza modificare i controlli. Picking ID dalla stessa tessellazione della vista, ricostruzione differita mentre la camera si muove. Build Release, 69/69 ctest in 54.22 s; gl_layers verifica griglia sotto trasparenza e selezione posteriore occlusa. Picking/M5/model interaction, livelli/frame/UTF-8 verdi; screenshot M4/M5 nei due temi e dimensioni ispezionati.
+
+## 2026-10-19 - Snapshot, render_view e prestazioni
+
+Metadata renderer/MSAA esposti da ui.inspect e render_view; test MCP reale su iso/top/front/right a 640x400, PNG e argomenti invalidi verificati anche con pytest. Benchmark della stessa pipeline in contesto nascosto: sfera sintetica di 200000 triangoli, 1440x900, MSAA4, 12 frame di warm-up e 120 frame di orbita sincronizzati con glFinish. NVIDIA GeForce RTX 3070 Ti, OpenGL 3.3 NVIDIA 617.42: 3038.21 fps medi, 2110.15 minimi, p95 2483.24; un solo upload. Sono tempi del renderer, senza il limite di frame della finestra. Build Release, 70/70 ctest in 55.01 s; pytest render_view 1/1.

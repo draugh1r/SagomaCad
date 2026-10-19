@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T15:03:59Z",
+    "updatedAt": "2026-10-19T15:07:13Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -647,13 +647,14 @@
       "milestone": "M5.5",
       "note": "Build Release, 69/69 ctest in 54.22 s; picking/M5/model interaction verdi. Layer GPU per anteprime, selezioni, profili e tratti; prepass depth per nascondere la griglia nelle trasparenze. Test gl_layers su preview e facce nascoste. M5 quote/stroke invariati, screenshot due temi/dimensioni verificati; livelli/frame/UTF-8 verdi.",
       "startedAt": "2026-10-19T14:49:00.556309+00:00",
-      "completedAt": "2026-10-19T15:03:58.788903+00:00"
+      "completedAt": "2026-10-19T15:03:58.788903+00:00",
+      "commit": "80930c8cdabfe4230a4cc6acc1fb8c0930903a45"
     },
     {
       "id": 28,
       "phase": 10,
       "title": "10.8 Snapshot, render_view e prestazioni",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         27,
@@ -668,7 +669,10 @@
       "validation": "pytest tests/test_mcp.py -k render_view",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 70/70 ctest in 55.01 s e pytest render_view 1/1. MCP genera PNG 640x400 iso/top/front/right con metadata opengl e MSAA. Benchmark 200000 triangoli, 120 frame dopo warm-up, 1440x900 MSAA4, RTX3070Ti: 3038.21 fps medi, 2110.15 minimi, p95 2483.24, un upload. Misura renderer in contesto nascosto con glFinish.",
+      "startedAt": "2026-10-19T15:04:02.080203+00:00",
+      "completedAt": "2026-10-19T15:07:12.887352+00:00"
     },
     {
       "id": 29,

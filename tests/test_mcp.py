@@ -1,11 +1,15 @@
 import json
+import base64
+import struct
+import os
+from pathlib import Path
 import subprocess
 import sys
 
 
-def main():
+def main(cli=None):
     process = subprocess.Popen(
-        [sys.argv[1], "mcp", "--headless"],
+        [cli or sys.argv[1], "mcp", "--headless"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, encoding="utf-8", bufsize=1,
     )
@@ -38,6 +42,17 @@ def main():
         assert listed["structuredContent"]["items"][0]["name"] == "larghezza"
         document = call("tools/call", {"name": "document_inspect", "arguments": {}})["result"]["structuredContent"]
         assert document["parameters"][0]["value"] == 40
+        created = call("tools/call", {"name":"command_run", "arguments":{"command":"primitive.add", "params":{"kind":"box", "dimensions":{"width":"40 mm", "depth":"30 mm", "height":"20 mm"}}}})["result"]
+        assert not created.get("isError"), created
+        for view in ("iso", "top", "front", "right"):
+            picture = call("tools/call", {"name":"render_view", "arguments":{"view":view, "size":"640x400"}})["result"]
+            assert not picture.get("isError"), picture
+            metadata = picture["structuredContent"]
+            assert metadata["renderer"] == "opengl" and 0 <= metadata["samples"] <= 4, metadata
+            png = base64.b64decode(next(c["data"] for c in picture["content"] if c["type"] == "image"))
+            assert png[:8] == b"\x89PNG\r\n\x1a\n" and struct.unpack(">II",png[16:24]) == (640,400)
+        invalid = call("tools/call", {"name":"render_view", "arguments":{"view":"iso", "size":"1x0"}})["result"]
+        assert invalid["isError"], invalid
         resources = call("resources/list")["result"]["resources"]
         assert {r["uri"] for r in resources} == {"sagomacad://document", "sagomacad://commands", "sagomacad://docs/modeling-guide"}
         for resource in resources:
@@ -63,6 +78,14 @@ def main():
     finally:
         process.stdin.close()
         assert process.wait(timeout=5) == 0, process.stderr.read()
+
+
+def test_render_view():
+    cli = os.environ.get("SAGOMACAD_CLI")
+    if not cli:
+        cli = str(Path(__file__).resolve().parents[1] / "build/apps/sagomacad-cli/sagomacad-cli.exe")
+    assert Path(cli).is_file(), "Set SAGOMACAD_CLI to the built CLI executable"
+    main(cli)
 
 
 if __name__ == "__main__":
