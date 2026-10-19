@@ -7,6 +7,7 @@ using namespace sagomacad;
 int main(){
     Shell shell(640,400,1,true,true);if(!shell.valid())return 1;
     ui::GlViewport renderer;ui::Camera camera;camera.target={};camera.look_from({0,0,1});camera.distance=10;
+    renderer.set_style({false,true,false});
     auto theme=ui::theme(true);theme.solid_edge={0,0,0,1};theme.viewport={1,1,1,1};
     mesh::Surface surface;surface.geometry.edges.push_back({{{-5,0,0},{5,0,0}},1});
     for(float thickness:{1.2f,3.f,5.f})for(int size:{200,400})for(double distance:{10.,20.}){

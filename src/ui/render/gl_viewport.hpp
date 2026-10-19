@@ -11,6 +11,7 @@ namespace sagomacad::ui {
 // Owns GL objects; destroy before the owning SDL context. Scene uploads are independent of camera updates.
 class GlViewport {
 public:
+    struct Style {bool faces=true,edges=true,silhouettes=true;};
     GlViewport();
     ~GlViewport();
     GlViewport(const GlViewport&)=delete;
@@ -23,6 +24,7 @@ public:
     const std::string& error() const;
     std::size_t uploads() const;
     int samples() const;
+    void set_style(Style);
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

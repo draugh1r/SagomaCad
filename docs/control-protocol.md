@@ -49,3 +49,7 @@ verifica trascinamento, doppio clic, compressione, riavvio e ridimensionamento.
 `engine.execute` espone `preferences.get`, `preferences.set` (`hide_sketch_after_feature`: booleano, default false) e `feature.extrude.suggest` (sorgente/distanza/direzione → `operation`, `target_bodies`, senza mutazioni). Sono gli stessi comandi raggiungibili da CLI e MCP `command_run`. Le preferenze native vengono salvate localmente; la visibilità applicata dalla feature si salva nel documento e nel suo undo.
 
 `ui.inspect.sketch` include `active_field` e le mappe di rettangoli `live_fields` (indice campo) e `dimension_rects` (ID quota), più `dimension_edit_rect` per il campo aperto dal doppio clic. Coordinate logiche `[x,y,width,height]`, proiettate nel viewport; consentono verifiche senza coordinate fisse.
+
+## Snapshot con camera riproducibile
+
+`--script` accetta un array JSON inline oppure il percorso di un file JSON (massimo 4 MiB). `ui.set` nello script snapshot accetta `camera: {yaw?, pitch?, roll?, distance?, target?: [x,y,z]}`: angoli in radianti, distanza in mm. La camera esplicita viene applicata dopo il fit iniziale. Numeri non finiti, distanze inferiori a 0.05 e coordinate oltre 1e7 vengono rifiutati. Esempi: `docs/examples/m5/camera-radente.json` e `cilindro-raccordi.json`.

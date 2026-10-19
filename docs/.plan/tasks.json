@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:33:08Z",
+    "updatedAt": "2026-10-19T14:41:58Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -523,7 +523,7 @@
       "blockedAt": "2026-10-19T14:24:49.044167+00:00",
       "note": "Correzione della validazione autorizzata. Build Release, 64/64 ctest in 50.42 s, livelli e screenshot nei due temi/dimensioni verificati.",
       "completedAt": "2026-10-19T14:27:08.000947+00:00",
-      "commit": "3b07d4ad69de8e29fc1d13aeb9afd394358fc7ae"
+      "commit": "28048dc18018ccbca71d6f2f7016b5f542fca814"
     },
     {
       "id": 23,
@@ -547,7 +547,7 @@
       "note": "Build Release e 65/65 ctest in 52.86 s. gl_lines misura 1.2/3/5 px a due risoluzioni e distanze, segmenti dietro occhio e taglio near. Screenshot due temi/dimensioni e livelli verificati.",
       "startedAt": "2026-10-19T14:27:14.189123+00:00",
       "completedAt": "2026-10-19T14:30:22.018809+00:00",
-      "commit": "28048dc18018ccbca71d6f2f7016b5f542fca814"
+      "commit": "5d76932e33d4a1838b32664a293608d84d4569e5"
     },
     {
       "id": 24,
@@ -571,13 +571,13 @@
       "note": "Build Release, 66/66 ctest in 53.30 s, livelli. Test continuita bordo a pitch .001/.035/.6. Script camera-radente eseguito e PNG controllati nei due temi/dimensioni. Snapshot supporta file JSON e camera esplicita con limiti.",
       "startedAt": "2026-10-19T14:30:25.627969+00:00",
       "completedAt": "2026-10-19T14:33:07.824788+00:00",
-      "commit": "5d76932e33d4a1838b32664a293608d84d4569e5"
+      "commit": "9f1251a09eee28ed6c36ae27741d129e8f4f3406"
     },
     {
       "id": 25,
       "phase": 10,
       "title": "10.5 Sagome dei corpi curvi",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         24,
@@ -591,7 +591,10 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-silhouette.png --script docs/examples/m5/cilindro-raccordi.json",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Build Release, 67/67 ctest in 53.31 s. Normali per vertice dalla superficie esatta, deflessione angolare 0.10 per continuita sagome; gl_silhouette isola il contorno senza spigoli, verifica normali unitarie/orientate e wireframe. Screenshot due temi/dimensioni e livelli verificati.",
+      "startedAt": "2026-10-19T14:33:10.720279+00:00",
+      "completedAt": "2026-10-19T14:41:58.487835+00:00"
     },
     {
       "id": 26,

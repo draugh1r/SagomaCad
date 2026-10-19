@@ -11,6 +11,7 @@
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepLProp_SLProps.hxx>
 #include <GProp_GProps.hxx>
 #include <Standard_Failure.hxx>
 #include <TopoDS_Shape.hxx>
@@ -239,7 +240,7 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
     if (!std::isfinite(tolerance) || tolerance<0.001 || tolerance>10.0)
         return Result<Tessellation>::failure("Tolleranza di tassellazione non valida");
     try {
-        BRepMesh_IncrementalMesh mesher(shape.impl_->shape,tolerance,false,0.35,true);
+        BRepMesh_IncrementalMesh mesher(shape.impl_->shape,tolerance,false,0.10,true);
         if (!mesher.IsDone()) return Result<Tessellation>::failure("Tassellazione OpenCascade fallita");
         Tessellation result;
         int face_id=0;
@@ -250,6 +251,7 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
             TopLoc_Location location;
             const auto triangulation=BRep_Tool::Triangulation(face,location);
             if (triangulation.IsNull()) continue;
+            BRepAdaptor_Surface surface(face);
             for (int i=1;i<=triangulation->NbTriangles();++i) {
                 int a=0,b=0,c=0;
                 triangulation->Triangle(i).Get(a,b,c);
@@ -263,7 +265,21 @@ Result<Tessellation> tessellate(const Shape& shape,double tolerance) noexcept {
                 const double size=std::hypot(normal.x,normal.y,normal.z);
                 if (size<=1.0e-12) continue;
                 normal.x/=size; normal.y/=size; normal.z/=size;
-                result.triangles.push_back({{{pa,pb,pc}},normal,face_id});
+                Triangle triangle{{{pa,pb,pc}},normal,face_id};
+                const std::array<int,3> indices{a,b,c};
+                for(int vertex=0;vertex<3;++vertex){
+                    auto smooth=normal;
+                    if(triangulation->HasUVNodes()){
+                        const auto uv=triangulation->UVNode(indices[vertex]);
+                        BRepLProp_SLProps properties(surface,uv.X(),uv.Y(),1,1e-9);
+                        if(properties.IsNormalDefined()){
+                            auto n=properties.Normal();if(face.Orientation()==TopAbs_REVERSED)n.Reverse();
+                            smooth={n.X(),n.Y(),n.Z()};
+                        }
+                    }
+                    triangle.normals[vertex]=smooth;
+                }
+                result.triangles.push_back(triangle);
                 if (result.triangles.size()>2000000) return Result<Tessellation>::failure("Troppi triangoli");
             }
         }

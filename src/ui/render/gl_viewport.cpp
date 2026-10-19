@@ -103,6 +103,7 @@ std::array<float,16> matrix(const Camera& c,int w,int h) {
 struct Vertex {float x,y,z,nx,ny,nz;bool operator==(const Vertex&)const=default;};
 }
 struct GlViewport::Impl {
+    Style style;
     const std::vector<mesh::Surface>* scene=nullptr;
     Camera queued_camera;
     Theme queued_theme{};
@@ -169,7 +170,7 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
             auto& body=p.bodies[index];const auto& surface=surfaces[index];
             std::vector<Vertex> triangles;std::vector<float> lines;
             triangles.reserve(surface.geometry.triangles.size()*3);
-            for(const auto& t:surface.geometry.triangles)for(auto v:t.vertices)triangles.push_back({float(v.x),float(v.y),float(v.z),float(t.normal.x),float(t.normal.y),float(t.normal.z)});
+            for(const auto& t:surface.geometry.triangles)for(int i=0;i<3;++i){auto v=t.vertices[i];auto n=t.normals[i];if(n.x*n.x+n.y*n.y+n.z*n.z<1e-12)n=t.normal;triangles.push_back({float(v.x),float(v.y),float(v.z),float(n.x),float(n.y),float(n.z)});}
             for(const auto& edge:surface.geometry.edges)for(std::size_t i=1;i<edge.points.size();++i)for(auto v:{edge.points[i-1],edge.points[i]}){lines.push_back(float(v.x));lines.push_back(float(v.y));lines.push_back(float(v.z));}
             if(body.vertices!=triangles||body.edges!=lines){
                 pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pBufferData(GL_ARRAY_BUFFER,triangles.size()*sizeof(Vertex),triangles.data(),GL_STATIC_DRAW);
@@ -184,17 +185,22 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
     auto uniforms=[&](unsigned program,Color c){pUseProgram(program);pUniformMatrix4fv(pGetUniformLocation(program,"camera"),1,GL_FALSE,m.data());pUniform4f(pGetUniformLocation(program,"body"),c.r,c.g,c.b,c.a);};
     pVertexAttribDivisor(0,0);pVertexAttribDivisor(1,0);
     uniforms(p.solid,theme.solid);
+    pUniform4f(pGetUniformLocation(p.solid,"edge_color"),theme.solid_edge.r,theme.solid_edge.g,theme.solid_edge.b,theme.solid_edge.a);
+    pUniform4f(pGetUniformLocation(p.solid,"silhouette"),p.style.edges&&p.style.silhouettes?theme.render.silhouette_px*scale:0.f,0,0,0);
+    const auto eye=camera.eye();pUniform4f(pGetUniformLocation(p.solid,"eye"),float(eye.x),float(eye.y),float(eye.z),1);
     const auto f=camera.forward();pUniform4f(pGetUniformLocation(p.solid,"toward_eye"),float(-f.x),float(-f.y),float(-f.z),0);
     // Push faces by one pixel of their own depth slope; edges stay at their exact depth.
     glEnable(GL_POLYGON_OFFSET_FILL);glPolygonOffset(1.f,2.f);
-    for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pEnableVertexAttribArray(0);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pEnableVertexAttribArray(1);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));}
+    if(p.style.faces)for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pEnableVertexAttribArray(0);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pEnableVertexAttribArray(1);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));}
     glDisable(GL_POLYGON_OFFSET_FILL);
     uniforms(p.line,theme.solid_edge);pUniform4f(pGetUniformLocation(p.line,"screen"),float(w),float(h),theme.render.edge_px*scale,0);
+    pEnableVertexAttribArray(0);pEnableVertexAttribArray(1);
     pVertexAttribDivisor(0,1);pVertexAttribDivisor(1,1);
-    for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));}
+    if(p.style.edges)for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));pDrawArraysInstanced(GL_TRIANGLES,0,6,int(body.edges.size()/6));}
     pBindFramebuffer(GL_READ_FRAMEBUFFER,p.fbo);pBindFramebuffer(GL_DRAW_FRAMEBUFFER,p.resolve);pBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);
     restore();return true;
 }
+void GlViewport::set_style(Style style){impl_->style=style;}
 unsigned GlViewport::texture()const{return impl_->texture;}
 bool GlViewport::enqueue(ImDrawList* list,const std::vector<mesh::Surface>& scene,const std::string& revision,const Camera& camera,Viewport v,const Theme& theme,float scale){
     auto& p=*impl_;

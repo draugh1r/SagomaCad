@@ -59,3 +59,9 @@ albero e formato delle preferenze sono in `docs/ui-design.md`.
 I risultati persistenti di Fuse, Cut e Common passano da `kernel::unify_same_domain`: ShapeUpgrade_UnifySameDomain unisce facce e spigoli, in SafeInputMode. La storia della booleana viene prima trasferita al risultato grezzo; poi History() della pulizia rimappa gli stessi alias sulle facce e sugli spigoli fusi. Le eliminazioni restano esplicite e i riferimenti divisi restano ambigui: nessuna selezione per vicinanza.
 
 La pulizia è opzionale: se Build() genera Standard_Failure, produce una forma nulla/non valida o non fornisce storia, si conserva l’intero risultato grezzo con i suoi nomi. OCCT 8 non espone IsDone() per questo algoritmo; si controllano forma, storia e BRepCheck_Analyzer, mentre IsDone() è verificato sulle booleane. Il passaggio copre anche i fori nei profili, i fori solidi tramite subtract e le intersezioni di misura. Esempi numerici e screenshot in docs/design/verifica-booleane/.
+
+## Pipeline del viewport GPU
+
+`ui/render/GlViewport` conserva VBO per corpo, framebuffer depth24/MSAA e texture risolta. La callback ImGui produce il 3D e presenta la texture sotto gli overlay della shell. Finestra, snapshot e render_view usano la stessa shell; il ripiego CPU conserva una diagnostica. Camera e tema sono uniform, il contenuto dei VBO cambia solo insieme alla geometria.
+
+Il kernel produce normali per vertice dalla superficie esatta, mantenendo anche la normale geometrica del triangolo. I renderer interpolano le prime per luce e sagome; dati sintetici senza normali per vertice usano quella geometrica. Lo shader applica luce principale, riempimento e riflesso in spazio lineare; converte i token sRGB in ingresso e il colore in uscita. Normali nulle preservano il colore piatto. Le facce sono spinte indietro secondo la pendenza, mentre le linee espanse in triangoli mantengono profondita e larghezza in pixel. `GlViewport::Style` controlla facce, spigoli e sagome separatamente.

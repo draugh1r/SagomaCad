@@ -3,7 +3,10 @@ in vec3 n;
 in vec3 world;
 uniform vec4 body;
 uniform vec4 toward_eye;
+uniform vec4 eye;
 uniform vec4 section_plane;
+uniform vec4 edge_color;
+uniform vec4 silhouette;
 out vec4 color;
 vec3 linear_color(vec3 c) {
     return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));
@@ -13,6 +16,8 @@ vec3 display_color(vec3 c) {
     return mix(c*12.92,1.055*pow(c,vec3(1.0/2.4))-0.055,step(vec3(0.0031308),c));
 }
 void main() {
+    float ndv=dot(normalize(n+vec3(1e-20)),normalize(eye.xyz-world));
+    float fw=fwidth(ndv);
     if(length(section_plane.xyz)>0.5 && dot(section_plane.xyz,world)>section_plane.w)discard;
     if(length(n)<0.0001) { color=body; return; }
     if(!gl_FrontFacing && length(section_plane.xyz)>0.5) {
@@ -28,4 +33,8 @@ void main() {
     float specular=pow(max(dot(normal,normalize(key+v)),0.0),40.0)*0.25;
     float intensity=0.42+0.38*diffuse+0.25*fill;
     color=vec4(display_color(linear_color(body.rgb)*intensity+vec3(specular)),body.a);
+    if(silhouette.x>0.0 && fw>1e-7){
+        float coverage=1.0-smoothstep(fw*0.5,fw*silhouette.x,abs(ndv));
+        color.rgb=mix(color.rgb,edge_color.rgb,coverage);
+    }
 }
