@@ -84,7 +84,7 @@ Traduci `shade()`: luce principale `normalize(v*0.8 + (-0.3, 0.2, 0.6))`, diffus
 
 **Validation:**
 ```bash
-sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[["engine.execute",{"command":"primitive.add","params":{"kind":"box"}}]]'
+sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[["engine.execute",{"command":"primitive.add","params":{"kind":"box","dimensions":{"width":"40 mm","depth":"30 mm","height":"20 mm"}}}]]'
 ```
 
 ### Task 10.3: Linee spesse in screen space

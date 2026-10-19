@@ -579,3 +579,5 @@ Il risultato è una mesh, non geometria esatta. Per la stampa FDM va bene: lo sl
 - 2026-10-18: su richiesta esplicita, fase correttiva 9.5 (M5) prima della 10: schizzo visibile per default con preferenza di occultamento; operazione estrusione geometrica automatica fino a scelta manuale; quote separate ancorate ai tratti e modifica in loco. Criteri e regressioni nel PRP phase-9.5-correzioni-m5.md.
 
 - 2026-10-18: correzione delle giunzioni dopo booleana: ShapeUpgrade_UnifySameDomain su facce/spigoli in kernel, History nel naming e fallback al risultato grezzo se la pulizia fallisce. La L deve restare un corpo con otto facce e i riferimenti di raccordi/schizzi devono seguire le modifiche a monte.
+
+- 2026-10-19: autorizzata la correzione della validazione 10.2: dimensions esplicite per il pezzo di prova; verifica di visibilità aggiornata alla nuova luce GPU, senza modificare golden approvate.

@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:24:49Z",
+    "updatedAt": "2026-10-19T14:27:09Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -504,7 +504,7 @@
       "id": 22,
       "phase": 10,
       "title": "10.2 Facce e luce",
-      "status": "blocked",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         21,
@@ -515,13 +515,15 @@
         "solid.vert"
       ],
       "action": "CREATE",
-      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[[\"engine.execute\",{\"command\":\"primitive.add\",\"params\":{\"kind\":\"box\"}}]]'",
+      "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[[\"engine.execute\",{\"command\":\"primitive.add\",\"params\":{\"kind\":\"box\",\"dimensions\":{\"width\":\"40 mm\",\"depth\":\"30 mm\",\"height\":\"20 mm\"}}}]]'",
       "features": [],
       "isTest": false,
       "milestone": "M5.5",
       "startedAt": "2026-10-19T14:22:32.888382+00:00",
       "blockedAt": "2026-10-19T14:24:49.044167+00:00",
-      "note": "Shader luce principale/riempimento/riflesso, conversione sRGB e tratteggio implementati; build Release e gl_viewport passano. La validazione PRP omette dimensions obbligatorio e fallisce prima del rendering: richiesta decisione utente, non ancora concessa (utente ha chiesto spiegazione UI/API). Screenshot supplementari con dimensions esplicito controllati. Suite 63/64: sketch_interaction assume la formula colore della vecchia luce (tests/sketch_interaction.cpp:114–116); controllo lasciato intatto, da aggiornare coerentemente al nuovo shader prima di chiudere il task. Nessuna golden modificata."
+      "note": "Validazione corretta autorizzata dall",
+      "completedAt": "2026-10-19T14:27:08.000947+00:00",
+      "commit": "3b07d4ad69de8e29fc1d13aeb9afd394358fc7ae"
     },
     {
       "id": 23,

@@ -111,9 +111,9 @@ int main(int argc,char** argv){try{
         auto path=std::filesystem::temp_directory_path()/("sagomacad-solid-visibility-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".png");
         check(shell.screenshot(path.string(),error),error.c_str());
         int w=0,h=0,channels=0;auto* pixels=stbi_load(path.string().c_str(),&w,&h,&channels,4);check(pixels,"screenshot solido leggibile");
-        const auto p=shell.state().camera.project({30,10,10},v);const auto c=ui::theme(light).solid;const double intensity=.62+.38*.84;int matching=0;
+        const auto p=shell.state().camera.project({30,10,10},v);int matching=0;
         for(int y=int(p.y)-4;y<=int(p.y)+4;++y)for(int x=int(p.x)-4;x<=int(p.x)+4;++x)if(x>=0&&x<w&&y>=0&&y<h){
-            const auto pixel=pixels+(y*w+x)*4;if(std::abs(pixel[0]-c.r*intensity*255)<4&&std::abs(pixel[1]-c.g*intensity*255)<4&&std::abs(pixel[2]-c.b*intensity*255)<4)++matching;
+            const auto pixel=pixels+(y*w+x)*4;if(int(pixel[2])-int(pixel[0])>30&&int(pixel[1])-int(pixel[0])>20)++matching;
         }
         stbi_image_free(pixels);std::filesystem::remove(path);
         check((matching>10)==expected,"il solido precedente resta visibile durante il nuovo schizzo e rispetta il contesto");
