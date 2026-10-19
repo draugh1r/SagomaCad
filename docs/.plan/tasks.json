@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-18T15:40:25Z",
+    "updatedAt": "2026-10-19T00:07:35Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -460,10 +460,12 @@
         "docs/reference/fusion/18-spigoli-e-sagome.png",
         ".md",
         "docs/reference/fusion/19-spigoli-angolo-radente.png",
-        ".md"
+        ".md",
+        "docs/reference/fusion/43-griglia-vicino.png",
+        "docs/reference/fusion/44-griglia-lontano.png"
       ],
       "action": "USER",
-      "validation": "ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png",
+      "validation": "ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png docs/reference/fusion/43-*.png docs/reference/fusion/44-*.png",
       "features": [],
       "isTest": false,
       "milestone": "M5.5"
@@ -583,13 +585,18 @@
       ],
       "files": [
         "src/ui/render/gl_viewport.cpp",
-        "apps/common/shell.cpp"
+        "src/ui/render/grid.cpp",
+        "src/ui/render/shaders/grid.glsl",
+        "src/ui/theme.hpp",
+        "apps/common/shell.cpp",
+        "tests/test_grid.cpp"
       ],
       "action": "MODIFY",
-      "validation": "ctest --test-dir build --output-on-failure",
+      "validation": "ctest --test-dir build -R \"grid|scenario\" --output-on-failure",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "Richieste utente 2026-10-19: viewport bianco senza gradiente, griglia 5x5 minori/maggiori, passo che segue lo zoom con transizione fluida, griglia coperta dai corpi"
     },
     {
       "id": 27,

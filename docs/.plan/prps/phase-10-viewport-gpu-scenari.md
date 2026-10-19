@@ -39,20 +39,24 @@ Clone fuori dal repository in `../solidcraft-ref` (vedi fase 9). Da studiare e t
 - `docs/reference/fusion/17-stile-visivo.png`, `.md`
 - `docs/reference/fusion/18-spigoli-e-sagome.png`, `.md`
 - `docs/reference/fusion/19-spigoli-angolo-radente.png`, `.md`
+- `docs/reference/fusion/43-griglia-vicino.png`, `.md`
+- `docs/reference/fusion/44-griglia-lontano.png`, `.md`
 
 **Details:**
 Se i file mancano, **fermati** e scrivi all'utente:
 
-> Per il nuovo viewport mi servono tre screenshot di Fusion, solo per capire il comportamento (cosa si vede e quando), non per copiarne l'aspetto. Salvali in `docs/reference/fusion/`.
+> Per il nuovo viewport mi servono cinque screenshot di Fusion, solo per capire il comportamento (cosa si vede e quando), non per copiarne l'aspetto. Salvali in `docs/reference/fusion/`.
 > 1. Prepara un pezzo con un cilindro e qualche raccordo: per esempio una scatola con un cilindro sopra e i raccordi sugli spigoli verticali.
 > 2. **17-stile-visivo.png**: nella barra in basso al centro clicca l'icona **Display Settings**, apri **Visual Style** e fai lo screenshot con il menu aperto (Shaded, Shaded with Hidden Edges, Shaded with Visible Edges Only, Wireframe...).
 > 3. **18-spigoli-e-sagome.png**: scegli **Shaded with Visible Edges Only**, vista isometrica (Home sul cubo), zoom in modo che il pezzo riempia metà schermo.
 > 4. **19-spigoli-angolo-radente.png**: ruota la vista fino a guardare la faccia superiore quasi di taglio, così si vede come restano visibili gli spigoli e il contorno del cilindro.
+> 5. **43-griglia-vicino.png**: documento vuoto, vista isometrica, zoom avanti finché le caselle piccole della griglia sono ben visibili (si vedono i blocchi da 5x5 caselle chiare con il bordo più scuro).
+> 6. **44-griglia-lontano.png**: stessa vista, zoom indietro finché la griglia cambia passo (le caselle grandi diventano quelle piccole). Se riesci, fai anche un terzo screenshot a metà del passaggio e chiamalo `44b-griglia-transizione.png`.
 > Accanto a ogni immagine crea un file con lo stesso nome e `.md` con una riga: per esempio "il contorno del cilindro si vede anche dove non c'è uno spigolo".
 
 **Validation:**
 ```bash
-ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png
+ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png docs/reference/fusion/43-*.png docs/reference/fusion/44-*.png
 ```
 
 ### Task 10.1: Modulo di rendering OpenGL
@@ -127,14 +131,29 @@ sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-silhouette.pn
 ### Task 10.6: Sfondo, griglia e piani dell'origine
 **Action:** MODIFY
 **Files:**
-- `src/ui/render/gl_viewport.cpp`, `apps/common/shell.cpp`
+- `src/ui/render/gl_viewport.cpp`, `src/ui/render/grid.cpp`, `src/ui/render/shaders/grid.glsl`, `src/ui/theme.hpp`, `apps/common/shell.cpp`, `tests/test_grid.cpp`
 
 **Details:**
-Gradiente tra `viewport_top` e `viewport_bottom`, griglia con linee principali più marcate che sfumano in lontananza, piani dell'origine trasparenti con bordo e hover dai token. Rimuovi il vecchio disegno CPU dei triangoli; lascia un percorso CPU solo come ripiego se il contesto GL non si crea (errore leggibile, mai crash).
+Richieste esplicite dell'utente (2026-10-19), con riferimento di comportamento in `43-griglia-vicino` e `44-griglia-lontano`:
+
+- **Sfondo:** tinta piena dal token `viewport_bg`. Nel tema chiaro è bianco `#ffffff`. Nessun gradiente in nessuno dei due temi.
+- **Gerarchia a due livelli:** linee minori chiare ogni passo; ogni 5 passi una linea maggiore più scura, così il piano appare diviso in blocchi da 5x5 caselle. Colori e spessori da token nuovi (`grid_minor`, `grid_major`, `grid_minor_px`, `grid_major_px`), sempre più tenui degli spigoli dei corpi.
+- **Passo che segue lo zoom:** il passo minore scende e sale in base alla distanza della camera (per esempio 0,1 / 0,5 / 1 / 5 / 10 / 50 / 100 mm), scelto in modo che una casella minore resti sullo schermo tra circa 8 e 40 pixel.
+- **Transizione fluida:** durante lo zoom il livello che sta per sparire sfuma in opacità e il livello maggiore diventa il nuovo minore, senza salti né sfarfallii. Linee antialiased (griglia calcolata nel fragment shader su un piano grande, con `fwidth`, oppure linee larghe del task 10.3), dissolvenza verso l'orizzonte e quando il piano è visto di taglio.
+- **Profondità:** la griglia è scritta con il depth test attivo, quindi i corpi la coprono. Non si vede attraverso i solidi, nemmeno con i corpi in trasparenza durante le anteprime. Gli assi X e Y restano colorati dai token, sotto la stessa regola.
+- **Schizzo:** su un piano di schizzo la griglia segue il piano dello schizzo con la stessa gerarchia, e il passo coincide con lo snap alla griglia.
+- **Piani dell'origine:** trasparenti con bordo e hover dai token.
+
+Test:
+- unitario sul calcolo del passo (distanza camera, altezza viewport, passo atteso) e sulla continuità dell'opacità tra due livelli: nessun salto oltre una soglia tra due distanze vicine;
+- scenario `griglia-zoom.json` con screenshot a 5 distanze nei due temi;
+- uno screenshot con una scatola sopra la griglia, in cui il controllo dei pixel dentro la sagoma non trova colori della griglia.
+
+Rimuovi il vecchio disegno CPU dei triangoli e della griglia; lascia un percorso CPU solo come ripiego se il contesto GL non si crea (errore leggibile, mai crash). Mostra all'utente gli screenshot vicino e lontano prima di chiudere il task.
 
 **Validation:**
 ```bash
-ctest --test-dir build --output-on-failure
+ctest --test-dir build -R "grid|scenario" --output-on-failure
 ```
 
 ### Task 10.7: Picking e anteprime sulla nuova pipeline

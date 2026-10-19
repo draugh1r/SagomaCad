@@ -35,3 +35,6 @@ __pycache__/
 /.claude/settings.local.json
 /.codex/hooks.json
 /.cursor/hooks.json
+
+# Copie storiche locali per il video
+/youtube/
