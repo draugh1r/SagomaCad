@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:11:39Z",
+    "updatedAt": "2026-10-19T14:12:27Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -448,7 +448,7 @@
       "id": 20,
       "phase": 10,
       "title": "10.0 Screenshot di riferimento (bloccante)",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         19,
@@ -468,7 +468,9 @@
       "validation": "ls docs/reference/fusion/17-*.png docs/reference/fusion/18-*.png docs/reference/fusion/19-*.png docs/reference/fusion/43-*.png docs/reference/fusion/44-*.png",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "completedAt": "2026-10-19T14:12:27.199465+00:00",
+      "note": "Presenti e letti screenshot e note 17–19, 43–44; riferimenti di comportamento verificati."
     },
     {
       "id": 21,
