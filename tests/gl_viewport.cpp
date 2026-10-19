@@ -28,6 +28,18 @@ int main(){
     if(!renderer.render({},"b",camera,640,400,theme)||renderer.uploads()!=1)return 8;
     if(renderer.render(scene,"bad",camera,0,400,theme))return 9;
     if(glGetError()!=GL_NO_ERROR){std::cerr<<"OpenGL error";return 11;}
+    // Zero normals are flat overlays: lighting and the framebuffer must preserve token colors.
+    sagomacad::mesh::Surface flat;
+    flat.geometry.triangles.push_back({{{{-100,-100,0},{100,-100,0},{0,100,0}}},{},0});
+    camera.target={};camera.distance=10;camera.look_from({0,0,1});
+    for(bool light:{false,true}){
+        auto flat_theme=sagomacad::ui::theme(light);
+        if(!renderer.render({flat},"flat",camera,64,64,flat_theme))return 13;
+        pixels.resize(64*64*4);glBindTexture(GL_TEXTURE_2D,renderer.texture());glGetTexImage(GL_TEXTURE_2D,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.data());
+        const auto at=(32*64+32)*4;
+        const float expected[]={flat_theme.solid.r,flat_theme.solid.g,flat_theme.solid.b};
+        for(int i=0;i<3;++i)if(std::abs(int(pixels[at+i])-int(expected[i]*255+.5f))>1){std::cerr<<"Flat overlay color changed";return 14;}
+    }
     return 0;
 }
 

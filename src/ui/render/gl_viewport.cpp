@@ -178,6 +178,7 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
     const auto m=matrix(camera,w,h);
     auto uniforms=[&](unsigned program,Color c){pUseProgram(program);pUniformMatrix4fv(pGetUniformLocation(program,"camera"),1,GL_FALSE,m.data());pUniform4f(pGetUniformLocation(program,"body"),c.r,c.g,c.b,c.a);};
     uniforms(p.solid,theme.solid);
+    const auto f=camera.forward();pUniform4f(pGetUniformLocation(p.solid,"toward_eye"),float(-f.x),float(-f.y),float(-f.z),0);
     for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.vbo);pEnableVertexAttribArray(0);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),nullptr);pEnableVertexAttribArray(1);pVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(Vertex),reinterpret_cast<void*>(3*sizeof(float)));glDrawArrays(GL_TRIANGLES,0,int(body.vertices.size()));}
     uniforms(p.line,theme.solid_edge);glLineWidth(scale);
     for(const auto& body:p.bodies){pBindBuffer(GL_ARRAY_BUFFER,body.lines);pVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3*sizeof(float),nullptr);glDrawArrays(GL_LINES,0,int(body.edges.size()/3));}

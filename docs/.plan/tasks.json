@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T14:22:05Z",
+    "updatedAt": "2026-10-19T14:24:49Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -497,13 +497,14 @@
       "milestone": "M5.5",
       "startedAt": "2026-10-19T14:12:30.101271+00:00",
       "completedAt": "2026-10-19T14:22:05.130295+00:00",
-      "note": "Build Release build/agent-phase10; 64/64 ctest in 53.07 s, livelli/frame/UTF-8 verdi. Framebuffer depth/MSAA, callback ImGui, cache VBO per corpo; screenshot chiaro 1440x900 DPI2 e scuro 1280x720 ispezionati. Griglia e anteprime restano al percorso precedente fino ai task 10.6/10.7."
+      "note": "Build Release build/agent-phase10; 64/64 ctest in 53.07 s, livelli/frame/UTF-8 verdi. Framebuffer depth/MSAA, callback ImGui, cache VBO per corpo; screenshot chiaro 1440x900 DPI2 e scuro 1280x720 ispezionati. Griglia e anteprime restano al percorso precedente fino ai task 10.6/10.7.",
+      "commit": "25b4a0ebf19d1ce11ccce80568494bf4b39f64d0"
     },
     {
       "id": 22,
       "phase": 10,
       "title": "10.2 Facce e luce",
-      "status": "pending",
+      "status": "blocked",
       "priority": "high",
       "dependencies": [
         21,
@@ -517,7 +518,10 @@
       "validation": "sagomacad-cli snapshot --size 1440x900 --scale 2 --out build/check-shading.png --script '[[\"engine.execute\",{\"command\":\"primitive.add\",\"params\":{\"kind\":\"box\"}}]]'",
       "features": [],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "startedAt": "2026-10-19T14:22:32.888382+00:00",
+      "blockedAt": "2026-10-19T14:24:49.044167+00:00",
+      "note": "Shader luce principale/riempimento/riflesso, conversione sRGB e tratteggio implementati; build Release e gl_viewport passano. La validazione PRP omette dimensions obbligatorio e fallisce prima del rendering: richiesta decisione utente, non ancora concessa (utente ha chiesto spiegazione UI/API). Screenshot supplementari con dimensions esplicito controllati. Suite 63/64: sketch_interaction assume la formula colore della vecchia luce (tests/sketch_interaction.cpp:114–116); controllo lasciato intatto, da aggiornare coerentemente al nuovo shader prima di chiudere il task. Nessuna golden modificata."
     },
     {
       "id": 23,
