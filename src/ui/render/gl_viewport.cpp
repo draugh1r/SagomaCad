@@ -230,7 +230,9 @@ bool GlViewport::render(const std::vector<mesh::Surface>& surfaces,const std::st
         pUniform4f(pGetUniformLocation(p.grid,"widths"),theme.render.grid_minor_px*scale,theme.render.grid_major_px*scale,theme.render.grid_axis_px*scale,0);
         const auto grid=grid_scale(camera.distance,h);const char* names[]={"level0","level1","level2"};
         for(int i=0;i<3;++i){const auto l=grid.levels[i];pUniform4f(pGetUniformLocation(p.grid,names[i]),float(l.step),float(l.minor),float(l.major),0);}
-        glDepthMask(GL_FALSE);glDepthFunc(GL_LESS);glDrawArrays(GL_TRIANGLES,0,3);glDepthMask(GL_TRUE);glDepthFunc(GL_LEQUAL);
+        // Cleared depth samples belong to the background. Opaque faces and
+        // the preview prepass mask it independently of which side we view.
+        glDepthMask(GL_FALSE);glDepthFunc(GL_EQUAL);glDrawArrays(GL_TRIANGLES,0,3);glDepthMask(GL_TRUE);glDepthFunc(GL_LEQUAL);
     }
     glEnable(GL_BLEND);pBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA);glDepthMask(GL_FALSE);
     for(std::size_t i=0;i<p.layers.size();++i){const auto& layer=p.layers[i];const auto& body=p.layer_buffers[i];

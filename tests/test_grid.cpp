@@ -35,5 +35,14 @@ int main(){
         int changed=0;for(std::size_t i=0;i<grid.size();i+=4)if(std::abs(int(grid[i])-int(plain[i]))>3)++changed;
         if(changed<500){std::cerr<<"Grid missing";return 9;}
     }
+    // An infinite grid is a background, even when its mathematical plane lies
+    // between the eye and the solid. Oblique underside views must retain walls.
+    for(bool light:{false,true})for(double pitch:{-.55,.55}){
+        camera.target={10,10,10};camera.yaw=-.7853981633974483;camera.pitch=pitch;
+        std::vector<unsigned char> plain(600*400*4),grid(plain.size());
+        for(bool enabled:{false,true}){renderer.set_grid({enabled});if(!renderer.render({*surface.value},"box",camera,600,400,ui::theme(light)))return 10;glBindTexture(GL_TEXTURE_2D,renderer.texture());glGetTexImage(GL_TEXTURE_2D,0,GL_RGBA,GL_UNSIGNED_BYTE,(enabled?grid:plain).data());}
+        for(const auto point:{kernel::Vec3{10,0,5},kernel::Vec3{10,0,15},kernel::Vec3{20,10,5},kernel::Vec3{20,10,15}}){auto p=camera.project(point,{0,0,600,400});const int at=((399-int(p.y))*600+int(p.x))*4;
+            for(int c=0;c<3;++c)if(std::abs(int(grid[at+c])-int(plain[at+c]))>1){std::cerr<<"Grid overwrites oblique body wall";return 11;}}
+    }
     return 0;
 }

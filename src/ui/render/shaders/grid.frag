@@ -41,5 +41,8 @@ void main(){
     color=vec4(mix(background.rgb,grid,fade),background.a);
     vec4 clip=camera*vec4(hit,1);
     float depth=clip.z/clip.w*.5+.5;
-    gl_FragDepth=min(1.0,depth+max(abs(dFdx(depth)),abs(dFdy(depth)))*2.0+8.0/16777216.0);
+    if(depth<0.0||depth>1.0)discard;
+    // The grid is a backdrop, not an opaque infinite plane. Preserve every
+    // covered model sample, including walls seen from below the origin plane.
+    gl_FragDepth=1.0;
 }

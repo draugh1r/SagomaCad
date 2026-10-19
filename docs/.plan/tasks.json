@@ -2,7 +2,7 @@
   "meta": {
     "projectName": "SagomaCad",
     "createdAt": "2026-10-17T10:54:00Z",
-    "updatedAt": "2026-10-19T20:47:19Z",
+    "updatedAt": "2026-10-19T20:53:17Z",
     "version": "1.0.0",
     "totalPhases": 15,
     "currentPhase": 10
@@ -775,7 +775,33 @@
       "milestone": "M5.5",
       "note": "Tre regioni analitiche selezionabili ed estrudibili, stabili dopo modifica raggio; test esatti CLI MCP UI e livelli validi",
       "startedAt": "2026-10-19T15:49:28.915689+00:00",
-      "completedAt": "2026-10-19T20:47:19.237762+00:00"
+      "completedAt": "2026-10-19T20:47:19.237762+00:00",
+      "commit": "2e85c405713d15e37a22b2b756c57e0bcdb60b42"
+    },
+    {
+      "id": 102,
+      "phase": 10,
+      "title": "10.14 Griglia dietro ai solidi anche dal basso",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        32
+      ],
+      "files": [
+        "src/ui/render/shaders/grid.frag",
+        "src/ui/render/gl_viewport.cpp",
+        "tests/test_grid.cpp"
+      ],
+      "action": "MODIFY",
+      "validation": "ctest --test-dir build -R \"grid|gl_layers\" --output-on-failure",
+      "features": [
+        "Occlusione della griglia nella vista dal basso"
+      ],
+      "isTest": true,
+      "milestone": "M5.5",
+      "note": "Regressione obliqua prima fallita, depth di sfondo sui soli campioni liberi; 87/87 e screenshot verificati",
+      "startedAt": "2026-10-19T20:50:27.271524+00:00",
+      "completedAt": "2026-10-19T20:53:17.017055+00:00"
     },
     {
       "id": 33,
@@ -785,7 +811,8 @@
       "priority": "high",
       "dependencies": [
         32,
-        101
+        101,
+        102
       ],
       "files": [],
       "action": "VERIFY",
@@ -798,7 +825,9 @@
         "Correzione dei profili con contorni intersecanti"
       ],
       "isTest": false,
-      "milestone": "M5.5"
+      "milestone": "M5.5",
+      "note": "La verifica dal basso ha rilevato che la griglia copre pareti sopra il suo piano; attende regressione e correzione.",
+      "startedAt": "2026-10-19T20:47:22.829570+00:00"
     },
     {
       "id": 34,
